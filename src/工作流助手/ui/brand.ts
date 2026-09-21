@@ -1,4 +1,4 @@
-export const SCRIPT_DISPLAY_NAME = '工作流助手';
+export const SCRIPT_DISPLAY_NAME = '工作流助手 · 世界演化自用版';
 export const SCRIPT_ID = '工作流助手';
 export const SCRIPT_LOG_PREFIX = `[${SCRIPT_DISPLAY_NAME}]`;
 export const WORKFLOW_TASK_LABEL = '工作流任务';

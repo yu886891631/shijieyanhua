@@ -6,7 +6,7 @@
         <span class="ac-header-icon-accent">✦</span>
       </div>
       <div class="ac-header-brand">
-        <h1 class="ac-header-main-title">世界时局与经济简报</h1>
+        <h1 class="ac-header-main-title">世界时局与经济简报 · 世界演化自用版</h1>
         <p class="ac-header-sub">
           <span class="ac-header-sub-en">Imperial Astronomical Archives · </span>星穹档案馆
         </p>

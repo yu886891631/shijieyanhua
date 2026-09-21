@@ -4,7 +4,7 @@
   "name": "工作流助手·六阶段轻量版（GitHub）",
   "id": "910a248d-a3c5-4993-9fac-fbe7f388a0e5",
   "content": "import 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@main/dist/工作流助手/index.js'",
-  "info": "cancannide\n版本更新方法：更新时将@v0.0.37换成对应的新版本号即可。\n介绍：AI 回复后独立处理脚本：自定义工作流、多 API 预设、回合/时间调度、独立世界书选择。与数据库本体填表并行，注入 AI 楼文末或保存到消息楼层变量。",
+  "info": "【世界演化自用分支】yu886891631/shijieyanhua\n基于 cannannide 的工作流助手；本导入包自带六阶段轻量版预设。\n阶段：世界状态 → 角色名单 → 前台/后台角色 → 后台交互 → 社交圈变量 → 资产账本（默认关闭）。",
   "button": {
     "enabled": true,
     "buttons": [
