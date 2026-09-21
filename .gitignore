@@ -1,0 +1,19 @@
+node_modules
+
+.DS_Store
+Thumbs.db
+
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+auto-imports.d.ts
+components.d.ts
+
+# 本地完整构建会生成示例产物；发布工作流不会保留这些目录。
+/dist/角色卡示例/
+/dist/脚本示例/
+/dist/流式楼层界面示例/
+/dist/前端界面示例/

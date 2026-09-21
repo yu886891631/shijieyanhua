@@ -1,0 +1,41 @@
+SocialCircle_Update_Format:
+  rule:
+    - you must output the update analysis and the actual update commands at once in the end of the next reply
+    - the update commands works like **JSON Patch (RFC 6902)**, supports: replace/delta/insert/remove/move
+    - every patch path must start with `/社交圈/`
+    - don't update fields starting with `_`
+    - "`社群人脉` `活跃角色` `关联圈交集` must be string, not JSON array"
+    - "use `insert /社交圈/新圈子名称` with a full object when creating a new social circle"
+    - "use `replace /社交圈/已有圈子/字段名` only for existing fields"
+    - "don't output `/世界/...` paths in this task"
+  format: |-
+    <UpdateVariable>
+    <Analysis>$(使用中文，不低于300字)
+    - ${分析本轮是否有稳定社交圈发生变化、新增、合并、分裂或消失}
+    - ${说明为什么需要更新已有圈子、创建新圈子、重命名旧圈子或移除失效圈子}
+    - ${逐项分析本轮涉及字段为何变化，并对照社交圈变量更新规则说明依据}
+    </Analysis>
+    <AddonJSONPatch>
+    [
+      {
+        "op": "insert",
+        "path": "/社交圈/${新圈子名称}",
+        "value": {
+          "性质": "${string}",
+          "互动频率": "${string}",
+          "信息范围": "${string}",
+          "社群人脉": "${string}",
+          "活跃角色": "${string}",
+          "关联团体": "${string}",
+          "关联圈交集": "${string}",
+          "当前动态": "${string}",
+          "描述": "${string}"
+        }
+      },
+      { "op": "replace", "path": "/社交圈/${已有圈子名称}/当前动态", "value": "${string}" },
+      { "op": "replace", "path": "/社交圈/${已有圈子名称}/活跃角色", "value": "${string}" },
+      { "op": "remove", "path": "/社交圈/${废弃圈子名称}" },
+      { "op": "move", "from": "/社交圈/${旧圈子名称}", "to": "/社交圈/${新圈子名称}" }
+    ]
+    </AddonJSONPatch>
+    </UpdateVariable>

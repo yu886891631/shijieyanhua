@@ -1,0 +1,56 @@
+---
+<%_
+function stripAddonForDisplay(data) {
+  if (data == null || typeof data !== 'object' || Array.isArray(data)) return data;
+  const HIDDEN = new Set(['平行演化', '位面交汇']);
+  function stripDeep(value) {
+    if (value == null || typeof value !== 'object') return value;
+    if (Array.isArray(value)) return value.map(stripDeep);
+    const next = {};
+    for (const [k, v] of Object.entries(value)) {
+      if (HIDDEN.has(k)) continue;
+      next[k] = stripDeep(v);
+    }
+    return next;
+  }
+  return stripDeep(_.cloneDeep(data));
+}
+
+const addonData = getvar('addon_data');
+const worldMap = addonData && typeof addonData === 'object' ? addonData.世界 : null;
+const planeMerge = addonData && addonData.位面交汇 === true;
+const replicaKey = String(`{{replica:val}}`).trim();
+const isEmpty = !worldMap || Object.keys(worldMap || {}).length === 0;
+
+let primaryWorld = null;
+let otherWorlds = null;
+
+if (!isEmpty) {
+  const stripped = stripAddonForDisplay(worldMap);
+  if (stripped != null && typeof stripped === 'object' && !Array.isArray(stripped)) {
+    if (planeMerge) {
+      const others = {};
+      for (const [name, world] of Object.entries(stripped)) {
+        if (replicaKey && name === replicaKey) {
+          primaryWorld = { [name]: world };
+        } else {
+          others[name] = world;
+        }
+      }
+      if (Object.keys(others).length > 0) otherWorlds = others;
+    } else if (replicaKey && stripped[replicaKey] != null) {
+      primaryWorld = { [replicaKey]: stripped[replicaKey] };
+    }
+  }
+}
+_%>
+<%_ if (primaryWorld) { _%>
+<上期世界状态>
+<%- YAML.stringify(primaryWorld, { blockQuote: 'literal' }) %>
+</上期世界状态>
+<%_ } _%>
+<%_ if (otherWorlds) { _%>
+<上期其它世界状态>
+<%- YAML.stringify(otherWorlds, { blockQuote: 'literal' }) %>
+</上期其它世界状态>
+<%_ } _%>

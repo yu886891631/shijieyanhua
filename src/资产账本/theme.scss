@@ -1,0 +1,102 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap');
+
+:root,
+.ledger-root {
+  --bg-root: #f7efe0;
+  --bg-card: #fefaf4;
+  --bg-card-alt: #fbf5ea;
+  --bg-subtle: #f0e6d4;
+  --text-primary: #3b2e1e;
+  --text-secondary: #5a4a35;
+  --text-tertiary: #7a6a55;
+  --text-muted: #9e8e7a;
+  --accent-primary: #b07d44;
+  --accent-secondary: #c8955c;
+  --accent-warm: #b85c38;
+  --accent-gold: #b8943e;
+  --accent-green: #4a7c5c;
+  --accent-red: #b8483a;
+  --accent-teal: #4a8c8c;
+  --border-card: #e4d7c2;
+  --border-subtle: #efe5d5;
+  --border-accent: rgba(176, 125, 68, 0.3);
+  --shadow-xs: 0 1px 2px rgba(60, 30, 10, 0.06);
+  --shadow-sm: 0 2px 6px rgba(60, 30, 10, 0.08);
+  --shadow-md: 0 4px 16px rgba(60, 30, 10, 0.1);
+  --shadow-glow: 0 0 20px rgba(176, 125, 68, 0.2);
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --font-display: 'Playfair Display', 'Noto Serif SC', 'Songti SC', serif;
+  --font-body: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 0.35s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.ledger-root.theme-dark {
+  --bg-root: #0f1119;
+  --bg-card: rgba(22, 25, 38, 0.92);
+  --bg-card-alt: rgba(26, 30, 44, 0.88);
+  --bg-subtle: rgba(18, 21, 32, 0.85);
+  --text-primary: #e8e4dd;
+  --text-secondary: #cfc9be;
+  --text-tertiary: #a9a390;
+  --text-muted: #8c8678;
+  --accent-primary: #7ea8e0;
+  --accent-secondary: #9abdf0;
+  --accent-warm: #d99a60;
+  --accent-gold: #d4b060;
+  --accent-green: #6dae80;
+  --accent-red: #e07060;
+  --accent-teal: #5da8a8;
+  --border-card: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-accent: rgba(126, 168, 224, 0.25);
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 18px rgba(0, 0, 0, 0.35);
+  --shadow-glow: 0 0 24px rgba(126, 168, 224, 0.2);
+}
+
+.ledger-root {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 8px;
+  background: var(--bg-root);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+  transition: background var(--transition-smooth), color var(--transition-smooth);
+}
+
+@media (max-width: 640px) {
+  .ledger-root {
+    padding: 6px;
+    font-size: 13px;
+  }
+}
+
+@keyframes ledger-dot-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 4px rgba(90, 143, 109, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(90, 143, 109, 0.8);
+  }
+}
+
+@keyframes ledger-shimmer {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}

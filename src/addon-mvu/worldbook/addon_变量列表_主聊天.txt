@@ -1,0 +1,40 @@
+---
+<%_
+function stripAddonForDisplay(data) {
+  if (data == null || typeof data !== 'object' || Array.isArray(data)) return data;
+  const HIDDEN = new Set(['平行演化', '刊报日期', '位面交汇']);
+  function stripDeep(value) {
+    if (value == null || typeof value !== 'object') return value;
+    if (Array.isArray(value)) return value.map(stripDeep);
+    const next = {};
+    for (const [k, v] of Object.entries(value)) {
+      if (HIDDEN.has(k)) continue;
+      next[k] = stripDeep(v);
+    }
+    return next;
+  }
+  return stripDeep(_.cloneDeep(data));
+}
+
+function filterDescentWorlds(worldMap) {
+  const stripped = stripAddonForDisplay(worldMap);
+  if (stripped == null || typeof stripped !== 'object' || Array.isArray(stripped)) return {};
+  const out = {};
+  for (const [name, world] of Object.entries(stripped)) {
+    if (world && typeof world === 'object' && !Array.isArray(world) && world.降临 === true) {
+      out[name] = world;
+    }
+  }
+  return out;
+}
+
+const addonData = getvar('addon_data');
+const worldMap = addonData && typeof addonData === 'object' ? addonData.世界 : null;
+const isEmpty = !worldMap || Object.keys(worldMap || {}).length === 0;
+const displayData = isEmpty ? null : filterDescentWorlds(worldMap);
+_%>
+<%_ if (displayData && Object.keys(displayData).length > 0) { _%>
+<WorldPaper>
+<%- YAML.stringify(displayData, { blockQuote: 'literal' }) %>
+</WorldPaper>
+<%_ } _%>

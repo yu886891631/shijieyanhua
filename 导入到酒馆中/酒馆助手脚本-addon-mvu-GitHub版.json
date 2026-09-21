@@ -1,0 +1,19 @@
+{
+  "type": "script",
+  "enabled": true,
+  "name": "addon-mvu（GitHub版）",
+  "id": "770e7d31-c630-4a6c-884f-efd68e378e6d",
+  "content": "import 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@main/dist/addon-mvu/index.js'",
+  "info": "cancannide\n版本更新方法：更新时将@v0.0.37换成对应的新版本号即可。\n介绍世界时局与经济简报变量脚本、悬浮球前端",
+  "button": {
+    "enabled": true,
+    "buttons": []
+  },
+  "data": {
+    "addon_console_theme": "dark"
+  },
+  "export_with": {
+    "data": true,
+    "button": true
+  }
+}

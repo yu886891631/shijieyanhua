@@ -1,0 +1,13 @@
+{
+  "type": "script",
+  "enabled": true,
+  "name": "工作流助手",
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "content": "import 'http://localhost:5500/dist/工作流助手/index.js'",
+  "info": "工作流助手：自定义任务、多 API 预设、回合/时间调度、独立世界书选择。与数据库本体并行，注入 AI 楼文末。",
+  "button": {
+    "enabled": true,
+    "buttons": []
+  },
+  "data": {}
+}

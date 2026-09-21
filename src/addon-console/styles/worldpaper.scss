@@ -1,0 +1,2097 @@
+/* Brief / worldpaper visual language — scoped under .addon-console */
+
+.addon-console .ac-brief {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  height: 100%;
+}
+
+.addon-console .ac-brief-nav {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  flex-shrink: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.addon-console .ac-brief-nav-chip {
+  flex-shrink: 0;
+  border: 1px solid var(--divider);
+  background: var(--cream-card);
+  color: var(--ink-mid);
+  border-radius: 999px;
+  padding: 6px 12px;
+  min-height: 36px;
+  font-size: 11px;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.addon-console .ac-brief-nav-chip:hover {
+  border-color: var(--gold);
+  color: var(--ink-deep);
+}
+
+.addon-console .ac-brief-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* —— Masthead —— */
+.addon-console .ac-masthead {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(200, 164, 92, 0.45);
+  background: linear-gradient(135deg, var(--deep-navy), var(--royal-blue) 55%, #2f4d72);
+  color: var(--gold-pale);
+  padding: 18px 18px 16px;
+  box-shadow: var(--shadow-md);
+}
+
+.addon-console[data-theme='dark'] .ac-masthead {
+  background: radial-gradient(ellipse at 30% 30%, rgba(40, 25, 70, 0.85) 0%, transparent 60%),
+    linear-gradient(135deg, #0c1630, #111f42 55%, #0e1a38);
+}
+
+.addon-console .ac-masthead-ornament {
+  position: absolute;
+  inset: 8px;
+  border: 1px solid rgba(232, 213, 176, 0.22);
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+.addon-console .ac-masthead-kicker {
+  margin: 0 0 4px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.8;
+  font-family: var(--font-body);
+}
+
+.addon-console .ac-masthead-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.addon-console .ac-masthead-date {
+  margin: 8px 0 0;
+  font-size: 13px;
+  opacity: 0.88;
+  font-family: var(--font-serif);
+}
+
+.addon-console .ac-masthead-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.addon-console .ac-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(232, 213, 176, 0.35);
+  background: rgba(0, 0, 0, 0.18);
+  font-family: var(--font-body);
+}
+
+.addon-console .ac-badge-on {
+  background: rgba(90, 125, 90, 0.35);
+  border-color: rgba(140, 190, 140, 0.45);
+}
+
+.addon-console .ac-badge-parallel {
+  background: rgba(200, 164, 92, 0.28);
+  border-color: rgba(232, 213, 176, 0.5);
+}
+
+/* —— Section card —— */
+.addon-console .ac-brief-section,
+.addon-console .ac-section-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-lg);
+  margin: 0;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: box-shadow 0.35s;
+  position: relative;
+  animation: ac-fade-up 0.35s ease both;
+}
+
+.addon-console .ac-section-card:hover,
+.addon-console .ac-brief-section:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.addon-console .ac-section-card::before,
+.addon-console .ac-brief-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--gold), var(--gold-bright), var(--gold), transparent);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.addon-console .ac-section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  min-height: 48px;
+  background: var(--section-header-bg);
+  border-bottom: 1px solid transparent;
+  font-weight: 700;
+  font-size: 16px;
+  font-family: var(--font-display);
+  color: var(--section-header-color);
+  letter-spacing: 1px;
+}
+
+.addon-console .ac-section-head-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.addon-console .ac-section-head-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.addon-console .ac-section-body-pad {
+  padding: 14px 16px 16px;
+}
+
+.addon-console .ac-brief-h {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  color: var(--section-header-color);
+  border-bottom: 1px solid var(--divider);
+  padding-bottom: 8px;
+}
+
+.addon-console .ac-brief-subh {
+  margin: 0 0 8px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--subcard-title);
+  font-family: var(--font-display);
+  font-weight: 700;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.addon-console .ac-brief-foot {
+  text-align: center;
+  margin: 4px 0 8px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--ink-light);
+  font-family: var(--font-serif);
+}
+
+.addon-console .ac-sub-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.addon-console .ac-prose-block {
+  margin-bottom: 8px;
+}
+
+.addon-console .ac-prose {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--font-body);
+}
+
+/* —— Era badge + stat rows —— */
+.addon-console .ac-era-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #f5e8d0, #fdf4e3);
+  padding: 6px 14px;
+  border-radius: 24px;
+  font-weight: 700;
+  font-size: 14px;
+  color: #5a3e28;
+  border: 1.5px solid var(--gold-pale);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 12px;
+  font-family: var(--font-serif);
+}
+
+.addon-console[data-theme='dark'] .ac-era-badge {
+  background: linear-gradient(135deg, rgba(30, 22, 50, 0.8), rgba(25, 20, 45, 0.7));
+  color: #e8d5a8;
+  border-color: rgba(200, 165, 90, 0.5);
+  box-shadow: 0 0 14px rgba(180, 140, 60, 0.2);
+}
+
+.addon-console .ac-era-badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 6px rgba(200, 165, 90, 0.6);
+  flex-shrink: 0;
+}
+
+.addon-console .ac-stat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 4px;
+}
+
+.addon-console .ac-stat-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--stat-item-bg);
+  border-bottom: 1px dashed rgba(200, 175, 130, 0.35);
+  font-family: var(--font-body);
+  transition: background 0.2s;
+}
+
+.addon-console .ac-stat-item:hover {
+  background: rgba(245, 236, 215, 0.6);
+}
+
+.addon-console[data-theme='dark'] .ac-stat-item:hover {
+  background: rgba(22, 30, 55, 0.55);
+}
+
+.addon-console .ac-stat-icon {
+  flex-shrink: 0;
+  font-size: 14px;
+  opacity: 0.75;
+  margin-top: 1px;
+}
+
+.addon-console .ac-stat-label {
+  font-weight: 700;
+  color: var(--stat-label-color);
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+
+.addon-console .ac-stat-value {
+  color: var(--ink-deep);
+  word-break: break-word;
+  flex: 1;
+  min-width: 0;
+}
+
+/* —— KV / timeline —— */
+.addon-console .ac-kv-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+  gap: 8px 12px;
+  font-family: var(--font-body);
+}
+
+.addon-console .ac-kv-key {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-light);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.addon-console .ac-kv-val {
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text);
+}
+
+.addon-console .ac-timeline-row {
+  display: grid;
+  grid-template-columns: minmax(72px, 28%) 1fr;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px dotted var(--divider);
+  font-family: var(--font-body);
+  font-size: 0.9em;
+}
+
+.addon-console .ac-timeline-row strong {
+  color: var(--ink-mid);
+  font-weight: 600;
+}
+
+.addon-console .ac-timeline-node {
+  border-left: 2px solid var(--gold);
+  margin: 6px 0 6px 10px;
+  padding-left: 14px;
+  position: relative;
+  font-size: 0.9em;
+  font-family: var(--font-body);
+}
+
+.addon-console .ac-timeline-node::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 0 2px var(--cream-card);
+}
+
+.addon-console .ac-nested {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--divider);
+}
+
+.addon-console .ac-inline-note {
+  font-size: 12px;
+  color: var(--sage);
+  margin-bottom: 6px;
+  font-family: var(--font-body);
+}
+
+.addon-console .ac-sing-active {
+  box-shadow: 0 0 0 1px rgba(90, 125, 90, 0.35);
+}
+
+/* —— Fold / l3 —— */
+.addon-console .ac-fold {
+  border: 1px solid var(--subcard-border);
+  border-radius: var(--radius-md);
+  background: #fdfaf4;
+  overflow: hidden;
+  margin: 6px 0;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s ease;
+}
+
+.addon-console[data-theme='dark'] .ac-fold {
+  background: rgba(18, 26, 50, 0.5);
+  border-color: var(--subcard-border);
+}
+
+.addon-console .ac-fold.open {
+  border-color: rgba(200, 164, 92, 0.55);
+}
+
+.addon-console .ac-fold-head {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.2s;
+}
+
+.addon-console .ac-fold-head:hover {
+  background: rgba(200, 165, 90, 0.04);
+}
+
+.addon-console .ac-fold-arrow {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(200, 165, 90, 0.08);
+  color: var(--gold);
+  font-size: 11px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  transition: transform 0.38s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.addon-console .ac-fold:not(.open) .ac-fold-arrow {
+  transform: rotate(-90deg);
+}
+
+.addon-console .ac-fold-title {
+  font-weight: 700;
+  color: var(--subcard-title);
+  font-family: var(--font-serif);
+}
+
+.addon-console .ac-fold-summary {
+  flex: 1 1 8em;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-family: var(--font-body);
+}
+
+.addon-console .ac-fold-badge {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(200, 164, 92, 0.16);
+  color: var(--ink-mid);
+  font-family: var(--font-body);
+}
+
+.addon-console .ac-fold-badge.on,
+.addon-console .ac-fold-badge.warn {
+  background: rgba(90, 125, 90, 0.18);
+  color: var(--sage);
+}
+
+.addon-console .ac-fold-badge.warn {
+  background: rgba(160, 82, 75, 0.15);
+  color: var(--rust);
+}
+
+.addon-console .ac-fold-body {
+  padding: 0 12px 12px;
+  animation: ac-fold-in 0.2s ease;
+  font-family: var(--font-body);
+}
+
+/* —— Progress —— */
+.addon-console .ac-progress {
+  margin: 4px 0 10px;
+}
+
+.addon-console .ac-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  font-family: var(--font-body);
+}
+
+.addon-console .ac-progress-track {
+  height: 8px;
+  border-radius: 16px;
+  background: #e8ddd0;
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.addon-console[data-theme='dark'] .ac-progress-track {
+  background: rgba(30, 35, 55, 0.7);
+}
+
+.addon-console .ac-progress-fill {
+  height: 100%;
+  border-radius: 16px;
+  background: linear-gradient(90deg, #c8a45c, #d9b86b, #c8a45c);
+  background-size: 200% 100%;
+  transition: width 0.8s cubic-bezier(0.25, 0.8, 0.25, 1);
+  animation: ac-progress-shimmer 3s ease-in-out infinite;
+}
+
+@keyframes ac-progress-shimmer {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* —— Change badge —— */
+.addon-console .ac-change {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  width: auto;
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-family: var(--font-body);
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.addon-console .ac-change.up {
+  color: var(--currency-change-up);
+  background: rgba(45, 122, 58, 0.12);
+}
+
+.addon-console .ac-change.down {
+  color: var(--currency-change-down);
+  background: rgba(184, 56, 40, 0.12);
+}
+
+.addon-console .ac-change.flat,
+.addon-console .ac-change.unknown {
+  color: var(--ink-mid);
+  background: rgba(140, 120, 80, 0.1);
+}
+
+/* —— Cards grids —— */
+.addon-console .ac-card-grid,
+.addon-console .ac-trade-regions-grid,
+.addon-console .ac-currency-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 8px;
+}
+
+.addon-console .ac-currency-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 10px;
+}
+
+.addon-console .ac-spec-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr));
+  gap: 8px;
+  justify-content: start;
+}
+
+.addon-console .ac-region-card,
+.addon-console .ac-mini-card {
+  background: var(--region-card-bg);
+  border: 1px solid var(--region-card-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.85rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  font-family: var(--font-body);
+}
+
+.addon-console .ac-region-name,
+.addon-console .ac-mini-card-title {
+  font-weight: 700;
+  color: var(--region-name-color);
+  margin-bottom: 2px;
+}
+
+.addon-console .ac-region-status {
+  color: var(--region-status-color);
+  font-weight: 600;
+  font-size: 0.78rem;
+}
+
+.addon-console .ac-commodity-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 8px;
+}
+
+.addon-console .ac-commodity-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--region-card-border);
+  background: var(--region-card-bg);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  border-left-width: 3px;
+  border-left-color: rgba(200, 165, 90, 0.55);
+  min-width: 0;
+}
+
+.addon-console .ac-commodity-card.is-grain {
+  border-left-color: #c4a35a;
+}
+
+.addon-console .ac-commodity-card.is-ore {
+  border-left-color: #6d7f8f;
+}
+
+.addon-console .ac-commodity-card.is-energy {
+  border-left-color: #d0893b;
+}
+
+.addon-console .ac-commodity-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  width: 100%;
+}
+
+.addon-console .ac-commodity-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.addon-console .ac-commodity-name {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--region-name-color);
+  flex: 1;
+  min-width: 0;
+}
+
+.addon-console .ac-supply-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  color: var(--ink-mid);
+  background: rgba(140, 120, 80, 0.1);
+  border-color: rgba(140, 120, 80, 0.22);
+}
+
+.addon-console .ac-supply-badge.supply-tight {
+  color: #b42318;
+  background: rgba(180, 35, 24, 0.1);
+  border-color: rgba(180, 35, 24, 0.35);
+}
+
+.addon-console .ac-supply-badge.supply-surplus {
+  color: #175cd3;
+  background: rgba(23, 92, 211, 0.08);
+  border-color: rgba(23, 92, 211, 0.28);
+}
+
+.addon-console .ac-supply-badge.supply-steady {
+  color: #3f6b3a;
+  background: rgba(63, 107, 58, 0.1);
+  border-color: rgba(63, 107, 58, 0.3);
+}
+
+.addon-console[data-theme='dark'] .ac-supply-badge.supply-tight {
+  color: #f09060;
+  background: rgba(220, 110, 70, 0.18);
+  border-color: rgba(220, 110, 70, 0.45);
+}
+
+.addon-console[data-theme='dark'] .ac-supply-badge.supply-surplus {
+  color: #8cb4e8;
+  background: rgba(100, 140, 200, 0.16);
+  border-color: rgba(100, 140, 200, 0.4);
+}
+
+.addon-console[data-theme='dark'] .ac-supply-badge.supply-steady {
+  color: #8cc4aa;
+  background: rgba(80, 140, 110, 0.16);
+  border-color: rgba(80, 140, 110, 0.4);
+}
+
+.addon-console .ac-commodity-detail {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--region-industry-color, var(--ink-mid));
+  word-break: break-word;
+}
+
+.addon-console .ac-commodity-detail-label {
+  color: var(--ink-light);
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.addon-console .ac-commodity-detail-label::after {
+  content: '·';
+  margin-left: 4px;
+  color: var(--ink-light);
+  font-weight: 400;
+}
+
+.addon-console .ac-region-industry,
+.addon-console .ac-mini-card-line {
+  color: var(--region-industry-color);
+  font-size: 0.73rem;
+  margin-top: 2px;
+}
+
+.addon-console .ac-climate-wrap {
+  background: var(--climate-wrap-bg);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  border: 1px solid var(--climate-wrap-border);
+}
+
+.addon-console .ac-econ-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.addon-console .ac-econ-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 14px 16px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--sub-block-border);
+  background: var(--sub-block-bg);
+}
+
+.addon-console .ac-econ-block-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--divider);
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--sub-block-title-color);
+  line-height: 1.25;
+}
+
+.addon-console .ac-econ-block-icon {
+  font-size: 1.35rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.addon-console .ac-econ-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+  padding: 8px 12px;
+  margin-bottom: 0;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--climate-wrap-border);
+  background: var(--climate-wrap-bg);
+  font-family: var(--font-body);
+}
+
+.addon-console .ac-econ-summary-label {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-light);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.addon-console .ac-econ-summary-value {
+  color: var(--ink-deep);
+  font-weight: 600;
+  word-break: break-word;
+  flex: 1 1 8em;
+  min-width: 0;
+}
+
+.addon-console .ac-econ-summary-sep {
+  color: var(--ink-light);
+  opacity: 0.6;
+}
+
+.addon-console .ac-econ-event-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 3px;
+}
+
+.addon-console .ac-econ-event {
+  margin: 4px 0;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--divider);
+  background: var(--region-card-bg);
+  overflow: hidden;
+}
+
+.addon-console .ac-econ-event-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  padding: 8px 10px;
+  min-height: 40px;
+  cursor: pointer;
+  list-style: none;
+  font-family: var(--font-body);
+}
+
+.addon-console .ac-econ-event-summary::-webkit-details-marker {
+  display: none;
+}
+
+.addon-console .ac-econ-event-summary::before {
+  content: '▸';
+  color: var(--gold);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.addon-console .ac-econ-event[open] > .ac-econ-event-summary::before {
+  content: '▾';
+}
+
+.addon-console .ac-econ-event-name {
+  font-weight: 700;
+  color: var(--region-name-color);
+}
+
+.addon-console .ac-econ-event-desc {
+  flex: 1 1 12em;
+  min-width: 0;
+  font-size: 0.82rem;
+  color: var(--ink-mid);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.addon-console .ac-econ-event-body {
+  padding: 0 10px 10px;
+  border-top: 1px dashed var(--divider);
+}
+
+.addon-console .ac-base-highlight {
+  background: var(--base-highlight-bg);
+  border: 1px solid var(--base-highlight-border);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  margin-bottom: 10px;
+}
+
+.addon-console .ac-base-highlight-label {
+  font-size: 11px;
+  color: var(--base-highlight-sub);
+  margin-bottom: 2px;
+  font-family: var(--font-body);
+}
+
+.addon-console .ac-base-highlight-value {
+  font-weight: 700;
+  color: var(--base-highlight-text);
+  font-family: var(--font-serif);
+}
+
+.addon-console .ac-currency-card,
+.addon-console .ac-spec-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  background: var(--currency-card-bg);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  border: 1.5px solid var(--currency-card-border);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  position: relative;
+  overflow: hidden;
+  font-family: var(--font-body);
+  min-width: 0;
+  width: 100%;
+}
+
+.addon-console .ac-spec-card {
+  background: var(--spec-card-bg);
+  border-color: var(--spec-card-border);
+  padding: 10px 12px;
+  gap: 4px;
+  max-width: 280px;
+}
+
+.addon-console .ac-currency-card::after,
+.addon-console .ac-spec-card::after {
+  content: '';
+  position: absolute;
+  top: -18px;
+  right: -18px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(200, 165, 90, 0.04);
+  pointer-events: none;
+  transition: all 0.4s;
+}
+
+.addon-console .ac-currency-card:hover,
+.addon-console .ac-spec-card:hover {
+  box-shadow: var(--shadow-gold);
+  border-color: var(--gold-pale);
+}
+
+.addon-console .ac-currency-card:hover::after,
+.addon-console .ac-spec-card:hover::after {
+  transform: scale(1.6);
+}
+
+.addon-console .ac-currency-name,
+.addon-console .ac-spec-title {
+  font-weight: 700;
+  color: var(--spec-title-color);
+  font-size: 0.95rem;
+  width: 100%;
+}
+
+.addon-console .ac-spec-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.addon-console .ac-spec-title {
+  font-size: 0.82rem;
+  line-height: 1.35;
+  width: auto;
+  flex: 1;
+  min-width: 0;
+}
+
+.addon-console .ac-heat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  font-family: var(--font-serif);
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  padding: 4px 9px 4px 7px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  color: var(--spec-text-color);
+  background: rgba(120, 120, 120, 0.1);
+  border-color: rgba(120, 120, 120, 0.22);
+}
+
+.addon-console .ac-heat-badge-mark {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: currentColor;
+  opacity: 0.85;
+  box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 22%, transparent);
+}
+
+.addon-console .ac-heat-badge.heat-high {
+  color: #b42318;
+  background: linear-gradient(135deg, rgba(180, 35, 24, 0.12), rgba(180, 35, 24, 0.05));
+  border-color: rgba(180, 35, 24, 0.32);
+}
+
+.addon-console .ac-heat-badge.heat-high .ac-heat-badge-mark {
+  box-shadow:
+    0 0 0 2px rgba(180, 35, 24, 0.18),
+    0 0 8px rgba(180, 35, 24, 0.35);
+}
+
+.addon-console .ac-heat-badge.heat-mid {
+  color: #8a6a20;
+  background: linear-gradient(135deg, rgba(200, 165, 90, 0.18), rgba(200, 165, 90, 0.06));
+  border-color: rgba(154, 103, 0, 0.32);
+}
+
+.addon-console .ac-heat-badge.heat-low {
+  color: #5b6572;
+  background: linear-gradient(135deg, rgba(71, 84, 103, 0.1), rgba(71, 84, 103, 0.04));
+  border-color: rgba(71, 84, 103, 0.24);
+}
+
+.addon-console .ac-heat-badge.heat-low .ac-heat-badge-mark {
+  opacity: 0.55;
+  box-shadow: 0 0 0 2px rgba(71, 84, 103, 0.12);
+}
+
+.addon-console[data-theme='dark'] .ac-heat-badge.heat-high {
+  color: #f0a070;
+  background: linear-gradient(135deg, rgba(220, 110, 70, 0.22), rgba(220, 110, 70, 0.08));
+  border-color: rgba(220, 110, 70, 0.42);
+}
+
+.addon-console[data-theme='dark'] .ac-heat-badge.heat-high .ac-heat-badge-mark {
+  box-shadow:
+    0 0 0 2px rgba(240, 160, 112, 0.2),
+    0 0 10px rgba(220, 110, 70, 0.45);
+}
+
+.addon-console[data-theme='dark'] .ac-heat-badge.heat-mid {
+  color: #e2c878;
+  background: linear-gradient(135deg, rgba(200, 165, 90, 0.2), rgba(200, 165, 90, 0.07));
+  border-color: rgba(200, 165, 90, 0.38);
+}
+
+.addon-console[data-theme='dark'] .ac-heat-badge.heat-low {
+  color: #9aa4b2;
+  background: linear-gradient(135deg, rgba(154, 164, 178, 0.12), rgba(154, 164, 178, 0.04));
+  border-color: rgba(154, 164, 178, 0.28);
+}
+
+.addon-console .ac-currency-rate-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+}
+
+.addon-console .ac-currency-rate {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--currency-rate-color);
+  letter-spacing: 0.02em;
+  font-family: var(--font-serif);
+}
+
+.addon-console .ac-spec-price {
+  font-size: 1.05rem;
+  font-weight: 750;
+  color: var(--currency-rate-color);
+  letter-spacing: 0.02em;
+  font-family: var(--font-serif);
+}
+
+.addon-console .ac-currency-prev {
+  font-size: 0.8rem;
+  color: var(--currency-prev-color);
+}
+
+.addon-console .ac-currency-meta,
+.addon-console .ac-spec-meta {
+  font-size: 0.78rem;
+  color: var(--spec-text-color);
+  width: 100%;
+}
+
+.addon-console .ac-spec-meta {
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.addon-console .ac-spec-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  width: 100%;
+}
+
+.addon-console .ac-spec-chip {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--spec-card-border);
+  background: rgba(200, 165, 90, 0.06);
+  color: var(--spec-text-color);
+  line-height: 1.4;
+}
+
+.addon-console .ac-futures-block {
+  margin-top: 10px;
+}
+
+.addon-console .ac-futures-label {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+  margin-bottom: 6px;
+  font-family: var(--font-body);
+}
+
+.addon-console .ac-futures-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: 8px;
+  justify-content: start;
+}
+
+.addon-console .ac-futures-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--region-card-border);
+  background: var(--region-card-bg);
+  border-left: 3px solid var(--gold);
+  min-width: 0;
+  max-width: 320px;
+  width: 100%;
+  font-family: var(--font-body);
+}
+
+.addon-console .ac-futures-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.addon-console .ac-futures-badge {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #1a1208;
+  background: var(--gold);
+  line-height: 1;
+}
+
+.addon-console .ac-futures-name {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--region-name-color);
+  font-family: var(--font-serif);
+  line-height: 1.3;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.addon-console .ac-futures-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.addon-console .ac-futures-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  background: rgba(200, 165, 90, 0.06);
+  border: 1px solid rgba(200, 165, 90, 0.12);
+  min-width: 0;
+}
+
+.addon-console .ac-futures-metric-label {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--ink-light);
+}
+
+.addon-console .ac-futures-metric-value {
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: var(--ink-deep);
+  word-break: break-word;
+  line-height: 1.3;
+}
+
+.addon-console .ac-econ-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+  gap: 8px;
+  margin-top: 0;
+}
+
+.addon-console .ac-econ-block .ac-currency-grid {
+  margin-top: 2px;
+}
+
+.addon-console .ac-econ-metric {
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--climate-wrap-border);
+  background: var(--climate-wrap-bg);
+  min-width: 0;
+}
+
+.addon-console .ac-econ-metric-label {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+  margin-bottom: 3px;
+}
+
+.addon-console .ac-econ-metric-value {
+  font-size: 0.88rem;
+  font-weight: 650;
+  color: var(--ink-deep);
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+.addon-console .ac-spec-index {
+  background: var(--spec-index-bg);
+  border: 1px solid var(--spec-index-border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  font-family: var(--font-body);
+}
+
+.addon-console .ac-fx-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.addon-console .ac-fx-row {
+  /* legacy alias → currency card look when used alone */
+  border: 1.5px solid var(--currency-card-border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  background: var(--currency-card-bg);
+  font-family: var(--font-body);
+}
+
+.addon-console .ac-fx-name {
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: var(--spec-title-color);
+}
+
+.addon-console .ac-fx-rates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.addon-console .ac-sub-card {
+  background: #fdfaf4;
+  border: 1px solid var(--subcard-border);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  margin: 8px 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.addon-console[data-theme='dark'] .ac-sub-card {
+  background: rgba(18, 26, 50, 0.5);
+}
+
+.addon-console .ac-sub-card-title {
+  font-weight: 700;
+  color: var(--subcard-title);
+  margin-bottom: 6px;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-serif);
+}
+
+/* —— 三子页签按钮（容器在 shell.scss） —— */
+.addon-console .ac-brief-page-tab {
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1.5px solid var(--divider);
+  background: var(--cream-card);
+  color: var(--ink-mid);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+.addon-console .ac-brief-page-tab-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.addon-console .ac-brief-page-tab:hover {
+  border-color: var(--gold);
+  color: var(--ink-deep);
+}
+
+.addon-console .ac-brief-page-tab.active {
+  background: linear-gradient(135deg, var(--deep-navy), var(--royal-blue));
+  border-color: var(--gold);
+  color: var(--gold-pale);
+  box-shadow: var(--shadow-sm), 0 0 0 1px rgba(200, 165, 90, 0.25);
+}
+
+.addon-console .ac-brief-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* —— Status tags —— */
+.addon-console .ac-tag {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  letter-spacing: 0.03em;
+  border: 1px solid rgba(180, 150, 90, 0.35);
+  background: rgba(200, 175, 130, 0.18);
+  color: var(--ink-mid);
+  vertical-align: middle;
+}
+
+.addon-console .ac-tag.status-embryo {
+  background: rgba(130, 190, 170, 0.2);
+  color: #3d8a72;
+  border-color: rgba(130, 190, 170, 0.45);
+}
+
+.addon-console .ac-tag.status-developing {
+  background: rgba(200, 175, 110, 0.25);
+  color: #9a7a30;
+  border-color: rgba(200, 165, 90, 0.55);
+}
+
+.addon-console .ac-tag.status-stable {
+  background: rgba(120, 150, 180, 0.18);
+  color: #4a6d8c;
+  border-color: rgba(120, 150, 180, 0.4);
+}
+
+.addon-console .ac-tag.status-critical {
+  background: rgba(220, 110, 70, 0.25);
+  color: #c45a38;
+  border-color: rgba(220, 110, 70, 0.55);
+  animation: ac-critical-pulse 2s ease-in-out infinite;
+}
+
+.addon-console[data-theme='dark'] .ac-tag.status-embryo {
+  color: #8cc4aa;
+}
+
+.addon-console[data-theme='dark'] .ac-tag.status-developing {
+  color: #e0c870;
+}
+
+.addon-console[data-theme='dark'] .ac-tag.status-stable {
+  color: #9bb6d0;
+}
+
+.addon-console[data-theme='dark'] .ac-tag.status-critical {
+  color: #f09060;
+}
+
+@keyframes ac-critical-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 110, 70, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(220, 110, 70, 0);
+  }
+}
+
+.addon-console .ac-progress-fill.critical {
+  background: linear-gradient(90deg, #c45a38, #e07850, #c45a38);
+  background-size: 200% 100%;
+}
+
+/* —— Era group cards —— */
+.addon-console .ac-era-group,
+.addon-console .ac-potential-group,
+.addon-console .ac-twist-group {
+  margin: 8px 0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(40, 20, 8, 0.08);
+  border: 1px solid var(--subcard-border);
+  background: var(--cream-card);
+}
+
+.addon-console[data-theme='dark'] .ac-era-group {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  background: rgba(18, 26, 50, 0.55);
+}
+
+.addon-console .ac-era-group-head {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  padding: 10px 12px;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.addon-console .ac-era-group-head.no-children {
+  cursor: default;
+}
+
+.addon-console .ac-era-group-head:not(.no-children):hover {
+  background: rgba(200, 165, 90, 0.04);
+}
+
+.addon-console .ac-era-group-head .ac-fold-arrow.collapsed {
+  transform: rotate(-90deg);
+}
+
+.addon-console .ac-era-group-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.addon-console .ac-era-group-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.addon-console .ac-era-group-name {
+  color: var(--subcard-title);
+  font-family: var(--font-serif);
+  font-size: 0.95rem;
+}
+
+.addon-console .ac-era-group-date {
+  font-size: 0.72rem;
+  color: var(--ink-light);
+  font-family: var(--font-body);
+}
+
+.addon-console .ac-era-group-desc {
+  font-size: 0.82rem;
+  color: var(--ink-mid);
+  margin-top: 4px;
+  font-family: var(--font-body);
+  word-break: break-word;
+}
+
+.addon-console .ac-era-group-extra {
+  font-size: 0.73rem;
+  color: var(--ink-mid);
+  margin-top: 4px;
+  font-family: var(--font-body);
+}
+
+.addon-console .ac-era-group-body {
+  padding: 0 10px 10px;
+  border-top: 1px dashed var(--divider);
+}
+
+.addon-console .ac-force-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 0.73rem;
+  color: var(--ink-mid);
+  margin-top: 4px;
+  font-family: var(--font-body);
+}
+
+.addon-console .ac-sub-item-block {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--sub-block-bg);
+  border: 1px solid var(--sub-block-border);
+}
+
+.addon-console .ac-sub-item-title {
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--sub-block-title-color);
+  margin-bottom: 6px;
+  font-family: var(--font-serif);
+}
+
+/* —— 时代演化 / 关键转折点：事件脉络（对齐岁月史书时间线节点） —— */
+.addon-console .ac-era-event-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 2px;
+}
+
+.addon-console .ac-era-event-list .ac-era-event-row {
+  margin: 4px 0 4px 8px;
+  padding: 0 0 0 14px;
+  border: none;
+  border-left: 2px solid var(--gold);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.addon-console .ac-era-event-list .ac-era-event-row::before {
+  left: -5px;
+  top: 7px;
+  bottom: auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 0 2px var(--sub-block-bg, var(--cream-card));
+}
+
+.addon-console .ac-era-event-list .ac-era-event-row--completed {
+  border-left-color: var(--sage);
+}
+
+.addon-console .ac-era-event-list .ac-era-event-row--completed::before {
+  background: var(--sage);
+}
+
+.addon-console .ac-era-event-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin-bottom: 2px;
+}
+
+.addon-console .ac-era-event-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--subcard-title);
+  font-family: var(--font-serif);
+  line-height: 1.3;
+}
+
+.addon-console .ac-era-event-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.addon-console .ac-era-event-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  line-height: 1.4;
+  color: var(--ink-mid);
+  background: rgba(200, 164, 92, 0.1);
+  border: 1px solid rgba(200, 164, 92, 0.22);
+  font-family: var(--font-body);
+  word-break: break-word;
+}
+
+.addon-console[data-theme='dark'] .ac-era-event-chip {
+  background: rgba(180, 150, 80, 0.12);
+  border-color: rgba(180, 150, 80, 0.28);
+  color: var(--ink-light);
+}
+
+.addon-console .ac-era-group-body .ac-sub-item-block {
+  margin-top: 8px;
+  padding: 8px 10px 6px;
+}
+
+.addon-console .ac-era-group-body .ac-sub-item-title {
+  margin-bottom: 6px;
+}
+
+/* 无标题时（数字键名）元信息贴顶，与描述更紧凑 */
+.addon-console .ac-era-event-row--timeline .ac-era-event-head:not(:has(.ac-era-event-title)) {
+  margin-bottom: 1px;
+}
+
+.addon-console .ac-era-event-row--timeline .ac-era-event-head:not(:has(.ac-era-event-title)) .ac-era-event-meta {
+  margin-left: 0;
+}
+
+.addon-console .ac-timeline-node-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.addon-console .ac-timeline-node-line {
+  font-size: 0.78rem;
+  color: var(--ink-mid);
+  font-family: var(--font-body);
+  word-break: break-word;
+  margin-top: 2px;
+}
+
+.addon-console .ac-timeline-node-meta {
+  font-size: 0.73rem;
+  color: var(--ink-mid);
+  font-family: var(--font-body);
+  margin-top: 2px;
+}
+
+.addon-console .ac-event-completed {
+  border-left-color: var(--sage);
+}
+
+.addon-console .ac-event-completed::before {
+  background: var(--sage);
+}
+
+.addon-console .ac-epic-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+/* —— 剧情态势页：事件 / 传闻 / 团体 —— */
+.addon-console .ac-plot-card-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.addon-console .ac-social-empty {
+  margin: 4px 0 0;
+  opacity: 0.78;
+}
+
+.addon-console .ac-plot-card,
+.addon-console .ac-faction-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--currency-card-border);
+  background: var(--currency-card-bg);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.3s ease, transform 0.3s ease, border-color 0.3s ease;
+  font-family: var(--font-body);
+}
+
+.addon-console .ac-plot-card::after,
+.addon-console .ac-faction-card::after {
+  content: '';
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(200, 165, 90, 0.05);
+  pointer-events: none;
+}
+
+.addon-console .ac-plot-card:hover,
+.addon-console .ac-faction-card:hover {
+  box-shadow: var(--shadow-gold);
+  border-color: var(--gold-pale);
+}
+
+.addon-console .ac-plot-card-head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.addon-console .ac-plot-card-title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--spec-title-color);
+  letter-spacing: 0.02em;
+}
+
+.addon-console .ac-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.addon-console .ac-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--divider);
+  background: rgba(200, 165, 90, 0.08);
+  color: var(--ink-mid);
+  max-width: 100%;
+  word-break: break-word;
+}
+
+.addon-console .ac-plot-settle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: baseline;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--base-highlight-border);
+  background: var(--base-highlight-bg);
+}
+
+.addon-console .ac-plot-settle-label {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--base-highlight-sub);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.addon-console .ac-plot-settle-value {
+  color: var(--base-highlight-text);
+  font-weight: 650;
+  word-break: break-word;
+  flex: 1 1 10em;
+  min-width: 0;
+}
+
+.addon-console .ac-oracle-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.addon-console .ac-oracle-cell {
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--sub-block-border);
+  background: var(--sub-block-bg);
+  min-width: 0;
+  text-align: center;
+}
+
+.addon-console .ac-oracle-label {
+  font-family: var(--font-serif);
+  font-size: 0.82rem;
+  font-weight: 650;
+  letter-spacing: 0.18em;
+  color: var(--gold, #c8a45c);
+  margin-bottom: 10px;
+  line-height: 1.2;
+}
+
+.addon-console .ac-oracle-value {
+  font-family: var(--font-serif);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--sub-block-title-color);
+  word-break: break-word;
+  line-height: 1.45;
+  text-align: center;
+  margin-top: 10px;
+}
+
+.addon-console .ac-tarot-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 0;
+}
+
+.addon-console .ac-tarot-card {
+  margin: 0;
+  padding: 0;
+  line-height: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--sub-block-border);
+  background: #1a1520;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 18%);
+}
+
+.addon-console .ac-tarot-card img {
+  display: block;
+  height: 72px;
+  width: auto;
+  max-width: 52px;
+  object-fit: cover;
+}
+
+.addon-console .ac-tarot-card.is-reversed img {
+  transform: rotate(180deg);
+}
+
+.addon-console .ac-hexagram-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 0;
+  min-height: 72px;
+}
+
+.addon-console .ac-hexagram {
+  font-size: 3.2rem;
+  line-height: 1;
+  color: var(--sub-block-title-color);
+  font-family: 'Segoe UI Symbol', 'Noto Sans Symbols', 'Noto Sans Symbols 2', serif;
+  user-select: none;
+}
+
+.addon-console .ac-plot-timeline {
+  margin-top: 4px;
+}
+
+.addon-console .ac-faction-block {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--divider);
+}
+
+.addon-console .ac-faction-block:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.addon-console .ac-faction-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--divider);
+}
+
+.addon-console .ac-faction-panel {
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--region-card-border);
+  background: var(--region-card-bg);
+  min-width: 0;
+}
+
+.addon-console .ac-faction-panel .ac-kv-key {
+  margin-bottom: 6px;
+}
+
+.addon-console .ac-reputation-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.addon-console .ac-reputation-cell {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--region-card-border);
+  background: var(--region-card-bg);
+  min-width: 0;
+}
+
+.addon-console .ac-reputation-label {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+  margin-bottom: 2px;
+}
+
+.addon-console .ac-reputation-value {
+  font-size: 0.82rem;
+  color: var(--region-name-color);
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.addon-console .ac-people-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  gap: 8px;
+  margin-top: 6px;
+  justify-content: start;
+}
+
+.addon-console .ac-person-card {
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--subcard-border);
+  background: #fdfaf4;
+  min-width: 0;
+  max-width: 280px;
+  width: 100%;
+}
+
+.addon-console[data-theme='dark'] .ac-person-card {
+  background: rgba(18, 26, 50, 0.55);
+}
+
+.addon-console .ac-person-name {
+  font-weight: 700;
+  color: var(--subcard-title);
+  font-family: var(--font-serif);
+  margin-bottom: 2px;
+}
+
+.addon-console .ac-person-role {
+  font-size: 0.78rem;
+  color: var(--ink-mid);
+  margin-bottom: 4px;
+}
+
+.addon-console .ac-person-pillars {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+@keyframes ac-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ac-fold-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .addon-console .ac-currency-card:hover,
+  .addon-console .ac-spec-card:hover,
+  .addon-console .ac-plot-card:hover,
+  .addon-console .ac-faction-card:hover {
+    transform: translateY(-2px);
+  }
+}
+
+@media (max-width: 900px) {
+  .addon-console .ac-oracle-grid,
+  .addon-console .ac-faction-split {
+    grid-template-columns: 1fr;
+  }
+
+  .addon-console .ac-reputation-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .addon-console .ac-kv-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .addon-console .ac-masthead-title {
+    font-size: 20px;
+  }
+
+  .addon-console .ac-masthead {
+    padding: 14px 14px 12px;
+  }
+
+  .addon-console .ac-section-head {
+    padding: 10px 12px;
+    font-size: 15px;
+    min-height: 48px;
+  }
+
+  .addon-console .ac-section-body-pad {
+    padding: 10px 12px 14px;
+  }
+
+  .addon-console .ac-card-grid,
+  .addon-console .ac-trade-regions-grid,
+  .addon-console .ac-currency-grid,
+  .addon-console .ac-spec-grid,
+  .addon-console .ac-futures-grid,
+  .addon-console .ac-commodity-grid,
+  .addon-console .ac-econ-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .addon-console .ac-spec-card,
+  .addon-console .ac-futures-card {
+    max-width: none;
+  }
+
+  .addon-console .ac-brief-nav-chip,
+  .addon-console .ac-brief-page-tab {
+    min-height: 40px;
+  }
+
+  .addon-console .ac-brief-page-tab {
+    flex: 0 0 auto;
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+
+  .addon-console .ac-brief-page-tab-icon {
+    display: none;
+  }
+
+  .addon-console .ac-timeline-row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .addon-console .ac-oracle-grid,
+  .addon-console .ac-reputation-grid,
+  .addon-console .ac-people-grid,
+  .addon-console .ac-faction-split {
+    grid-template-columns: 1fr;
+  }
+
+  .addon-console .ac-person-card {
+    max-width: none;
+  }
+}

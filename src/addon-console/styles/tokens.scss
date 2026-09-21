@@ -1,0 +1,220 @@
+/* 勿用 @import 拉取 Google Fonts：国内移动网络常超时，会阻塞整段 style（含变量/布局）导致面板空白 */
+.addon-console,
+.addon-console[data-theme='light'] {
+  --deep-navy: #1a2740;
+  --midnight: #1e3050;
+  --royal-blue: #253d5e;
+  --gold: #c8a45c;
+  --gold-bright: #d9b86b;
+  --gold-pale: #e8d5b0;
+  --gold-wash: #f5ecd7;
+  --cream-bg: #fdf9f2;
+  --cream-card: #fffefb;
+  --cream-dark: #f7f1e3;
+  --ink-deep: #2c2416;
+  --ink-mid: #5c4b2c;
+  --ink-light: #8b7a5c;
+  --rust: #a0524b;
+  --sage: #5a7d5a;
+  --slate: #6b7d8e;
+  --divider: #e0d5bd;
+  --up: #2d7a3a;
+  --down: #b83828;
+  --shadow-sm: 0 1px 3px rgba(40, 20, 8, 0.06);
+  --shadow-md: 0 4px 16px rgba(40, 20, 8, 0.1);
+  --shadow-lg: 0 8px 32px rgba(40, 20, 8, 0.14);
+  --shadow-gold: 0 2px 12px rgba(180, 140, 60, 0.18);
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+  --sub-block-bg: rgba(250, 243, 228, 0.7);
+  --sub-block-border: rgba(180, 150, 90, 0.28);
+  --sub-block-title-color: #5a3e28;
+  --sub-block-line-color: #5c4b2c;
+  --sub-block-line-border: rgba(180, 150, 90, 0.45);
+  --region-card-bg: rgba(250, 245, 235, 0.75);
+  --region-card-border: rgba(200, 175, 130, 0.4);
+  --region-name-color: #5a3e28;
+  --region-status-color: #6b5c3c;
+  --region-industry-color: #7a6d4c;
+  --climate-wrap-bg: rgba(250, 243, 228, 0.7);
+  --climate-wrap-border: rgba(200, 175, 130, 0.4);
+  --base-highlight-bg: linear-gradient(135deg, #fef9f0, #fdf4e0);
+  --base-highlight-border: rgba(200, 165, 90, 0.55);
+  --base-highlight-text: #5a3e28;
+  --base-highlight-sub: #6b5c3c;
+  --subcard-border: #ece0cc;
+  --subcard-title: #5a3e28;
+  --currency-card-bg: linear-gradient(165deg, #fffefb 0%, #fdf8ef 40%, #faf3e4 100%);
+  --currency-card-border: #e0ceaa;
+  --currency-rate-color: #1a0f00;
+  --currency-change-up: #2d7a3a;
+  --currency-change-down: #b83828;
+  --currency-prev-color: #6b5c3c;
+  --spec-card-bg: linear-gradient(165deg, #fffefb 0%, #fdf8ef 40%, #faf3e4 100%);
+  --spec-card-border: #e0ceaa;
+  --spec-title-color: #5a3e28;
+  --spec-text-color: #5c4b2c;
+  --spec-label-color: #8b7a5c;
+  --spec-highlight: #c8a45c;
+  --spec-change-up: #2d7a3a;
+  --spec-change-down: #b83828;
+  --spec-index-bg: rgba(200, 165, 90, 0.08);
+  --spec-index-border: rgba(200, 165, 90, 0.25);
+  --surface: var(--cream-bg);
+  --surface-raised: var(--cream-card);
+  --text: var(--ink-deep);
+  --text-muted: var(--ink-mid);
+  --accent: var(--gold);
+  --header-bg: linear-gradient(160deg, var(--deep-navy) 0%, var(--midnight) 30%, var(--royal-blue) 60%, #2a4570 100%);
+  --header-text: var(--gold-pale);
+  --toggle-on: var(--sage);
+  --danger: var(--rust);
+  --font-display: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
+  --font-serif: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
+  --font-body: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  --section-header-bg: linear-gradient(180deg, rgba(245, 236, 215, 0.6) 0%, rgba(250, 243, 228, 0.3) 100%);
+  --section-header-color: #5a3e28;
+  --stat-label-color: #6b4226;
+  --stat-item-bg: rgba(250, 245, 235, 0.5);
+  --paper-border: var(--gold-pale);
+  --paper-inset: rgba(245, 236, 215, 0.5);
+}
+
+.addon-console[data-theme='dark'] {
+  --cream-bg: #0b142a;
+  --cream-card: rgba(16, 24, 48, 0.65);
+  --cream-dark: rgba(20, 30, 55, 0.55);
+  --ink-deep: #e8dcc8;
+  --ink-mid: #c4b896;
+  --ink-light: #9a8d72;
+  --divider: rgba(180, 150, 90, 0.25);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 0 18px rgba(140, 120, 60, 0.2), 0 0 4px rgba(180, 150, 80, 0.3);
+  --shadow-lg: 0 0 32px rgba(120, 100, 50, 0.22), 0 0 8px rgba(180, 150, 80, 0.25);
+  --shadow-gold: 0 0 20px rgba(200, 160, 70, 0.25);
+  --gold-pale: #c9a94e;
+  --gold-wash: #2a2040;
+  --sub-block-bg: rgba(14, 22, 42, 0.5);
+  --sub-block-border: rgba(180, 150, 90, 0.2);
+  --sub-block-title-color: #d4c090;
+  --sub-block-line-color: #b0a080;
+  --sub-block-line-border: rgba(180, 150, 90, 0.35);
+  --region-card-bg: rgba(18, 26, 48, 0.5);
+  --region-card-border: rgba(180, 150, 90, 0.25);
+  --region-name-color: #d8c8a0;
+  --region-status-color: #b8a680;
+  --region-industry-color: #9a8d6a;
+  --climate-wrap-bg: rgba(22, 18, 40, 0.6);
+  --climate-wrap-border: rgba(180, 150, 90, 0.3);
+  --base-highlight-bg: linear-gradient(135deg, rgba(25, 20, 45, 0.7), rgba(20, 18, 38, 0.8));
+  --base-highlight-border: rgba(200, 165, 90, 0.5);
+  --base-highlight-text: #e8d5a8;
+  --base-highlight-sub: #c4b080;
+  --subcard-border: rgba(180, 150, 90, 0.25);
+  --subcard-title: #e0cfaa;
+  --currency-card-bg: linear-gradient(
+    165deg,
+    rgba(20, 28, 50, 0.7) 0%,
+    rgba(16, 24, 44, 0.75) 40%,
+    rgba(12, 20, 38, 0.8) 100%
+  );
+  --currency-card-border: rgba(200, 165, 90, 0.35);
+  --currency-rate-color: #f5e8c8;
+  --currency-change-up: #6ddb80;
+  --currency-change-down: #f09080;
+  --currency-prev-color: #b0a080;
+  --spec-card-bg: linear-gradient(
+    165deg,
+    rgba(20, 28, 50, 0.7) 0%,
+    rgba(16, 24, 44, 0.75) 40%,
+    rgba(12, 20, 38, 0.8) 100%
+  );
+  --spec-card-border: rgba(200, 165, 90, 0.35);
+  --spec-title-color: #e0cfaa;
+  --spec-text-color: #c4b896;
+  --spec-label-color: #9a8d72;
+  --spec-highlight: #d9b86b;
+  --spec-change-up: #6ddb80;
+  --spec-change-down: #f09080;
+  --spec-index-bg: rgba(200, 160, 70, 0.12);
+  --spec-index-border: rgba(200, 160, 70, 0.3);
+  --surface: var(--cream-bg);
+  --surface-raised: var(--cream-card);
+  --text: var(--ink-deep);
+  --text-muted: var(--ink-mid);
+  --header-bg: radial-gradient(ellipse at 30% 30%, rgba(40, 25, 70, 0.8) 0%, transparent 60%),
+    radial-gradient(ellipse at 70% 70%, rgba(25, 35, 80, 0.7) 0%, transparent 55%),
+    linear-gradient(160deg, #0c1630 0%, #0f1c3a 30%, #111f42 60%, #0e1a38 100%);
+  --header-text: var(--gold-bright);
+  --up: #6ddb80;
+  --down: #f09080;
+  --section-header-bg: linear-gradient(180deg, rgba(25, 32, 55, 0.7) 0%, rgba(20, 28, 48, 0.5) 100%);
+  --section-header-color: #e0cfaa;
+  --stat-label-color: #d4c090;
+  --stat-item-bg: rgba(18, 26, 48, 0.4);
+  --paper-border: rgba(180, 150, 80, 0.3);
+  --paper-inset: rgba(20, 18, 40, 0.5);
+}
+
+.addon-console,
+.addon-console *,
+.addon-console *::before,
+.addon-console *::after {
+  box-sizing: border-box;
+}
+
+.addon-console {
+  /* 父级 .ac-mount 为 flex 列；用 flex 拉伸避免 WebKit 下 height:100% 对 flex 高度解析为 0 */
+  flex: 1 1 auto;
+  align-self: stretch;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  color: var(--text);
+  font-family: var(--font-serif);
+  font-size: 14px;
+  line-height: 1.55;
+  background: var(--cream-bg);
+  background-image:
+    radial-gradient(ellipse at 15% 8%, rgba(200, 165, 90, 0.06) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 92%, rgba(180, 140, 70, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(245, 236, 215, 0.4) 0%, transparent 70%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 24px,
+      rgba(180, 150, 100, 0.025) 24px,
+      rgba(180, 150, 100, 0.025) 25px
+    );
+  border: 2px solid var(--paper-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(200, 165, 90, 0.25) inset, 0 0 0 4px var(--paper-inset) inset;
+}
+
+/* 全屏宿主已对 shell 做 safe-area；此处兜底（非全屏嵌入时） */
+@media (max-width: 640px) {
+  .addon-console {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+}
+
+.addon-console[data-theme='dark'] {
+  background-image:
+    radial-gradient(ellipse at 20% 10%, rgba(30, 20, 70, 0.7) 0%, transparent 55%),
+    radial-gradient(ellipse at 75% 18%, rgba(20, 30, 80, 0.5) 0%, transparent 50%),
+    radial-gradient(ellipse at 40% 70%, rgba(25, 18, 55, 0.6) 0%, transparent 60%),
+    linear-gradient(175deg, #080e20 0%, #0b142a 15%, #0d1832 30%, #0f1a36 45%, #0c1630 60%, #0a122a 75%, #080f22 100%);
+  box-shadow:
+    0 0 32px rgba(120, 100, 50, 0.22),
+    0 0 8px rgba(180, 150, 80, 0.25),
+    0 0 0 1px rgba(180, 150, 80, 0.2) inset,
+    0 0 0 4px var(--paper-inset) inset;
+}

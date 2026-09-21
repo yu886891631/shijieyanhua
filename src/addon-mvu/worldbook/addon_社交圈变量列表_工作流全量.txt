@@ -1,0 +1,18 @@
+---
+<%_
+function readSocialCircles() {
+  const addonData = getvar('addon_data');
+  if (!addonData || typeof addonData !== 'object' || Array.isArray(addonData)) return {};
+  const social = addonData.社交圈;
+  if (!social || typeof social !== 'object' || Array.isArray(social)) return {};
+  return _.cloneDeep(social);
+}
+
+const socialCircles = readSocialCircles();
+const names = Object.keys(socialCircles);
+_%>
+<%_ if (names.length > 0) { _%>
+<社交圈>
+<%- YAML.stringify(socialCircles, { blockQuote: 'literal' }) %>
+</社交圈>
+<%_ } _%>
