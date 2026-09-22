@@ -671,9 +671,9 @@
         "apiPresetFallbackNames": [
           "2"
         ],
-        "apiPrimaryMaxConcurrency": 5,
+        "apiPrimaryMaxConcurrency": 1,
         "apiFallbackMaxConcurrencies": [
-          5
+          1
         ],
         "apiPresetMode": "inheritRoot",
         "schedule": {
@@ -791,9 +791,9 @@
         "apiPresetFallbackNames": [
           "2"
         ],
-        "apiPrimaryMaxConcurrency": 5,
+        "apiPrimaryMaxConcurrency": 1,
         "apiFallbackMaxConcurrencies": [
-          5
+          1
         ],
         "apiPresetMode": "inheritRoot",
         "schedule": {
@@ -2917,9 +2917,9 @@
             "apiPresetFallbackNames": [
               "2"
             ],
-            "apiPrimaryMaxConcurrency": 5,
+            "apiPrimaryMaxConcurrency": 1,
             "apiFallbackMaxConcurrencies": [
-              5
+              1
             ],
             "apiPresetMode": "inheritRoot",
             "schedule": {
@@ -3037,9 +3037,9 @@
             "apiPresetFallbackNames": [
               "2"
             ],
-            "apiPrimaryMaxConcurrency": 5,
+            "apiPrimaryMaxConcurrency": 1,
             "apiFallbackMaxConcurrencies": [
-              5
+              1
             ],
             "apiPresetMode": "inheritRoot",
             "schedule": {

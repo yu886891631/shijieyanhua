@@ -22,7 +22,7 @@ import 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@main/dist/add
 import 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@main/dist/工作流助手/index.js'
 ```
 
-启用的六阶段依次为：世界状态 → 名单筛选与 ReplicaEnum → 前台角色副本 → 后台角色副本 → 后台交互 → 社交圈变量。资产账本顺延至 S7 且默认关闭；因此前台角色整批结束后，才会启动后台角色。
+启用的六阶段依次为：世界状态 → 名单筛选与 ReplicaEnum → 前台角色副本 → 后台角色副本 → 后台交互 → 社交圈变量。资产账本顺延至 S7 且默认关闭；前台与后台副本族的主/备用 API 并发均预设为 1，因此角色任务会依次串行执行。
 
 ## 在 GitHub 网页修改
 
