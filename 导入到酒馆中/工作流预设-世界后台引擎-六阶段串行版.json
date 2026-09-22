@@ -1,5 +1,5 @@
 {
-  "name": "世界后台引擎·六阶段轻量版",
+  "name": "世界后台引擎·六阶段串行版",
   "tasks": [
     {
       "id": "task-1783694761112-g7ynn",
@@ -489,7 +489,7 @@
       "id": "example-replica-family",
       "name": "后台角色",
       "enabled": true,
-      "stage": 3,
+      "stage": 4,
       "promptGroups": [
         {
           "name": "🛑ROLE主提示",
@@ -609,7 +609,7 @@
       "id": "task-six-stage-interaction-115a2ef29f",
       "name": "后台角色交互预演",
       "enabled": true,
-      "stage": 4,
+      "stage": 5,
       "promptGroups": [
         {
           "name": "后台交互预演",
@@ -686,7 +686,7 @@
       "id": "task-six-stage-social-cef64e9f10",
       "name": "社交圈变量更新",
       "enabled": true,
-      "stage": 5,
+      "stage": 6,
       "promptGroups": [
         {
           "name": "社交圈变量更新",
@@ -763,7 +763,7 @@
       "id": "task-1784451284887-etzyg",
       "name": "资产账本",
       "enabled": false,
-      "stage": 6,
+      "stage": 7,
       "promptGroups": [
         {
           "name": "宏重置",
