@@ -173,6 +173,53 @@ export async function updateWorldEvolutionRunRecord(
   return world;
 }
 
+export async function mutateWorldManually(
+  chatKey: string,
+  mutator: (world: WorldEvolutionWorld) => void,
+): Promise<WorldEvolutionWorld> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const current = await loadWorld(chatKey);
+    const next = clone(current);
+    mutator(next);
+    next.revision += 1;
+    next.revisions.push({
+      revision: next.revision,
+      messageId: -1,
+      source: 'manual',
+      changedEntityIds: [],
+      createdEventIds: [],
+      createdAt: Date.now(),
+    });
+    const saved = await saveWorldIfRevisionMatches(next, current.revision);
+    if (saved) return trimWorldHistory(next);
+  }
+  throw new Error('世界演变正在被其他任务更新，请稍后重试');
+}
+
+export async function updateWorldEntityManually(
+  chatKey: string,
+  entityId: string,
+  patch: { state?: Record<string, unknown>; visibility?: WorldEvolutionEntity['visibility'] },
+): Promise<WorldEvolutionWorld> {
+  return mutateWorldManually(chatKey, world => {
+    const entity = world.entities[entityId];
+    if (!entity) throw new Error(`对象不存在：${entityId}`);
+    if (patch.state) entity.state = { ...entity.state, ...clone(patch.state) };
+    if (patch.visibility) entity.visibility = patch.visibility;
+    entity.updatedAt = Date.now();
+  });
+}
+
+export async function deleteWorldEntityManually(
+  chatKey: string,
+  entityId: string,
+): Promise<WorldEvolutionWorld> {
+  return mutateWorldManually(chatKey, world => {
+    if (!world.entities[entityId]) throw new Error(`对象不存在：${entityId}`);
+    delete world.entities[entityId];
+  });
+}
+
 export async function exportWorld(chatKey: string): Promise<string> {
   return JSON.stringify(await loadWorld(chatKey), null, 2);
 }
