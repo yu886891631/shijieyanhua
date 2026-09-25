@@ -1,5 +1,11 @@
 import { getCurrentChatKey } from '../工作流助手/api/chat-key';
-import { loadSettings, saveSettings, loadWorld, saveWorld, trimWorldHistory } from './store';
+import {
+  loadSettings,
+  saveSettings,
+  loadWorld,
+  saveWorldIfRevisionMatches,
+  trimWorldHistory,
+} from './store';
 import type {
   WorldEvolutionAiEvent,
   WorldEvolutionAiResult,
@@ -9,6 +15,7 @@ import type {
   WorldEvolutionEvent,
   WorldEvolutionInput,
   WorldEvolutionSettings,
+  WorldEvolutionVisibility,
   WorldEvolutionWorld,
 } from './types';
 import { DEFAULT_WORLD_EVOLUTION_SETTINGS } from './types';
@@ -169,21 +176,106 @@ function slugify(value: string): string {
   return normalized || `entity-${Date.now()}`;
 }
 
-function normalizeUpdate(update: WorldEvolutionAiUpdate): WorldEvolutionAiUpdate | null {
-  if (!update || typeof update !== 'object') return null;
-  if (!['npc', 'organization', 'location', 'environment', 'social'].includes(update.type)) return null;
-  if (
-    update.visibility != null &&
-    !['backstage', 'ai_context', 'protagonist_known', 'revealed'].includes(update.visibility)
-  ) {
-    return null;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function isVisibility(value: unknown): value is WorldEvolutionVisibility {
+  return (
+    typeof value === 'string' &&
+    ['backstage', 'ai_context', 'protagonist_known', 'revealed'].includes(value)
+  );
+}
+
+function optionalText(value: unknown, label: string): string | undefined {
+  if (value == null) return undefined;
+  if (typeof value !== 'string') throw new Error(`${label}必须是文本`);
+  return value.trim() || undefined;
+}
+
+function stringList(value: unknown, label: string): string[] {
+  if (value == null) return [];
+  if (!Array.isArray(value) || value.some(item => typeof item !== 'string')) {
+    throw new Error(`${label}必须是字符串数组`);
   }
-  if (typeof update.name !== 'string' || !update.name.trim()) return null;
-  if (!update.changes || typeof update.changes !== 'object' || Array.isArray(update.changes)) return null;
+  return value.map(item => item.trim()).filter(Boolean);
+}
+
+function normalizeUpdate(update: unknown, index: number): WorldEvolutionAiUpdate {
+  const label = `第 ${index + 1} 条对象更新`;
+  if (!isRecord(update)) throw new Error(`${label}不是对象`);
+  if (
+    typeof update.type !== 'string' ||
+    !['npc', 'organization', 'location', 'environment', 'social'].includes(update.type)
+  ) {
+    throw new Error(`${label}的 type 无效`);
+  }
+  if (update.visibility != null && !isVisibility(update.visibility)) {
+    throw new Error(`${label}的 visibility 无效`);
+  }
+  if (typeof update.name !== 'string' || !update.name.trim()) {
+    throw new Error(`${label}缺少有效的 name`);
+  }
+  if (update.id != null && (typeof update.id !== 'string' || !update.id.trim())) {
+    throw new Error(`${label}的 id 无效`);
+  }
+  if (!isRecord(update.changes)) throw new Error(`${label}的 changes 必须是对象`);
+
   return {
-    ...update,
+    type: update.type as WorldEvolutionEntityType,
+    id: typeof update.id === 'string' ? update.id.trim() : undefined,
     name: update.name.trim(),
+    visibility: update.visibility as WorldEvolutionAiUpdate['visibility'],
     changes: clone(update.changes),
+  };
+}
+
+function normalizeEvent(event: unknown, index: number): WorldEvolutionAiEvent {
+  const label = `第 ${index + 1} 条事件`;
+  if (!isRecord(event)) throw new Error(`${label}不是对象`);
+  const summary = optionalText(event.summary, `${label}的 summary`);
+  if (!summary) throw new Error(`${label}缺少有效的 summary`);
+  if (event.visibility != null && !isVisibility(event.visibility)) {
+    throw new Error(`${label}的 visibility 无效`);
+  }
+  return {
+    id: optionalText(event.id, `${label}的 id`),
+    type: optionalText(event.type, `${label}的 type`) ?? 'world_change',
+    actors: stringList(event.actors, `${label}的 actors`),
+    summary,
+    details: optionalText(event.details, `${label}的 details`),
+    time: optionalText(event.time, `${label}的 time`),
+    location: optionalText(event.location, `${label}的 location`),
+    visibility: event.visibility as WorldEvolutionVisibility | undefined,
+  };
+}
+
+function normalizeScheduledEvent(
+  event: unknown,
+  index: number,
+): WorldEvolutionAiResult['scheduledEvents'][number] {
+  const label = `第 ${index + 1} 条待办计划`;
+  if (!isRecord(event)) throw new Error(`${label}不是对象`);
+  const title = optionalText(event.title, `${label}的 title`);
+  if (!title) throw new Error(`${label}缺少有效的 title`);
+  if (event.visibility != null && !isVisibility(event.visibility)) {
+    throw new Error(`${label}的 visibility 无效`);
+  }
+  if (
+    event.status != null &&
+    event.status !== 'pending' &&
+    event.status !== 'completed' &&
+    event.status !== 'cancelled'
+  ) {
+    throw new Error(`${label}的 status 无效`);
+  }
+  return {
+    id: optionalText(event.id, `${label}的 id`),
+    title,
+    trigger: optionalText(event.trigger, `${label}的 trigger`),
+    actors: stringList(event.actors, `${label}的 actors`),
+    visibility: event.visibility as WorldEvolutionVisibility | undefined,
+    status: event.status as 'pending' | 'completed' | 'cancelled' | undefined,
   };
 }
 
@@ -192,9 +284,12 @@ function parseWorldEvolutionResponse(raw: string): WorldEvolutionAiResult {
   const tagged = text.match(/<WorldEvolution>([\s\S]*?)<\/WorldEvolution>/i);
   if (tagged?.[1]) text = tagged[1].trim();
   text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
-  const parsed = JSON.parse(text) as WorldEvolutionAiResult;
-  if (!parsed || typeof parsed !== 'object') throw new Error('世界演变 AI 返回的不是 JSON 对象');
-  return parsed;
+  const parsed = JSON.parse(text) as unknown;
+  if (!isRecord(parsed)) throw new Error('世界演变 AI 返回的不是 JSON 对象');
+  if (!Array.isArray(parsed.updates)) throw new Error('世界演变 AI 返回缺少 updates 数组');
+  if (!Array.isArray(parsed.events)) throw new Error('世界演变 AI 返回缺少 events 数组');
+  if (!Array.isArray(parsed.scheduledEvents)) throw new Error('世界演变 AI 返回缺少 scheduledEvents 数组');
+  return parsed as unknown as WorldEvolutionAiResult;
 }
 
 function buildPrompt(input: WorldEvolutionInput, world: WorldEvolutionWorld, settings: WorldEvolutionSettings): string {
@@ -227,6 +322,7 @@ function buildPrompt(input: WorldEvolutionInput, world: WorldEvolutionWorld, set
     `本轮上限：NPC 最多 ${settings.maxNpcPerRun} 个，其他对象最多 ${settings.maxOtherEntitiesPerRun} 个。`,
     `已有世界演变状态：\n${compactJson(entities, 10000)}`,
     `最近后台事件：\n${compactJson(world.events.slice(-20), 6000)}`,
+    `待办演变计划：\n${compactJson(world.scheduledEvents.filter(event => event.status === 'pending').slice(-20), 6000)}`,
     '',
     '【输出结构】',
     JSON.stringify(
@@ -334,6 +430,10 @@ async function callEvolutionAi(prompt: string): Promise<string> {
                 title: { type: 'string' },
                 trigger: { type: 'string' },
                 actors: { type: 'array', items: { type: 'string' } },
+                visibility: {
+                  type: 'string',
+                  enum: ['backstage', 'ai_context', 'protagonist_known', 'revealed'],
+                },
                 status: { type: 'string', enum: ['pending', 'completed', 'cancelled'] },
               },
               required: ['title'],
@@ -379,12 +479,27 @@ function validateAndCommit(
   settings: WorldEvolutionSettings,
   source: 'auto' | 'manual',
 ): { world: WorldEvolutionWorld; changedEntityIds: string[]; eventIds: string[] } {
+  if (!Number.isInteger(parsed.baseRevision)) {
+    throw new Error('世界演变结果缺少有效的 baseRevision，已拒绝提交');
+  }
   if (parsed.baseRevision != null && parsed.baseRevision !== world.revision) {
     throw new Error(`世界演变版本冲突：AI基于 ${parsed.baseRevision}，当前是 ${world.revision}`);
   }
-  if (parsed.baseRevision == null) throw new Error('世界演变结果缺少 baseRevision，已拒绝提交');
 
-  const updates = (parsed.updates ?? []).map(normalizeUpdate).filter((item): item is WorldEvolutionAiUpdate => item !== null);
+  if (!Array.isArray(parsed.updates)) throw new Error('世界演变结果缺少 updates 数组，已拒绝提交');
+  const updates = parsed.updates.map((update, index) => normalizeUpdate(update, index));
+  const events = parsed.events.map((event, index) => normalizeEvent(event, index));
+  const scheduledEvents = parsed.scheduledEvents.map((event, index) => normalizeScheduledEvent(event, index));
+  const updateIds = updates.map(update => {
+    if (!input.candidateNames.includes(update.name) && !settings.manualCandidates.includes(update.name)) {
+      throw new Error(`AI 修改了非候选对象：${update.name}`);
+    }
+    return resolveEntityId(world, update);
+  });
+  if (new Set(updateIds).size !== updateIds.length) {
+    throw new Error('AI 更新批次包含重复对象，已拒绝整批提交');
+  }
+
   const npcCount = updates.filter(update => isNpcLike(update.type)).length;
   const otherCount = updates.length - npcCount;
   if (npcCount > settings.maxNpcPerRun) throw new Error(`本轮 NPC 更新 ${npcCount} 条，超过上限 ${settings.maxNpcPerRun}`);
@@ -395,11 +510,8 @@ function validateAndCommit(
   const next = clone(world);
   const changedEntityIds: string[] = [];
   const now = Date.now();
-  for (const update of updates) {
-    if (!input.candidateNames.includes(update.name) && !settings.manualCandidates.includes(update.name)) {
-      throw new Error(`AI 修改了非候选对象：${update.name}`);
-    }
-    const id = resolveEntityId(next, update);
+  for (const [index, update] of updates.entries()) {
+    const id = updateIds[index];
     const previous = next.entities[id];
     const entity: WorldEvolutionEntity = previous ?? {
       id,
@@ -419,23 +531,18 @@ function validateAndCommit(
   }
 
   const eventIds: string[] = [];
-  for (const rawEvent of parsed.events ?? []) {
-    if (!rawEvent || typeof rawEvent.summary !== 'string' || !rawEvent.summary.trim()) continue;
-    const event = rawEvent as WorldEvolutionAiEvent;
+  for (const event of events) {
     const id = event.id?.trim() || `EV-${input.messageId}-${next.revision + eventIds.length + 1}`;
     if (next.events.some(item => item.id === id)) continue;
     const normalized: WorldEvolutionEvent = {
       id,
-      type: event.type?.trim() || 'world_change',
-      actors: Array.isArray(event.actors) ? event.actors.filter(value => typeof value === 'string') : [],
-      summary: event.summary.trim(),
-      details: event.details?.trim(),
-      time: event.time?.trim(),
-      location: event.location?.trim(),
-      visibility:
-        event.visibility && ['backstage', 'ai_context', 'protagonist_known', 'revealed'].includes(event.visibility)
-          ? event.visibility
-          : 'ai_context',
+      type: event.type ?? 'world_change',
+      actors: event.actors ?? [],
+      summary: event.summary,
+      details: event.details,
+      time: event.time,
+      location: event.location,
+      visibility: event.visibility ?? 'ai_context',
       sourceMessageId: input.messageId,
       createdAt: now,
     };
@@ -443,8 +550,7 @@ function validateAndCommit(
     eventIds.push(id);
   }
 
-  for (const rawEvent of parsed.scheduledEvents ?? []) {
-    if (!rawEvent || typeof rawEvent.title !== 'string' || !rawEvent.title.trim()) continue;
+  for (const rawEvent of scheduledEvents) {
     const id = rawEvent.id?.trim() || `SE-${input.messageId}-${next.revision + next.scheduledEvents.length + 1}`;
     const existing = next.scheduledEvents.find(item => item.id === id);
     if (existing) {
@@ -458,9 +564,10 @@ function validateAndCommit(
     }
     next.scheduledEvents.push({
       id,
-      title: rawEvent.title.trim(),
-      trigger: rawEvent.trigger?.trim(),
-      actors: Array.isArray(rawEvent.actors) ? rawEvent.actors.filter(value => typeof value === 'string') : [],
+      title: rawEvent.title,
+      trigger: rawEvent.trigger,
+      actors: rawEvent.actors ?? [],
+      visibility: rawEvent.visibility ?? 'ai_context',
       status:
         rawEvent.status === 'completed' || rawEvent.status === 'cancelled'
           ? rawEvent.status
@@ -547,7 +654,10 @@ export async function runWorldEvolution(
 
     report('committing', '正在校验并提交世界演变结果');
     const committed = validateAndCommit(world, parsed, input, settings, options?.source ?? 'manual');
-    await saveWorld(committed.world);
+    const saved = await saveWorldIfRevisionMatches(committed.world, world.revision);
+    if (!saved) {
+      throw new Error('世界演变数据已被其他任务更新；为避免覆盖，本轮结果未写入，请重新运行');
+    }
     result.status = 'done';
     result.world = committed.world;
     result.changedEntityIds = committed.changedEntityIds;

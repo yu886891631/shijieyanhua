@@ -76,6 +76,60 @@ export async function saveWorld(world: WorldEvolutionWorld): Promise<void> {
   }
 }
 
+export async function saveWorldIfRevisionMatches(
+  world: WorldEvolutionWorld,
+  expectedRevision: number,
+): Promise<boolean> {
+  const normalized: WorldEvolutionWorld = {
+    ...clone(world),
+    updatedAt: Date.now(),
+  };
+  const database = await openDatabase();
+  try {
+    const transaction = database.transaction(STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+    return await new Promise<boolean>((resolve, reject) => {
+      let revisionConflict = false;
+      let settled = false;
+      const finish = (callback: () => void) => {
+        if (settled) return;
+        settled = true;
+        callback();
+      };
+
+      transaction.oncomplete = () => finish(() => resolve(true));
+      transaction.onerror = () => {
+        if (revisionConflict) return;
+        finish(() => reject(transaction.error ?? new Error('世界演变 IndexedDB 事务失败')));
+      };
+      transaction.onabort = () => {
+        if (revisionConflict) {
+          finish(() => resolve(false));
+          return;
+        }
+        finish(() => reject(transaction.error ?? new Error('世界演变 IndexedDB 事务已中止')));
+      };
+
+      const request = store.get(world.chatKey);
+      request.onsuccess = () => {
+        const currentWorld = request.result as WorldEvolutionWorld | undefined;
+        const currentRevision = currentWorld?.revision ?? 0;
+        if (currentRevision !== expectedRevision) {
+          revisionConflict = true;
+          transaction.abort();
+          return;
+        }
+        store.put(normalized);
+      };
+    });
+  } catch (error) {
+    console.error('[世界演变] 并发保护写入失败:', error);
+    throw error;
+  } finally {
+    database.close();
+  }
+}
+
 export async function clearWorld(chatKey: string): Promise<void> {
   const database = await openDatabase();
   try {
@@ -103,7 +157,10 @@ export async function importWorld(chatKey: string, raw: string): Promise<WorldEv
   world.entities = isRecord(parsed.entities) ? (parsed.entities as Record<string, WorldEvolutionEntity>) : {};
   world.events = Array.isArray(parsed.events) ? (parsed.events as WorldEvolutionEvent[]) : [];
   world.scheduledEvents = Array.isArray(parsed.scheduledEvents)
-    ? (parsed.scheduledEvents as WorldEvolutionScheduledEvent[])
+    ? (parsed.scheduledEvents as WorldEvolutionScheduledEvent[]).map(event => ({
+        ...event,
+        visibility: event.visibility ?? 'ai_context',
+      }))
     : [];
   world.revisions = Array.isArray(parsed.revisions)
     ? (parsed.revisions as WorldEvolutionRevision[])

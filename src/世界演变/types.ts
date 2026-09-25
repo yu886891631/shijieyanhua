@@ -41,6 +41,7 @@ export type WorldEvolutionScheduledEvent = {
   title: string;
   trigger?: string;
   actors: string[];
+  visibility: WorldEvolutionVisibility;
   status: 'pending' | 'completed' | 'cancelled';
   createdAt: number;
 };
@@ -88,7 +89,7 @@ export type WorldEvolutionAiUpdate = {
 
 export type WorldEvolutionAiEvent = {
   id?: string;
-  type: string;
+  type?: string;
   actors?: string[];
   summary: string;
   details?: string;
@@ -98,14 +99,15 @@ export type WorldEvolutionAiEvent = {
 };
 
 export type WorldEvolutionAiResult = {
-  baseRevision?: number;
-  updates?: WorldEvolutionAiUpdate[];
-  events?: WorldEvolutionAiEvent[];
-  scheduledEvents?: Array<{
+  baseRevision: number;
+  updates: WorldEvolutionAiUpdate[];
+  events: WorldEvolutionAiEvent[];
+  scheduledEvents: Array<{
     id?: string;
     title: string;
     trigger?: string;
     actors?: string[];
+    visibility?: WorldEvolutionVisibility;
     status?: 'pending' | 'completed' | 'cancelled';
   }>;
 };

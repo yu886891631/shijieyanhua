@@ -45,11 +45,18 @@ function createEventContent(event: WorldEvolutionWorld['events'][number]): strin
 
 function createIndexContent(world: WorldEvolutionWorld): string {
   const entities = Object.values(world.entities)
+    .filter(entity => entity.visibility !== 'backstage')
     .map(entity => `${entity.name}（${entity.type}）：${summarizeState(entity.state)}`)
     .join('\n');
   const events = world.events
+    .filter(event => event.visibility !== 'backstage')
     .slice(-10)
     .map(event => `${event.id}：${event.summary}`)
+    .join('\n');
+  const scheduledEvents = world.scheduledEvents
+    .filter(event => event.visibility !== 'backstage' && event.status === 'pending')
+    .slice(-10)
+    .map(event => `${event.id}：${event.title}${event.trigger ? `（${event.trigger}）` : ''}`)
     .join('\n');
   return [
     '<世界演变后台索引>',
@@ -58,6 +65,8 @@ function createIndexContent(world: WorldEvolutionWorld): string {
     entities || '暂无',
     '近期后台事件：',
     events || '暂无',
+    '待发生计划：',
+    scheduledEvents || '暂无',
     '</世界演变后台索引>',
   ].join('\n');
 }
@@ -123,13 +132,31 @@ export async function syncWorldEvolutionWorldbook(worldbookName: string, world: 
   ];
 
   for (const entity of Object.values(world.entities)) {
+    if (entity.visibility === 'backstage') continue;
     const keys = [entity.name];
     managedEntries.push(partialEntry(entityEntryName(entity), createEntryContent(entity), 'selective', keys));
   }
 
   for (const event of world.events.slice(-50)) {
+    if (event.visibility === 'backstage') continue;
     const keys = [event.id, ...event.actors].filter(Boolean);
     managedEntries.push(partialEntry(`${ENTRY_PREFIX}事件-${event.id}`, createEventContent(event), 'selective', keys));
+  }
+
+  for (const event of world.scheduledEvents) {
+    if (event.visibility === 'backstage' || event.status !== 'pending') continue;
+    const keys = [event.id, ...event.actors].filter(Boolean);
+    const content = [
+      '<世界演变待办计划>',
+      `计划编号：${event.id}`,
+      `相关对象：${event.actors.join('、') || '未指定'}`,
+      `计划：${event.title}`,
+      event.trigger ? `触发条件：${event.trigger}` : '',
+      '</世界演变待办计划>',
+    ]
+      .filter(Boolean)
+      .join('\n');
+    managedEntries.push(partialEntry(`${ENTRY_PREFIX}计划-${event.id}`, content, 'selective', keys));
   }
 
   const current = await getWorldbook(name);
