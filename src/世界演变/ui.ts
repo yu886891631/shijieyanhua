@@ -12,10 +12,14 @@ import {
   importWorld,
   loadSettings,
   loadWorld,
+  rollbackWorldToCheckpoint,
   saveSettings,
+  saveWorldCheckpoint,
   updateWorldEntityManually,
 } from './store';
 import { syncWorldEvolutionWorldbook } from './worldbook';
+import { WORLD_EVOLUTION_VERSION } from './types';
+import { retryPendingWorldbookSync } from './engine';
 
 let app: ReturnType<typeof createApp> | null = null;
 let root: JQuery<HTMLDivElement> | null = null;
@@ -122,6 +126,35 @@ function mountPanel(): void {
         await refreshWorld();
         if (result.error) error.value = result.error;
       };
+      const retryWorldbook = async () => {
+        try {
+          const synced = await retryPendingWorldbookSync(state.chatKey, state.settings);
+          await refreshWorld();
+          state.statusMessage = synced ? '世界书同步重试完成' : '当前没有待重试的世界书同步';
+        } catch (syncError) {
+          error.value = syncError instanceof Error ? syncError.message : String(syncError);
+        }
+      };
+      const createCheckpoint = async () => {
+        try {
+          await saveWorldCheckpoint(state.chatKey, 'manual');
+          await refreshWorld();
+          state.statusMessage = '已创建世界演变 checkpoint';
+        } catch (checkpointError) {
+          error.value = checkpointError instanceof Error ? checkpointError.message : String(checkpointError);
+        }
+      };
+      const rollbackLatestCheckpoint = async () => {
+        const checkpoint = state.world?.checkpoints.at(-1);
+        if (!checkpoint || !window.confirm(`回滚到 checkpoint ${checkpoint.id}？这会恢复对象、事件和待办计划。`)) return;
+        try {
+          state.world = await rollbackWorldToCheckpoint(state.chatKey, checkpoint.id);
+          await syncAfterManualChange();
+          state.statusMessage = `已回滚到 checkpoint：${checkpoint.id}`;
+        } catch (rollbackError) {
+          error.value = rollbackError instanceof Error ? rollbackError.message : String(rollbackError);
+        }
+      };
       const editEntity = async (entityId: string) => {
         const entity = state.world?.entities[entityId];
         if (!entity) return;
@@ -187,7 +220,7 @@ function mountPanel(): void {
           { class: 'we-panel' },
           [
             h('div', { class: 'we-head' }, [
-              h('div', { class: 'we-title' }, '世界演变 · 独立插件'),
+              h('div', { class: 'we-title' }, `世界演变 · 独立插件 ${WORLD_EVOLUTION_VERSION}`),
               h('button', { class: 'we-close', onClick: () => (visible.value = !visible.value) }, visible.value ? '收起' : '展开'),
             ]),
             visible.value
@@ -331,6 +364,16 @@ function mountPanel(): void {
                       },
                       '重试最近失败楼层',
                     ),
+                    h('button', { class: 'we-btn', onClick: createCheckpoint }, '创建 checkpoint'),
+                    h(
+                      'button',
+                      {
+                        class: 'we-btn',
+                        disabled: !state.world?.checkpoints.length,
+                        onClick: rollbackLatestCheckpoint,
+                      },
+                      '回滚最近 checkpoint',
+                    ),
                     h('button', { class: 'we-btn', onClick: backup }, '导出'),
                     h('button', { class: 'we-btn', onClick: restore }, '导入'),
                   ]),
@@ -414,6 +457,42 @@ function mountPanel(): void {
                             2,
                           )
                         : '读取中…',
+                    ),
+                  ]),
+                  h('div', { class: 'we-section' }, [
+                    h('div', { class: 'we-section-title' }, 'Checkpoint 与世界书同步'),
+                    h('div', { class: 'we-row' }, [
+                      h(
+                        'button',
+                        {
+                          class: 'we-btn',
+                          disabled: !state.settings.worldbookName.trim(),
+                          onClick: retryWorldbook,
+                        },
+                        '重试世界书同步',
+                      ),
+                    ]),
+                    h(
+                      'div',
+                      { class: 'we-muted' },
+                      `checkpoint：${state.world?.checkpoints.length ?? 0} 个；世界书：${
+                        state.world?.worldbookSync.status ?? 'never'
+                      }${state.world?.worldbookSync.error ? ` · ${state.world.worldbookSync.error}` : ''}`,
+                    ),
+                    h(
+                      'pre',
+                      { class: 'we-status' },
+                      JSON.stringify(
+                        (state.world?.checkpoints ?? []).slice(-5).map(checkpoint => ({
+                          id: checkpoint.id,
+                          revision: checkpoint.revision,
+                          messageId: checkpoint.messageId,
+                          reason: checkpoint.reason,
+                          createdAt: checkpoint.createdAt,
+                        })),
+                        null,
+                        2,
+                      ),
                     ),
                   ]),
                   h('div', { class: 'we-muted' }, '最近楼层运行记录'),

@@ -1,8 +1,8 @@
 import { getCurrentChatKey } from '../工作流助手/api/chat-key';
 import { ACU_PP_WORKFLOW_COMPLETED, type WorkflowCompletedPayload } from '../工作流助手/tasks/events';
-import { loadSettings } from './store';
+import { loadSettings, recoverInterruptedRuns } from './store';
 import { openWorldEvolutionPanel } from './ui';
-import { runWorldEvolution } from './engine';
+import { retryPendingWorldbookSync, runWorldEvolution } from './engine';
 
 const SCRIPT_BUTTON = '打开世界演变面板';
 const LOG_PREFIX = '[世界演变]';
@@ -183,6 +183,15 @@ function registerWorldEvolution(): void {
   appendInexistentScriptButtons([{ name: SCRIPT_BUTTON, visible: true }]);
   eventOn(getButtonEvent(SCRIPT_BUTTON), () => openWorldEvolutionPanel());
 
+  const recoverCurrentChat = (): void => {
+    const chatKey = getCurrentChatKey();
+    if (!chatKey) return;
+    void recoverInterruptedRuns(chatKey)
+      .then(() => retryPendingWorldbookSync(chatKey))
+      .catch(error => console.warn(`${LOG_PREFIX} 恢复上次运行状态失败:`, error));
+  };
+  recoverCurrentChat();
+
   const stopWorkflowCompleted = eventOn(ACU_PP_WORKFLOW_COMPLETED, (payload: WorkflowCompletedPayload) => {
     cancelGenerationFallback(payload.messageId);
     const settings = loadSettings();
@@ -199,6 +208,7 @@ function registerWorldEvolution(): void {
     for (const timer of generationFallbackTimers.values()) clearTimeout(timer);
     generationFallbackTimers.clear();
     generationFallbackPolls.clear();
+    recoverCurrentChat();
     console.info(`${LOG_PREFIX} 已切换聊天，等待下一轮工作流完成信号`);
   });
 

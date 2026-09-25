@@ -2,10 +2,12 @@ import {
   createEmptyWorld,
   type WorldEvolutionEntity,
   type WorldEvolutionEvent,
+  type WorldEvolutionCheckpoint,
   type WorldEvolutionRevision,
   type WorldEvolutionScheduledEvent,
   type WorldEvolutionRunRecord,
   type WorldEvolutionSettings,
+  type WorldEvolutionWorldbookSyncState,
   type WorldEvolutionWorld,
 } from './types';
 
@@ -14,6 +16,7 @@ const DB_VERSION = 1;
 const STORE_NAME = 'worlds';
 const SCRIPT_SETTINGS_KEY = 'world_evolution_settings_v1';
 const MAX_HISTORY_ITEMS = 200;
+const MAX_CHECKPOINTS = 50;
 
 function clone<T>(value: T): T {
   return structuredClone(value);
@@ -53,10 +56,107 @@ export async function loadWorld(chatKey: string): Promise<WorldEvolutionWorld> {
   try {
     const transaction = database.transaction(STORE_NAME, 'readonly');
     const value = await requestResult<WorldEvolutionWorld | undefined>(transaction.objectStore(STORE_NAME).get(chatKey));
-    return value ? clone(value) : createEmptyWorld(chatKey);
+    return normalizeWorld(chatKey, value);
   } finally {
     database.close();
   }
+}
+
+export function normalizeWorld(chatKey: string, parsed: unknown): WorldEvolutionWorld {
+  const raw = isRecord(parsed) ? parsed : {};
+  const world = createEmptyWorld(chatKey);
+  world.revision = Number.isInteger(raw.revision) ? Number(raw.revision) : 0;
+  world.entities = isRecord(raw.entities) ? (clone(raw.entities) as Record<string, WorldEvolutionEntity>) : {};
+  world.events = Array.isArray(raw.events) ? (clone(raw.events) as WorldEvolutionEvent[]) : [];
+  world.scheduledEvents = Array.isArray(raw.scheduledEvents)
+    ? (clone(raw.scheduledEvents) as WorldEvolutionScheduledEvent[]).map(event => ({
+        ...event,
+        visibility: event.visibility ?? 'ai_context',
+      }))
+    : [];
+  world.revisions = Array.isArray(raw.revisions)
+    ? (clone(raw.revisions) as WorldEvolutionRevision[]).map(revision => ({
+        ...revision,
+        messageFingerprint:
+          typeof revision.messageFingerprint === 'string' ? revision.messageFingerprint : undefined,
+      }))
+    : [];
+  world.checkpoints = Array.isArray(raw.checkpoints)
+    ? (clone(raw.checkpoints) as WorldEvolutionCheckpoint[]).filter(checkpoint => (
+        typeof checkpoint.id === 'string' &&
+        Number.isInteger(checkpoint.revision) &&
+        isRecord(checkpoint.entities) &&
+        Array.isArray(checkpoint.events) &&
+        Array.isArray(checkpoint.scheduledEvents) &&
+        Array.isArray(checkpoint.processedMessageKeys)
+      ))
+    : [];
+  world.processedMessageKeys = Array.isArray(raw.processedMessageKeys)
+    ? raw.processedMessageKeys.filter(value => typeof value === 'string') as string[]
+    : [];
+  world.runRecords = Array.isArray(raw.runRecords)
+    ? raw.runRecords
+        .filter(value => isRecord(value))
+        .map(value => normalizeRunRecord(chatKey, value))
+        .filter(value => value.key && value.messageId >= 0)
+    : [];
+  world.worldbookSync = normalizeWorldbookSync(raw.worldbookSync);
+  world.updatedAt = typeof raw.updatedAt === 'number' ? raw.updatedAt : Date.now();
+  return world;
+}
+
+function normalizeRunRecord(chatKey: string, value: Record<string, unknown>): WorldEvolutionRunRecord {
+  return {
+    key: typeof value.key === 'string' ? value.key : '',
+    chatKey,
+    messageId: typeof value.messageId === 'number' ? value.messageId : -1,
+    messageFingerprint:
+      typeof value.messageFingerprint === 'string' ? value.messageFingerprint : undefined,
+    source:
+      value.source === 'manual' || value.source === 'retry' || value.source === 'auto'
+        ? value.source
+        : 'auto',
+    status:
+      value.status === 'queued' ||
+      value.status === 'running' ||
+      value.status === 'done' ||
+      value.status === 'skipped' ||
+      value.status === 'failed' ||
+      value.status === 'cancelled'
+        ? value.status
+        : 'failed',
+    attempt: typeof value.attempt === 'number' ? value.attempt : 1,
+    enqueuedAt: typeof value.enqueuedAt === 'number' ? value.enqueuedAt : Date.now(),
+    startedAt: typeof value.startedAt === 'number' ? value.startedAt : undefined,
+    finishedAt: typeof value.finishedAt === 'number' ? value.finishedAt : undefined,
+    candidateNames: Array.isArray(value.candidateNames)
+      ? value.candidateNames.filter(item => typeof item === 'string')
+      : [],
+    changedEntityIds: Array.isArray(value.changedEntityIds)
+      ? value.changedEntityIds.filter(item => typeof item === 'string')
+      : [],
+    eventIds: Array.isArray(value.eventIds)
+      ? value.eventIds.filter(item => typeof item === 'string')
+      : [],
+    error: typeof value.error === 'string' ? value.error : undefined,
+  };
+}
+
+function normalizeWorldbookSync(value: unknown): WorldEvolutionWorldbookSyncState {
+  if (!isRecord(value)) return { status: 'never' };
+  return {
+    status:
+      value.status === 'pending' ||
+      value.status === 'synced' ||
+      value.status === 'failed' ||
+      value.status === 'never'
+        ? value.status
+        : 'never',
+    worldbookName: typeof value.worldbookName === 'string' ? value.worldbookName : undefined,
+    lastAttemptAt: typeof value.lastAttemptAt === 'number' ? value.lastAttemptAt : undefined,
+    lastSuccessAt: typeof value.lastSuccessAt === 'number' ? value.lastSuccessAt : undefined,
+    error: typeof value.error === 'string' ? value.error : undefined,
+  };
 }
 
 export async function saveWorld(world: WorldEvolutionWorld): Promise<void> {
@@ -159,18 +259,22 @@ export async function updateWorldEvolutionRunRecord(
   messageId: number,
   updater: (record: WorldEvolutionRunRecord | undefined) => WorldEvolutionRunRecord | undefined,
 ): Promise<WorldEvolutionWorld> {
-  const world = await loadWorld(chatKey);
   const key = getWorldEvolutionRunRecordKey(chatKey, messageId);
-  const index = world.runRecords.findIndex(record => record.key === key);
-  const nextRecord = updater(index >= 0 ? clone(world.runRecords[index]) : undefined);
-  if (nextRecord) {
-    if (index >= 0) world.runRecords[index] = clone(nextRecord);
-    else world.runRecords.push(clone(nextRecord));
-  } else if (index >= 0) {
-    world.runRecords.splice(index, 1);
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const world = await loadWorld(chatKey);
+    const expectedRevision = world.revision;
+    const index = world.runRecords.findIndex(record => record.key === key);
+    const nextRecord = updater(index >= 0 ? clone(world.runRecords[index]) : undefined);
+    if (nextRecord) {
+      if (index >= 0) world.runRecords[index] = clone(nextRecord);
+      else world.runRecords.push(clone(nextRecord));
+    } else if (index >= 0) {
+      world.runRecords.splice(index, 1);
+    }
+    const saved = await saveWorldIfRevisionMatches(trimWorldHistory(world), expectedRevision);
+    if (saved) return world;
   }
-  await saveWorld(trimWorldHistory(world));
-  return world;
+  throw new Error('运行记录写入冲突，请稍后重试');
 }
 
 export async function mutateWorldManually(
@@ -220,73 +324,108 @@ export async function deleteWorldEntityManually(
   });
 }
 
+export async function saveWorldCheckpoint(
+  chatKey: string,
+  reason: WorldEvolutionCheckpoint['reason'] = 'manual',
+  messageId = -1,
+  messageFingerprint?: string,
+): Promise<WorldEvolutionCheckpoint> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const world = await loadWorld(chatKey);
+    const checkpoint: WorldEvolutionCheckpoint = {
+      id: `CP-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      revision: world.revision,
+      messageId,
+      messageFingerprint,
+      reason,
+      createdAt: Date.now(),
+      entities: clone(world.entities),
+      events: clone(world.events),
+      scheduledEvents: clone(world.scheduledEvents),
+      processedMessageKeys: [...world.processedMessageKeys],
+    };
+    world.checkpoints = [...world.checkpoints, checkpoint].slice(-MAX_CHECKPOINTS);
+    if (await saveWorldIfRevisionMatches(world, world.revision - 0)) return checkpoint;
+  }
+  throw new Error('创建世界演变 checkpoint 冲突，请稍后重试');
+}
+
+export async function rollbackWorldToCheckpoint(
+  chatKey: string,
+  checkpointId: string,
+): Promise<WorldEvolutionWorld> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const current = await loadWorld(chatKey);
+    const checkpoint = current.checkpoints.find(item => item.id === checkpointId);
+    if (!checkpoint) throw new Error(`checkpoint 不存在：${checkpointId}`);
+    const next = clone(current);
+    next.entities = clone(checkpoint.entities);
+    next.events = clone(checkpoint.events);
+    next.scheduledEvents = clone(checkpoint.scheduledEvents);
+    next.processedMessageKeys = [...checkpoint.processedMessageKeys];
+    next.revision += 1;
+    next.revisions.push({
+      revision: next.revision,
+      messageId: -1,
+      source: 'manual',
+      changedEntityIds: Object.keys(next.entities),
+      createdEventIds: [],
+      createdAt: Date.now(),
+      rollbackFromCheckpointId: checkpoint.id,
+    });
+    next.worldbookSync = { status: 'pending', worldbookName: current.worldbookSync.worldbookName };
+    if (await saveWorldIfRevisionMatches(next, current.revision)) return trimWorldHistory(next);
+  }
+  throw new Error('回滚世界演变时发生版本冲突，请稍后重试');
+}
+
+export async function recoverInterruptedRuns(chatKey: string): Promise<WorldEvolutionWorld> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const world = await loadWorld(chatKey);
+    const recovered = markInterruptedRuns(world);
+    if (!recovered.changed) return recovered.world;
+    if (await saveWorldIfRevisionMatches(recovered.world, world.revision)) return recovered.world;
+  }
+  throw new Error('恢复中断任务时发生版本冲突，请稍后重试');
+}
+
+export function markInterruptedRuns(world: WorldEvolutionWorld, now = Date.now()): {
+  world: WorldEvolutionWorld;
+  changed: boolean;
+} {
+  const next = clone(world);
+  let changed = false;
+  for (const record of next.runRecords) {
+    if (record.status !== 'queued' && record.status !== 'running') continue;
+    record.status = 'failed';
+    record.finishedAt = now;
+    record.error = '页面刷新或脚本重载时任务中断，可从面板重试';
+    changed = true;
+  }
+  return { world: next, changed };
+}
+
+export async function updateWorldbookSyncState(
+  chatKey: string,
+  state: WorldEvolutionWorldbookSyncState,
+): Promise<WorldEvolutionWorld> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const world = await loadWorld(chatKey);
+    const expectedRevision = world.revision;
+    world.worldbookSync = clone(state);
+    if (await saveWorldIfRevisionMatches(world, expectedRevision)) return world;
+  }
+  throw new Error('世界书同步状态写入冲突，请稍后重试');
+}
+
 export async function exportWorld(chatKey: string): Promise<string> {
   return JSON.stringify(await loadWorld(chatKey), null, 2);
 }
 
 export async function importWorld(chatKey: string, raw: string): Promise<WorldEvolutionWorld> {
-  const parsed = JSON.parse(raw) as Partial<WorldEvolutionWorld>;
+  const parsed = JSON.parse(raw) as unknown;
   if (!parsed || typeof parsed !== 'object') throw new Error('世界演变备份不是对象');
-
-  const world = createEmptyWorld(chatKey);
-  world.revision = Number.isInteger(parsed.revision) ? Number(parsed.revision) : 0;
-  world.entities = isRecord(parsed.entities) ? (parsed.entities as Record<string, WorldEvolutionEntity>) : {};
-  world.events = Array.isArray(parsed.events) ? (parsed.events as WorldEvolutionEvent[]) : [];
-  world.scheduledEvents = Array.isArray(parsed.scheduledEvents)
-    ? (parsed.scheduledEvents as WorldEvolutionScheduledEvent[]).map(event => ({
-        ...event,
-        visibility: event.visibility ?? 'ai_context',
-      }))
-    : [];
-  world.revisions = Array.isArray(parsed.revisions)
-    ? (parsed.revisions as WorldEvolutionRevision[]).map(revision => ({
-        ...revision,
-        messageFingerprint:
-          typeof revision.messageFingerprint === 'string' ? revision.messageFingerprint : undefined,
-      }))
-    : [];
-  world.processedMessageKeys = Array.isArray(parsed.processedMessageKeys)
-    ? parsed.processedMessageKeys.filter(value => typeof value === 'string')
-    : [];
-  world.runRecords = Array.isArray(parsed.runRecords)
-    ? parsed.runRecords
-        .filter(value => isRecord(value))
-        .map(value => ({
-          key: typeof value.key === 'string' ? value.key : '',
-          chatKey,
-          messageId: typeof value.messageId === 'number' ? value.messageId : -1,
-          messageFingerprint:
-            typeof value.messageFingerprint === 'string' ? value.messageFingerprint : undefined,
-          source:
-            value.source === 'manual' || value.source === 'retry' || value.source === 'auto'
-              ? value.source
-              : 'auto',
-          status:
-            value.status === 'queued' ||
-            value.status === 'running' ||
-            value.status === 'done' ||
-            value.status === 'skipped' ||
-            value.status === 'failed' ||
-            value.status === 'cancelled'
-              ? value.status
-              : 'failed',
-          attempt: typeof value.attempt === 'number' ? value.attempt : 1,
-          enqueuedAt: typeof value.enqueuedAt === 'number' ? value.enqueuedAt : Date.now(),
-          startedAt: typeof value.startedAt === 'number' ? value.startedAt : undefined,
-          finishedAt: typeof value.finishedAt === 'number' ? value.finishedAt : undefined,
-          candidateNames: Array.isArray(value.candidateNames)
-            ? value.candidateNames.filter(item => typeof item === 'string')
-            : [],
-          changedEntityIds: Array.isArray(value.changedEntityIds)
-            ? value.changedEntityIds.filter(item => typeof item === 'string')
-            : [],
-          eventIds: Array.isArray(value.eventIds)
-            ? value.eventIds.filter(item => typeof item === 'string')
-            : [],
-          error: typeof value.error === 'string' ? value.error : undefined,
-        }))
-        .filter(value => value.key && value.messageId >= 0)
-    : [];
+  const world = normalizeWorld(chatKey, parsed);
   await saveWorld(world);
   return world;
 }
@@ -373,6 +512,7 @@ export function trimWorldHistory(world: WorldEvolutionWorld): WorldEvolutionWorl
   const next = clone(world);
   next.events = next.events.slice(-MAX_HISTORY_ITEMS);
   next.revisions = next.revisions.slice(-MAX_HISTORY_ITEMS);
+  next.checkpoints = next.checkpoints.slice(-MAX_CHECKPOINTS);
   next.processedMessageKeys = next.processedMessageKeys.slice(-MAX_HISTORY_ITEMS);
   next.runRecords = next.runRecords.slice(-MAX_HISTORY_ITEMS);
   return next;

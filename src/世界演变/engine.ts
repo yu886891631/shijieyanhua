@@ -1,12 +1,15 @@
 import { getCurrentChatKey } from '../工作流助手/api/chat-key';
+import { captureDataSnapshot } from '../工作流助手/bridge/database-api';
 import {
   loadSettings,
   saveSettings,
   loadWorld,
+  recoverInterruptedRuns,
   saveWorldIfRevisionMatches,
   trimWorldHistory,
   getWorldEvolutionRunRecordKey,
   updateWorldEvolutionRunRecord,
+  updateWorldbookSyncState,
 } from './store';
 import type {
   WorldEvolutionAiEvent,
@@ -20,6 +23,7 @@ import type {
   WorldEvolutionVisibility,
   WorldEvolutionWorld,
   WorldEvolutionRunRecord,
+  type WorldEvolutionWorldbookSyncState,
 } from './types';
 import { DEFAULT_WORLD_EVOLUTION_SETTINGS } from './types';
 import { syncWorldEvolutionWorldbook } from './worldbook';
@@ -230,6 +234,14 @@ function getWorkflowSummary(messageId: number): string {
   }
 }
 
+function getDatabaseSnapshot(): unknown {
+  try {
+    return clone(captureDataSnapshot().tablesJson);
+  } catch {
+    return null;
+  }
+}
+
 function compactJson(value: unknown, maxLength = 8000): string {
   try {
     const text = JSON.stringify(value, null, 2);
@@ -436,7 +448,11 @@ function parseWorldEvolutionResponse(raw: string): WorldEvolutionAiResult {
   return parsed as unknown as WorldEvolutionAiResult;
 }
 
-function buildPrompt(input: WorldEvolutionInput, world: WorldEvolutionWorld, settings: WorldEvolutionSettings): string {
+export function buildWorldEvolutionPrompt(
+  input: WorldEvolutionInput,
+  world: WorldEvolutionWorld,
+  settings: WorldEvolutionSettings,
+): string {
   const entities = Object.values(world.entities)
     .filter(entity => input.candidateNames.includes(entity.name) || settings.manualCandidates.includes(entity.name))
     .map(entity => ({
@@ -461,6 +477,7 @@ function buildPrompt(input: WorldEvolutionInput, world: WorldEvolutionWorld, set
     `当前地点：${input.currentLocation || '未知'}`,
     `MVU变化摘要：${input.mvuChangeSummary || '无明显变化'}`,
     `前置工作流结果摘要：\n${input.databaseSummary || '无可用摘要'}`,
+    `数据库当前表快照：\n${compactJson(input.databaseSnapshot, 12000)}`,
     `当前 MVU 快照：\n${compactJson(input.mvuSnapshot, 12000)}`,
     `本轮主AI消息：\n${input.latestMessage.slice(-12000)}`,
     `候选对象：${input.candidateNames.join('、') || '无'}`,
@@ -608,6 +625,7 @@ export async function callWorldEvolutionAi(prompt: string, settings: WorldEvolut
 
 function buildInput(chatKey: string, messageId: number, text: string, settings: WorldEvolutionSettings): WorldEvolutionInput {
   const mvuSnapshot = getMvuSnapshot(messageId);
+  const databaseSnapshot = getDatabaseSnapshot();
   const previous = recentMvuSnapshots.get(chatKey);
   recentMvuSnapshots.set(chatKey, clone(mvuSnapshot));
   const mvuChangeSummary =
@@ -622,7 +640,11 @@ function buildInput(chatKey: string, messageId: number, text: string, settings: 
     mvuSnapshot,
     previousMvuSnapshot: previous,
     mvuChangeSummary,
-    databaseSummary: getWorkflowSummary(messageId),
+    databaseSummary: compactJson(
+      { workflow: getWorkflowSummary(messageId), tables: databaseSnapshot },
+      10000,
+    ),
+    databaseSnapshot,
     candidateNames: [...new Set([...replicaNames, ...settings.manualCandidates])],
     currentTime: undefined,
     currentLocation: undefined,
@@ -755,6 +777,18 @@ function validateAndCommit(
     beforeProcessedMessageKeys,
   });
   next.processedMessageKeys.push(messageKey(input.messageId, input.latestMessage));
+  next.checkpoints.push({
+    id: `CP-${input.messageId}-${next.revision}-${fingerprintText(input.latestMessage)}`,
+    revision: next.revision,
+    messageId: input.messageId,
+    messageFingerprint: fingerprintText(input.latestMessage),
+    reason: 'auto',
+    createdAt: now,
+    entities: clone(next.entities),
+    events: clone(next.events),
+    scheduledEvents: clone(next.scheduledEvents),
+    processedMessageKeys: [...next.processedMessageKeys],
+  });
   return { world: trimWorldHistory(next), changedEntityIds, eventIds };
 }
 
@@ -856,7 +890,7 @@ async function executeWorldEvolution(
       error: undefined,
     }));
     report('generating', `正在批量演变 ${input.candidateNames.length} 个候选对象`);
-    const rawResponse = await callEvolutionAi(buildPrompt(input, world, settings), settings);
+    const rawResponse = await callEvolutionAi(buildWorldEvolutionPrompt(input, world, settings), settings);
     result.rawResponse = rawResponse;
     const parsed = parseWorldEvolutionResponse(rawResponse);
 
@@ -885,12 +919,29 @@ async function executeWorldEvolution(
     }));
 
     if (settings.worldbookAutoSync && settings.worldbookName.trim()) {
+      await updateWorldbookSyncState(chatKey, {
+        status: 'pending',
+        worldbookName: settings.worldbookName.trim(),
+        lastAttemptAt: Date.now(),
+      }).catch(error => console.warn('[世界演变] 标记世界书待同步失败:', error));
       try {
         report('syncing', '正在同步 WorldEvolution 世界书条目');
         await syncWorldEvolutionWorldbook(settings.worldbookName.trim(), committed.world);
+        await updateWorldbookSyncState(chatKey, {
+          status: 'synced',
+          worldbookName: settings.worldbookName.trim(),
+          lastAttemptAt: Date.now(),
+          lastSuccessAt: Date.now(),
+        });
       } catch (error) {
         // 世界书是投影层；同步失败不应让已提交的世界状态再次调用 AI。
         result.error = `世界书同步失败：${error instanceof Error ? error.message : String(error)}`;
+        await updateWorldbookSyncState(chatKey, {
+          status: 'failed',
+          worldbookName: settings.worldbookName.trim(),
+          lastAttemptAt: Date.now(),
+          error: result.error,
+        }).catch(syncError => console.warn('[世界演变] 记录世界书失败状态失败:', syncError));
         await updateRunRecord(chatKey, targetMessageId, record => ({
           ...(record ?? createQueuedRunRecord(chatKey, targetMessageId, runSource, fingerprint)),
           source: runSource,
@@ -923,6 +974,40 @@ async function executeWorldEvolution(
     }));
     report('failed', result.error, result);
     return result;
+  }
+}
+
+export async function retryPendingWorldbookSync(
+  chatKey = getCurrentChatKey(),
+  settings = loadSettings(),
+): Promise<boolean> {
+  if (!settings.worldbookAutoSync || !settings.worldbookName.trim()) return false;
+  const world = await loadWorld(chatKey);
+  const syncState = world.worldbookSync;
+  if (syncState.status === 'synced' && syncState.worldbookName === settings.worldbookName.trim()) return false;
+  const now = Date.now();
+  await updateWorldbookSyncState(chatKey, {
+    status: 'pending',
+    worldbookName: settings.worldbookName.trim(),
+    lastAttemptAt: now,
+  });
+  try {
+    await syncWorldEvolutionWorldbook(settings.worldbookName.trim(), world);
+    await updateWorldbookSyncState(chatKey, {
+      status: 'synced',
+      worldbookName: settings.worldbookName.trim(),
+      lastAttemptAt: now,
+      lastSuccessAt: Date.now(),
+    });
+    return true;
+  } catch (error) {
+    await updateWorldbookSyncState(chatKey, {
+      status: 'failed',
+      worldbookName: settings.worldbookName.trim(),
+      lastAttemptAt: now,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return false;
   }
 }
 

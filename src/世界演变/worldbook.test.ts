@@ -110,3 +110,40 @@ test('worldbook sync keeps backstage information out and preserves unmanaged ent
   assert.ok(!serialized.includes('政变计划进入最后准备'));
   assert.ok(!serialized.includes('密谋者发动政变'));
 });
+
+test('worldbook sync removes managed entries that disappeared from the current world', async () => {
+  let savedEntries: TypeFest.PartialDeep<WorldbookEntry>[] = [];
+  globalThis.getWorldbook = async () =>
+    [
+      {
+        name: 'WorldEvolution-NPC-旧角色',
+        enabled: true,
+        content: '旧状态',
+        extra: { acuWorldEvolution: true, managedBy: 'world-evolution-v1' },
+      } as WorldbookEntry,
+      {
+        name: 'User-owned entry',
+        enabled: true,
+        content: '保留',
+      } as WorldbookEntry,
+    ];
+  globalThis.replaceWorldbook = async (_name, entries) => {
+    savedEntries = entries;
+  };
+
+  const world = createEmptyWorld('chat-cleanup');
+  world.entities['npc:新角色'] = {
+    id: 'npc:新角色',
+    type: 'npc',
+    name: '新角色',
+    state: { goal: '巡逻' },
+    visibility: 'ai_context',
+    updatedAt: 2,
+  };
+
+  await syncWorldEvolutionWorldbook('Cleanup Book', world);
+  const names = savedEntries.map(entry => entry.name);
+  assert.ok(names.includes('WorldEvolution-NPC-新角色'));
+  assert.ok(!names.includes('WorldEvolution-NPC-旧角色'));
+  assert.ok(names.includes('User-owned entry'));
+});

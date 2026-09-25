@@ -1,4 +1,5 @@
 export type WorldEvolutionEntityType = 'npc' | 'organization' | 'location' | 'environment' | 'social';
+export const WORLD_EVOLUTION_VERSION = 'A0.0.5';
 
 export type WorldEvolutionVisibility = 'backstage' | 'ai_context' | 'protagonist_known' | 'revealed';
 
@@ -62,6 +63,28 @@ export type WorldEvolutionRevision = {
   beforeEventCount?: number;
   beforeScheduledEvents?: WorldEvolutionScheduledEvent[];
   beforeProcessedMessageKeys?: string[];
+  rollbackFromCheckpointId?: string;
+};
+
+export type WorldEvolutionCheckpoint = {
+  id: string;
+  revision: number;
+  messageId: number;
+  messageFingerprint?: string;
+  reason: 'auto' | 'manual' | 'rollback';
+  createdAt: number;
+  entities: Record<string, WorldEvolutionEntity>;
+  events: WorldEvolutionEvent[];
+  scheduledEvents: WorldEvolutionScheduledEvent[];
+  processedMessageKeys: string[];
+};
+
+export type WorldEvolutionWorldbookSyncState = {
+  status: 'never' | 'pending' | 'synced' | 'failed';
+  worldbookName?: string;
+  lastAttemptAt?: number;
+  lastSuccessAt?: number;
+  error?: string;
 };
 
 export type WorldEvolutionRunRecord = {
@@ -88,8 +111,10 @@ export type WorldEvolutionWorld = {
   events: WorldEvolutionEvent[];
   scheduledEvents: WorldEvolutionScheduledEvent[];
   revisions: WorldEvolutionRevision[];
+  checkpoints: WorldEvolutionCheckpoint[];
   processedMessageKeys: string[];
   runRecords: WorldEvolutionRunRecord[];
+  worldbookSync: WorldEvolutionWorldbookSyncState;
   updatedAt: number;
 };
 
@@ -101,6 +126,7 @@ export type WorldEvolutionInput = {
   previousMvuSnapshot?: unknown;
   mvuChangeSummary: string;
   databaseSummary: string;
+  databaseSnapshot: unknown;
   candidateNames: string[];
   currentTime?: string;
   currentLocation?: string;
@@ -163,8 +189,10 @@ export function createEmptyWorld(chatKey: string): WorldEvolutionWorld {
     events: [],
     scheduledEvents: [],
     revisions: [],
+    checkpoints: [],
     processedMessageKeys: [],
     runRecords: [],
+    worldbookSync: { status: 'never' },
     updatedAt: Date.now(),
   };
 }
