@@ -116,7 +116,9 @@ function registerWorldEvolution(): void {
     return (message?.data as Record<string, unknown> | undefined)?._post_process_done === true;
   };
 
-  const getWorkflowCompletionState = (messageId: number): boolean | null => {
+  const getWorkflowCompletionState = (
+    messageId: number,
+  ): { available: boolean; success: boolean | null } => {
     try {
       const hostWindow = (window.parent ?? window) as Window & {
         AcuPostProcessAPI?: {
@@ -126,12 +128,15 @@ function registerWorldEvolution(): void {
         };
       };
       const api = hostWindow.AcuPostProcessAPI;
-      if (!api?.getRunStatusForFloor) return null;
+      if (!api?.getRunStatusForFloor) return { available: false, success: null };
       const status = api.getRunStatusForFloor(messageId);
-      if (!status?.taskResults) return null;
-      return status.taskResults.some(task => task.success === true && task.skipped !== true);
+      if (!status?.taskResults) return { available: true, success: null };
+      return {
+        available: true,
+        success: status.taskResults.some(task => task.success === true && task.skipped !== true),
+      };
     } catch {
-      return null;
+      return { available: false, success: null };
     }
   };
 
@@ -147,24 +152,25 @@ function registerWorldEvolution(): void {
       generationFallbackPolls.set(messageId, currentPoll);
       const workflowState = getWorkflowCompletionState(messageId);
       // 工作流存在时以其楼层运行快照为准，避免“工作流失败但注入标记残留”误触发。
-      if (workflowState === true) {
+      if (workflowState.success === true) {
         cancelGenerationFallback(messageId);
         void runWorldEvolution(messageId, { source: 'auto' });
         return;
       }
-      if (workflowState === false) {
+      if (workflowState.available && workflowState.success === false) {
         cancelGenerationFallback(messageId);
         return;
       }
-      // 没有工作流助手时，才使用注入标记或短延迟兜底。
-      if (!workflowState && hasWorkflowDoneMarker(messageId)) {
+      // 没有工作流助手时，才使用注入标记或短延迟兜底；若工作流 API 已存在但尚未有快照，
+      // 超时也不强行运行，避免工作流失败/取消时误启动世界演变。
+      if (!workflowState.available && hasWorkflowDoneMarker(messageId)) {
         cancelGenerationFallback(messageId);
         void runWorldEvolution(messageId, { source: 'auto' });
         return;
       }
       if (currentPoll >= GENERATION_FALLBACK_MAX_POLLS) {
         cancelGenerationFallback(messageId);
-        if (!workflowState) void runWorldEvolution(messageId, { source: 'auto' });
+        if (!workflowState.available) void runWorldEvolution(messageId, { source: 'auto' });
         return;
       }
       const timer = setTimeout(poll, GENERATION_FALLBACK_DELAY_MS);

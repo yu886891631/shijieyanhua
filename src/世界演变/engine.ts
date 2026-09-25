@@ -196,6 +196,40 @@ function getMvuSnapshot(messageId: number): unknown {
   }
 }
 
+function getWorkflowSummary(messageId: number): string {
+  try {
+    const hostWindow = (window.parent ?? window) as Window & {
+      AcuPostProcessAPI?: {
+        getRunStatusForFloor?: (floorId: number) => {
+          taskResults?: Array<{
+            taskName?: string;
+            success?: boolean;
+            skipped?: boolean;
+            skipReason?: string;
+            preview?: string;
+            extractedTags?: unknown;
+          }>;
+        } | null;
+      };
+    };
+    const status = hostWindow.AcuPostProcessAPI?.getRunStatusForFloor?.(messageId);
+    if (!status?.taskResults?.length) return '';
+    return compactJson(
+      status.taskResults.map(task => ({
+        taskName: task.taskName,
+        success: task.success,
+        skipped: task.skipped,
+        skipReason: task.skipReason,
+        preview: task.preview,
+        extractedTags: task.extractedTags,
+      })),
+      8000,
+    );
+  } catch {
+    return '';
+  }
+}
+
 function compactJson(value: unknown, maxLength = 8000): string {
   try {
     const text = JSON.stringify(value, null, 2);
@@ -426,6 +460,7 @@ function buildPrompt(input: WorldEvolutionInput, world: WorldEvolutionWorld, set
     `当前时间：${input.currentTime || '未知'}`,
     `当前地点：${input.currentLocation || '未知'}`,
     `MVU变化摘要：${input.mvuChangeSummary || '无明显变化'}`,
+    `前置工作流结果摘要：\n${input.databaseSummary || '无可用摘要'}`,
     `当前 MVU 快照：\n${compactJson(input.mvuSnapshot, 12000)}`,
     `本轮主AI消息：\n${input.latestMessage.slice(-12000)}`,
     `候选对象：${input.candidateNames.join('、') || '无'}`,
@@ -587,7 +622,7 @@ function buildInput(chatKey: string, messageId: number, text: string, settings: 
     mvuSnapshot,
     previousMvuSnapshot: previous,
     mvuChangeSummary,
-    databaseSummary: '',
+    databaseSummary: getWorkflowSummary(messageId),
     candidateNames: [...new Set([...replicaNames, ...settings.manualCandidates])],
     currentTime: undefined,
     currentLocation: undefined,
