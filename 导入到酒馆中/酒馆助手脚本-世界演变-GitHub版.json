@@ -1,0 +1,28 @@
+{
+  "type": "script",
+  "enabled": true,
+  "name": "世界演变（GitHub版）",
+  "id": "e8f5f92e-4c2a-4e45-9f91-7b6d8d2c1047",
+  "content": "import 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@main/dist/world-evolution/index.js'",
+  "info": "独立可选的世界演变插件。默认关闭；启用后会在工作流完成（MVU/数据库阶段之后）接收触发，批量推进 NPC、组织、地点和后台事件，并可同步 WorldEvolution-* 世界书条目。打开脚本按钮“打开世界演变面板”进行设置。",
+  "button": {
+    "enabled": true,
+    "buttons": []
+  },
+  "data": {
+    "world_evolution_settings_v1": {
+      "enabled": false,
+      "autoRun": false,
+      "maxNpcPerRun": 3,
+      "maxOtherEntitiesPerRun": 2,
+      "worldbookName": "",
+      "worldbookAutoSync": true,
+      "manualCandidates": [],
+      "modelInstruction": "只处理给定候选对象。让 NPC、组织、社会和环境在主角视线之外合理行动；不要改写主角已经知道的事实，不要凭空结束剧情。"
+    }
+  },
+  "export_with": {
+    "data": true,
+    "button": true
+  }
+}

@@ -73,6 +73,8 @@ import {
   resolveAutoTriggerMessageId,
 } from './message-floor';
 import { writeRunStatusToMessage, cleanupOldRunStatusSnapshots } from './run-status';
+import { emitWorkflowCompleted } from './events';
+import { getCurrentChatKey } from '../api/chat-key';
 
 async function persistRunStatus(
   settings: ReturnType<typeof loadSettings>,
@@ -378,6 +380,14 @@ export async function handleMessageReceived(
       hideTaskProgressToast();
       await runReplicaFamilyCleanupIfDue(baseSettings, settings, targetId, newlyCreatedReplicaIds);
       await writeReplicaStateSnapshot(targetId, settings.tasks);
+      await emitWorkflowCompleted({
+        chatKey: getCurrentChatKey(),
+        messageId: targetId,
+        type,
+        isRerun,
+        hasSuccess,
+        cancelled: false,
+      });
     } catch (e) {
       const superseded =
         e instanceof RunCancelledError && runEpoch !== undefined && getRunEpoch() !== runEpoch;
