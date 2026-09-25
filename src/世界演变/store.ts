@@ -4,6 +4,7 @@ import {
   type WorldEvolutionEvent,
   type WorldEvolutionRevision,
   type WorldEvolutionScheduledEvent,
+  type WorldEvolutionRunRecord,
   type WorldEvolutionSettings,
   type WorldEvolutionWorld,
 } from './types';
@@ -144,6 +145,34 @@ export async function clearWorld(chatKey: string): Promise<void> {
   }
 }
 
+export function getWorldEvolutionRunRecordKey(chatKey: string, messageId: number): string {
+  return `${chatKey}\u0000${messageId}`;
+}
+
+/**
+ * 运行记录与世界状态分开更新，保证排队/失败等中间状态也能在面板或刷新后保留。
+ * 世界演变任务本身是单并发的，因此这里用“读-改-写”即可；最终世界提交仍由
+ * saveWorldIfRevisionMatches 负责并发保护。
+ */
+export async function updateWorldEvolutionRunRecord(
+  chatKey: string,
+  messageId: number,
+  updater: (record: WorldEvolutionRunRecord | undefined) => WorldEvolutionRunRecord | undefined,
+): Promise<WorldEvolutionWorld> {
+  const world = await loadWorld(chatKey);
+  const key = getWorldEvolutionRunRecordKey(chatKey, messageId);
+  const index = world.runRecords.findIndex(record => record.key === key);
+  const nextRecord = updater(index >= 0 ? clone(world.runRecords[index]) : undefined);
+  if (nextRecord) {
+    if (index >= 0) world.runRecords[index] = clone(nextRecord);
+    else world.runRecords.push(clone(nextRecord));
+  } else if (index >= 0) {
+    world.runRecords.splice(index, 1);
+  }
+  await saveWorld(trimWorldHistory(world));
+  return world;
+}
+
 export async function exportWorld(chatKey: string): Promise<string> {
   return JSON.stringify(await loadWorld(chatKey), null, 2);
 }
@@ -163,10 +192,53 @@ export async function importWorld(chatKey: string, raw: string): Promise<WorldEv
       }))
     : [];
   world.revisions = Array.isArray(parsed.revisions)
-    ? (parsed.revisions as WorldEvolutionRevision[])
+    ? (parsed.revisions as WorldEvolutionRevision[]).map(revision => ({
+        ...revision,
+        messageFingerprint:
+          typeof revision.messageFingerprint === 'string' ? revision.messageFingerprint : undefined,
+      }))
     : [];
   world.processedMessageKeys = Array.isArray(parsed.processedMessageKeys)
     ? parsed.processedMessageKeys.filter(value => typeof value === 'string')
+    : [];
+  world.runRecords = Array.isArray(parsed.runRecords)
+    ? parsed.runRecords
+        .filter(value => isRecord(value))
+        .map(value => ({
+          key: typeof value.key === 'string' ? value.key : '',
+          chatKey,
+          messageId: typeof value.messageId === 'number' ? value.messageId : -1,
+          messageFingerprint:
+            typeof value.messageFingerprint === 'string' ? value.messageFingerprint : undefined,
+          source:
+            value.source === 'manual' || value.source === 'retry' || value.source === 'auto'
+              ? value.source
+              : 'auto',
+          status:
+            value.status === 'queued' ||
+            value.status === 'running' ||
+            value.status === 'done' ||
+            value.status === 'skipped' ||
+            value.status === 'failed' ||
+            value.status === 'cancelled'
+              ? value.status
+              : 'failed',
+          attempt: typeof value.attempt === 'number' ? value.attempt : 1,
+          enqueuedAt: typeof value.enqueuedAt === 'number' ? value.enqueuedAt : Date.now(),
+          startedAt: typeof value.startedAt === 'number' ? value.startedAt : undefined,
+          finishedAt: typeof value.finishedAt === 'number' ? value.finishedAt : undefined,
+          candidateNames: Array.isArray(value.candidateNames)
+            ? value.candidateNames.filter(item => typeof item === 'string')
+            : [],
+          changedEntityIds: Array.isArray(value.changedEntityIds)
+            ? value.changedEntityIds.filter(item => typeof item === 'string')
+            : [],
+          eventIds: Array.isArray(value.eventIds)
+            ? value.eventIds.filter(item => typeof item === 'string')
+            : [],
+          error: typeof value.error === 'string' ? value.error : undefined,
+        }))
+        .filter(value => value.key && value.messageId >= 0)
     : [];
   await saveWorld(world);
   return world;
@@ -180,6 +252,10 @@ export function loadSettings(): WorldEvolutionSettings {
       return {
         enabled: value.enabled === true,
         autoRun: value.autoRun === true,
+        maxRetries: normalizeLimit(value.maxRetries, 2),
+        retryDelayMs: normalizeDelay(value.retryDelayMs, 1500),
+        stablePollMs: normalizeDelay(value.stablePollMs, 200),
+        stableSamples: Math.max(1, normalizeLimit(value.stableSamples, 2)),
         maxNpcPerRun: normalizeLimit(value.maxNpcPerRun, 3),
         maxOtherEntitiesPerRun: normalizeLimit(value.maxOtherEntitiesPerRun, 2),
         worldbookName: typeof value.worldbookName === 'string' ? value.worldbookName : '',
@@ -200,6 +276,10 @@ export function loadSettings(): WorldEvolutionSettings {
   return {
     enabled: false,
     autoRun: false,
+    maxRetries: 2,
+    retryDelayMs: 1500,
+    stablePollMs: 200,
+    stableSamples: 2,
     maxNpcPerRun: 3,
     maxOtherEntitiesPerRun: 2,
     worldbookName: '',
@@ -215,6 +295,10 @@ export function saveSettings(settings: WorldEvolutionSettings): void {
     {
       [SCRIPT_SETTINGS_KEY]: {
         ...settings,
+        maxRetries: normalizeLimit(settings.maxRetries, 2),
+        retryDelayMs: normalizeDelay(settings.retryDelayMs, 1500),
+        stablePollMs: normalizeDelay(settings.stablePollMs, 200),
+        stableSamples: Math.max(1, normalizeLimit(settings.stableSamples, 2)),
         maxNpcPerRun: normalizeLimit(settings.maxNpcPerRun, 3),
         maxOtherEntitiesPerRun: normalizeLimit(settings.maxOtherEntitiesPerRun, 2),
         manualCandidates: settings.manualCandidates.map(item => item.trim()).filter(Boolean),
@@ -229,6 +313,11 @@ function normalizeLimit(value: unknown, fallback: number): number {
   return Math.max(0, Math.min(50, Math.floor(value)));
 }
 
+function normalizeDelay(value: unknown, fallback: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
+  return Math.max(0, Math.min(60_000, Math.floor(value)));
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
@@ -238,5 +327,6 @@ export function trimWorldHistory(world: WorldEvolutionWorld): WorldEvolutionWorl
   next.events = next.events.slice(-MAX_HISTORY_ITEMS);
   next.revisions = next.revisions.slice(-MAX_HISTORY_ITEMS);
   next.processedMessageKeys = next.processedMessageKeys.slice(-MAX_HISTORY_ITEMS);
+  next.runRecords = next.runRecords.slice(-MAX_HISTORY_ITEMS);
   return next;
 }

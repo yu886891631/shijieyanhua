@@ -6,7 +6,7 @@ import {
   setWorldEvolutionStatusListener,
   type WorldEvolutionRunResult,
 } from './engine';
-import { loadSettings, saveSettings, exportWorld, importWorld } from './store';
+import { loadSettings, saveSettings, exportWorld, importWorld, loadWorld } from './store';
 
 let app: ReturnType<typeof createApp> | null = null;
 let root: JQuery<HTMLDivElement> | null = null;
@@ -26,14 +26,26 @@ function mountPanel(): void {
     statusMessage: '等待触发',
     running: false,
     lastResult: null as WorldEvolutionRunResult | null,
+    world: null as Awaited<ReturnType<typeof loadWorld>> | null,
     chatKey: getCurrentChatKey(),
   });
+
+  const refreshWorld = async (): Promise<void> => {
+    try {
+      state.world = await loadWorld(state.chatKey);
+    } catch (error) {
+      state.statusMessage = `读取世界演变记录失败：${error instanceof Error ? error.message : String(error)}`;
+    }
+  };
+
+  void refreshWorld();
 
   setWorldEvolutionStatusListener(update => {
     state.status = update.status;
     state.statusMessage = update.message;
     state.lastResult = update.result ?? state.lastResult;
-    state.running = ['collecting', 'generating', 'committing', 'syncing'].includes(update.status);
+    state.running = ['waiting', 'collecting', 'generating', 'committing', 'syncing'].includes(update.status);
+    void refreshWorld();
   });
 
   const Panel = {
@@ -67,6 +79,7 @@ function mountPanel(): void {
         saveSettings(state.settings);
         const result = await runWorldEvolution(undefined, { source: 'manual' });
         state.lastResult = result;
+        await refreshWorld();
         if (result.error) error.value = result.error;
       };
       const backup = async () => {
@@ -138,6 +151,62 @@ function mountPanel(): void {
                     }),
                   ]),
                   h('div', { class: 'we-row' }, [
+                    h('label', { class: 'we-label' }, '每轮最多其他对象'),
+                    h('input', {
+                      class: 'we-input',
+                      type: 'number',
+                      min: 0,
+                      max: 50,
+                      value: state.settings.maxOtherEntitiesPerRun,
+                      onInput: (event: Event) =>
+                        (state.settings.maxOtherEntitiesPerRun = Number((event.target as HTMLInputElement).value)),
+                    }),
+                  ]),
+                  h('div', { class: 'we-row' }, [
+                    h('label', { class: 'we-label' }, '失败重试次数'),
+                    h('input', {
+                      class: 'we-input',
+                      type: 'number',
+                      min: 0,
+                      max: 10,
+                      value: state.settings.maxRetries,
+                      onInput: (event: Event) =>
+                        (state.settings.maxRetries = Number((event.target as HTMLInputElement).value)),
+                    }),
+                    h('label', { class: 'we-label' }, '重试间隔 ms'),
+                    h('input', {
+                      class: 'we-input',
+                      type: 'number',
+                      min: 0,
+                      max: 60000,
+                      value: state.settings.retryDelayMs,
+                      onInput: (event: Event) =>
+                        (state.settings.retryDelayMs = Number((event.target as HTMLInputElement).value)),
+                    }),
+                  ]),
+                  h('div', { class: 'we-row' }, [
+                    h('label', { class: 'we-label' }, '楼层稳定轮询 ms'),
+                    h('input', {
+                      class: 'we-input',
+                      type: 'number',
+                      min: 0,
+                      max: 60000,
+                      value: state.settings.stablePollMs,
+                      onInput: (event: Event) =>
+                        (state.settings.stablePollMs = Number((event.target as HTMLInputElement).value)),
+                    }),
+                    h('label', { class: 'we-label' }, '连续稳定次数'),
+                    h('input', {
+                      class: 'we-input',
+                      type: 'number',
+                      min: 1,
+                      max: 10,
+                      value: state.settings.stableSamples,
+                      onInput: (event: Event) =>
+                        (state.settings.stableSamples = Number((event.target as HTMLInputElement).value)),
+                    }),
+                  ]),
+                  h('div', { class: 'we-row' }, [
                     h('label', { class: 'we-label' }, '世界书名称'),
                     h('input', {
                       class: 'we-input',
@@ -160,6 +229,16 @@ function mountPanel(): void {
                     }),
                   ]),
                   h('div', { class: 'we-row' }, [
+                    h('label', { class: 'we-label' }, '自动同步世界书'),
+                    h('input', {
+                      class: 'we-check',
+                      type: 'checkbox',
+                      checked: state.settings.worldbookAutoSync,
+                      onChange: (event: Event) =>
+                        (state.settings.worldbookAutoSync = (event.target as HTMLInputElement).checked),
+                    }),
+                  ]),
+                  h('div', { class: 'we-row' }, [
                     h('button', { class: 'we-btn', onClick: save }, '保存设置'),
                     h(
                       'button',
@@ -176,6 +255,26 @@ function mountPanel(): void {
                   h('div', { class: 'we-muted' }, `聊天：${state.chatKey}`),
                   h('div', { class: 'we-muted' }, `状态：${state.status} · ${state.statusMessage}`),
                   error.value ? h('div', { class: 'we-danger' }, error.value) : null,
+                  h('div', { class: 'we-muted' }, '最近楼层运行记录'),
+                  h(
+                    'pre',
+                    { class: 'we-status' },
+                    state.world
+                      ? JSON.stringify(
+                          state.world.runRecords.slice(-10).map(record => ({
+                            messageId: record.messageId,
+                            status: record.status,
+                            attempt: record.attempt,
+                            candidates: record.candidateNames,
+                            changed: record.changedEntityIds,
+                            events: record.eventIds,
+                            error: record.error,
+                          })),
+                          null,
+                          2,
+                        )
+                      : '读取中…',
+                  ),
                   h('pre', { class: 'we-status' }, resultText()),
                 ])
               : null,
@@ -193,6 +292,7 @@ function mountPanel(): void {
   stopChatChangeListener = eventOn(tavern_events.CHAT_CHANGED, () => {
     state.chatKey = getCurrentChatKey();
     state.settings = loadSettings();
+    void refreshWorld();
   });
   $(window).on('pagehide.world-evolution', () => {
     stopChatChangeListener?.stop();

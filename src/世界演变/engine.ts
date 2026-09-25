@@ -5,6 +5,8 @@ import {
   loadWorld,
   saveWorldIfRevisionMatches,
   trimWorldHistory,
+  getWorldEvolutionRunRecordKey,
+  updateWorldEvolutionRunRecord,
 } from './store';
 import type {
   WorldEvolutionAiEvent,
@@ -17,9 +19,14 @@ import type {
   WorldEvolutionSettings,
   WorldEvolutionVisibility,
   WorldEvolutionWorld,
+  WorldEvolutionRunRecord,
 } from './types';
 import { DEFAULT_WORLD_EVOLUTION_SETTINGS } from './types';
 import { syncWorldEvolutionWorldbook } from './worldbook';
+import {
+  waitForStableSnapshot,
+  WorldEvolutionFloorQueue,
+} from './floor-queue';
 
 export type WorldEvolutionRunStatus =
   | 'idle'
@@ -51,8 +58,15 @@ export type WorldEvolutionStatusListener = (status: {
 }) => void;
 
 let statusListener: WorldEvolutionStatusListener | undefined;
-let running = false;
 const recentMvuSnapshots = new Map<string, unknown>();
+let worldEvolutionQueue: WorldEvolutionFloorQueue | undefined;
+
+export type WorldEvolutionAiCaller = (
+  prompt: string,
+  settings: WorldEvolutionSettings,
+) => Promise<string>;
+
+let worldEvolutionAiCaller: WorldEvolutionAiCaller | undefined;
 
 export function setWorldEvolutionStatusListener(listener: WorldEvolutionStatusListener | undefined): void {
   statusListener = listener;
@@ -63,8 +77,104 @@ function report(status: WorldEvolutionRunStatus, message: string, result?: World
   console.info(`[世界演变] ${message}`);
 }
 
+export function setWorldEvolutionAiCaller(caller: WorldEvolutionAiCaller | undefined): void {
+  worldEvolutionAiCaller = caller;
+}
+
+function runRecordSource(source: 'auto' | 'manual' | 'retry'): WorldEvolutionRunRecord['source'] {
+  return source;
+}
+
+async function updateRunRecord(
+  chatKey: string,
+  messageId: number,
+  updater: (record: WorldEvolutionRunRecord | undefined) => WorldEvolutionRunRecord | undefined,
+): Promise<void> {
+  try {
+    await updateWorldEvolutionRunRecord(chatKey, messageId, updater);
+  } catch (error) {
+    // 运行记录是诊断信息，不能让它的写入失败覆盖真正的世界演变结果。
+    console.warn('[世界演变] 运行记录写入失败:', error);
+  }
+}
+
+function createQueuedRunRecord(
+  chatKey: string,
+  messageId: number,
+  source: 'auto' | 'manual' | 'retry',
+  messageFingerprint?: string,
+): WorldEvolutionRunRecord {
+  return {
+    key: getWorldEvolutionRunRecordKey(chatKey, messageId),
+    chatKey,
+    messageId,
+    messageFingerprint,
+    source: runRecordSource(source),
+    status: 'queued',
+    attempt: 0,
+    enqueuedAt: Date.now(),
+    candidateNames: [],
+    changedEntityIds: [],
+    eventIds: [],
+  };
+}
+
 function clone<T>(value: T): T {
   return structuredClone(value);
+}
+
+function fingerprintText(value: string): string {
+  // FNV-1a 32-bit：区分同一楼层的重新生成内容，但不把正文原文写入键名。
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
+function messageKey(messageId: number, text: string): string {
+  return `${messageId}:${fingerprintText(text)}`;
+}
+
+function isMessageAlreadyProcessed(world: WorldEvolutionWorld, messageId: number, text: string): boolean {
+  const fingerprint = fingerprintText(text);
+  const exactKey = messageKey(messageId, text);
+  if (world.processedMessageKeys.includes(exactKey)) return true;
+  if (!world.processedMessageKeys.includes(`${messageId}`)) return false;
+  const priorRecord = world.runRecords.find(record => record.messageId === messageId);
+  return !priorRecord?.messageFingerprint || priorRecord.messageFingerprint === fingerprint;
+}
+
+function rollbackLatestRegeneratedMessage(
+  world: WorldEvolutionWorld,
+  messageId: number,
+  currentFingerprint: string,
+): boolean {
+  const revision = world.revisions.at(-1);
+  if (
+    !revision ||
+    revision.messageId !== messageId ||
+    !revision.messageFingerprint ||
+    revision.messageFingerprint === currentFingerprint ||
+    !revision.beforeEntities ||
+    revision.beforeEventCount == null ||
+    !revision.beforeScheduledEvents ||
+    !revision.beforeProcessedMessageKeys
+  ) {
+    return false;
+  }
+
+  for (const [entityId, previous] of Object.entries(revision.beforeEntities)) {
+    if (previous) world.entities[entityId] = clone(previous);
+    else delete world.entities[entityId];
+  }
+  world.events = world.events.slice(0, revision.beforeEventCount);
+  world.scheduledEvents = clone(revision.beforeScheduledEvents);
+  world.processedMessageKeys = [...revision.beforeProcessedMessageKeys];
+  world.revisions = world.revisions.slice(0, -1);
+  world.revision = Math.max(0, revision.revision - 1);
+  return true;
 }
 
 function getLatestMessage(messageId?: number): { id: number; text: string } | null {
@@ -355,7 +465,7 @@ function buildPrompt(input: WorldEvolutionInput, world: WorldEvolutionWorld, set
   ].join('\n');
 }
 
-async function callEvolutionAi(prompt: string): Promise<string> {
+async function defaultCallEvolutionAi(prompt: string): Promise<string> {
   const result = await generateRaw({
     ordered_prompts: [
       { role: 'system', content: '你负责严格生成世界演变 JSON。' },
@@ -449,6 +559,18 @@ async function callEvolutionAi(prompt: string): Promise<string> {
   return typeof result === 'string' ? result : result.content;
 }
 
+async function callEvolutionAi(prompt: string, settings: WorldEvolutionSettings): Promise<string> {
+  return (worldEvolutionAiCaller ?? defaultCallEvolutionAi)(prompt, settings);
+}
+
+/**
+ * 测试/宿主注入入口：生产环境默认走 SillyTavern 的 generateRaw，
+ * 模拟测试可注入纯函数而不消耗真实 API。
+ */
+export async function callWorldEvolutionAi(prompt: string, settings: WorldEvolutionSettings): Promise<string> {
+  return callEvolutionAi(prompt, settings);
+}
+
 function buildInput(chatKey: string, messageId: number, text: string, settings: WorldEvolutionSettings): WorldEvolutionInput {
   const mvuSnapshot = getMvuSnapshot(messageId);
   const previous = recentMvuSnapshots.get(chatKey);
@@ -507,6 +629,13 @@ function validateAndCommit(
     throw new Error(`本轮其他对象更新 ${otherCount} 条，超过上限 ${settings.maxOtherEntitiesPerRun}`);
   }
 
+  const beforeEntities: Record<string, WorldEvolutionEntity | null> = {};
+  for (const id of updateIds) {
+    beforeEntities[id] = world.entities[id] ? clone(world.entities[id]) : null;
+  }
+  const beforeEventCount = world.events.length;
+  const beforeScheduledEvents = clone(world.scheduledEvents);
+  const beforeProcessedMessageKeys = [...world.processedMessageKeys];
   const next = clone(world);
   const changedEntityIds: string[] = [];
   const now = Date.now();
@@ -580,18 +709,23 @@ function validateAndCommit(
   next.revisions.push({
     revision: next.revision,
     messageId: input.messageId,
+    messageFingerprint: fingerprintText(input.latestMessage),
     source,
     changedEntityIds,
     createdEventIds: eventIds,
     createdAt: now,
+    beforeEntities,
+    beforeEventCount,
+    beforeScheduledEvents,
+    beforeProcessedMessageKeys,
   });
-  next.processedMessageKeys.push(`${input.messageId}`);
+  next.processedMessageKeys.push(messageKey(input.messageId, input.latestMessage));
   return { world: trimWorldHistory(next), changedEntityIds, eventIds };
 }
 
-export async function runWorldEvolution(
+async function executeWorldEvolution(
   messageId?: number,
-  options?: { source?: 'auto' | 'manual' },
+  options?: { source?: 'auto' | 'manual'; attempt?: number },
 ): Promise<WorldEvolutionRunResult> {
   const settings = loadSettings();
   const latest = getLatestMessage(messageId);
@@ -610,12 +744,6 @@ export async function runWorldEvolution(
     report('skipped', result.reason, result);
     return result;
   }
-  if (running) {
-    result.status = 'skipped';
-    result.reason = '已有世界演变任务正在运行';
-    report('skipped', result.reason, result);
-    return result;
-  }
   if (!settings.enabled) {
     result.status = 'skipped';
     result.reason = '世界演变插件未启用';
@@ -624,16 +752,40 @@ export async function runWorldEvolution(
   }
 
   const chatKey = getCurrentChatKey();
-  const world = await loadWorld(chatKey);
-  const messageKey = `${targetMessageId}`;
-  if (world.processedMessageKeys.includes(messageKey)) {
+  const storedWorld = await loadWorld(chatKey);
+  const expectedRevision = storedWorld.revision;
+  const fingerprint = fingerprintText(latest.text);
+  const world = clone(storedWorld);
+  const regeneratedLatest = rollbackLatestRegeneratedMessage(world, targetMessageId, fingerprint);
+  const wasProcessed = !regeneratedLatest && isMessageAlreadyProcessed(world, targetMessageId, latest.text);
+  if (wasProcessed) {
     result.status = 'skipped';
     result.reason = `消息楼层 ${targetMessageId} 已处理`;
+    await updateRunRecord(chatKey, targetMessageId, record => ({
+      ...(record ?? createQueuedRunRecord(chatKey, targetMessageId, options?.source ?? 'auto', fingerprint)),
+      status: 'skipped',
+      messageFingerprint: fingerprint,
+      finishedAt: Date.now(),
+      error: result.reason,
+    }));
     report('skipped', result.reason, result);
     return result;
   }
 
-  running = true;
+  const attempt = Math.max(1, options?.attempt ?? 1);
+  const runSource: WorldEvolutionRunRecord['source'] =
+    attempt > 1 ? 'retry' : options?.source === 'manual' ? 'manual' : 'auto';
+  await updateRunRecord(chatKey, targetMessageId, record => ({
+    ...(record ?? createQueuedRunRecord(chatKey, targetMessageId, runSource, fingerprint)),
+    source: runSource,
+    messageFingerprint: fingerprint,
+    status: 'running',
+    attempt,
+    startedAt: record?.startedAt ?? Date.now(),
+    finishedAt: undefined,
+    error: undefined,
+  }));
+
   try {
     report('collecting', `正在收集第 ${targetMessageId} 楼输入`);
     const input = buildInput(chatKey, targetMessageId, latest.text, settings);
@@ -642,19 +794,40 @@ export async function runWorldEvolution(
     if (!candidateNames.length) {
       result.status = 'skipped';
       result.reason = '没有候选对象；可在面板中添加手动候选 NPC';
+      await updateRunRecord(chatKey, targetMessageId, record => ({
+        ...(record ?? createQueuedRunRecord(chatKey, targetMessageId, runSource, fingerprint)),
+        source: runSource,
+        messageFingerprint: fingerprint,
+        status: 'skipped',
+        attempt,
+        finishedAt: Date.now(),
+        candidateNames: [],
+        error: result.reason,
+      }));
       report('skipped', result.reason, result);
       return result;
     }
 
     input.candidateNames = candidateNames.slice(0, settings.maxNpcPerRun + settings.maxOtherEntitiesPerRun);
+    await updateRunRecord(chatKey, targetMessageId, record => ({
+      ...(record ?? createQueuedRunRecord(chatKey, targetMessageId, runSource, fingerprint)),
+      source: runSource,
+      messageFingerprint: fingerprint,
+      status: 'running',
+      attempt,
+      candidateNames: [...input.candidateNames],
+      changedEntityIds: [],
+      eventIds: [],
+      error: undefined,
+    }));
     report('generating', `正在批量演变 ${input.candidateNames.length} 个候选对象`);
-    const rawResponse = await callEvolutionAi(buildPrompt(input, world, settings));
+    const rawResponse = await callEvolutionAi(buildPrompt(input, world, settings), settings);
     result.rawResponse = rawResponse;
     const parsed = parseWorldEvolutionResponse(rawResponse);
 
     report('committing', '正在校验并提交世界演变结果');
     const committed = validateAndCommit(world, parsed, input, settings, options?.source ?? 'manual');
-    const saved = await saveWorldIfRevisionMatches(committed.world, world.revision);
+    const saved = await saveWorldIfRevisionMatches(committed.world, expectedRevision);
     if (!saved) {
       throw new Error('世界演变数据已被其他任务更新；为避免覆盖，本轮结果未写入，请重新运行');
     }
@@ -663,20 +836,151 @@ export async function runWorldEvolution(
     result.changedEntityIds = committed.changedEntityIds;
     result.eventIds = committed.eventIds;
 
+    await updateRunRecord(chatKey, targetMessageId, record => ({
+      ...(record ?? createQueuedRunRecord(chatKey, targetMessageId, runSource, fingerprint)),
+      source: runSource,
+      messageFingerprint: fingerprint,
+      status: 'done',
+      attempt,
+      finishedAt: Date.now(),
+      candidateNames: [...input.candidateNames],
+      changedEntityIds: [...committed.changedEntityIds],
+      eventIds: [...committed.eventIds],
+      error: undefined,
+    }));
+
     if (settings.worldbookAutoSync && settings.worldbookName.trim()) {
-      report('syncing', '正在同步 WorldEvolution 世界书条目');
-      await syncWorldEvolutionWorldbook(settings.worldbookName.trim(), committed.world);
+      try {
+        report('syncing', '正在同步 WorldEvolution 世界书条目');
+        await syncWorldEvolutionWorldbook(settings.worldbookName.trim(), committed.world);
+      } catch (error) {
+        // 世界书是投影层；同步失败不应让已提交的世界状态再次调用 AI。
+        result.error = `世界书同步失败：${error instanceof Error ? error.message : String(error)}`;
+        await updateRunRecord(chatKey, targetMessageId, record => ({
+          ...(record ?? createQueuedRunRecord(chatKey, targetMessageId, runSource, fingerprint)),
+          source: runSource,
+          status: 'done',
+          attempt,
+          finishedAt: Date.now(),
+          candidateNames: [...input.candidateNames],
+          changedEntityIds: [...committed.changedEntityIds],
+          eventIds: [...committed.eventIds],
+          error: result.error,
+        }));
+        console.warn('[世界演变] 世界书同步失败，保留已提交状态:', error);
+      }
     }
     report('done', `世界演变完成：${committed.changedEntityIds.length} 个对象，${committed.eventIds.length} 条事件`, result);
     return result;
   } catch (error) {
     result.status = 'failed';
     result.error = error instanceof Error ? error.message : String(error);
+    await updateRunRecord(chatKey, targetMessageId, record => ({
+      ...(record ?? createQueuedRunRecord(chatKey, targetMessageId, runSource)),
+      source: runSource,
+      status: 'failed',
+      attempt,
+      finishedAt: Date.now(),
+      candidateNames: [...result.candidateNames],
+      changedEntityIds: [...result.changedEntityIds],
+      eventIds: [...result.eventIds],
+      error: result.error,
+    }));
     report('failed', result.error, result);
     return result;
-  } finally {
-    running = false;
   }
+}
+
+function queueSourceToRunSource(source: string): 'auto' | 'manual' {
+  return source === 'manual' ? 'manual' : 'auto';
+}
+
+function ensureWorldEvolutionQueue(settings: WorldEvolutionSettings): WorldEvolutionFloorQueue {
+  if (!worldEvolutionQueue) {
+    worldEvolutionQueue = new WorldEvolutionFloorQueue(
+      async task => {
+        const currentSettings = loadSettings();
+        report('waiting', `正在等待第 ${task.messageId} 楼稳定`);
+        await waitForStableSnapshot({
+          read: () => getLatestMessage(task.messageId),
+          equals: (left, right) => left?.id === right?.id && left?.text === right?.text,
+          pollMs: currentSettings.stablePollMs,
+          stableSamples: currentSettings.stableSamples,
+        });
+        return executeWorldEvolution(task.messageId, {
+          source: queueSourceToRunSource(task.source),
+          attempt: task.attempt,
+        });
+      },
+      {
+        maxRetries: settings.maxRetries,
+        retryDelayMs: settings.retryDelayMs,
+      },
+    );
+  } else {
+    worldEvolutionQueue.configure({
+      maxRetries: settings.maxRetries,
+      retryDelayMs: settings.retryDelayMs,
+    });
+  }
+  return worldEvolutionQueue;
+}
+
+export async function runWorldEvolution(
+  messageId?: number,
+  options?: { source?: 'auto' | 'manual' },
+): Promise<WorldEvolutionRunResult> {
+  const settings = loadSettings();
+  const latest = getLatestMessage(messageId);
+  const targetMessageId = latest?.id ?? messageId ?? getLastMessageId();
+  const skipped: WorldEvolutionRunResult = {
+    status: 'idle',
+    messageId: targetMessageId,
+    candidateNames: [],
+    changedEntityIds: [],
+    eventIds: [],
+  };
+
+  if (!latest) {
+    skipped.status = 'skipped';
+    skipped.reason = '当前聊天没有可处理的消息';
+    report('skipped', skipped.reason, skipped);
+    return skipped;
+  }
+  if (!settings.enabled) {
+    skipped.status = 'skipped';
+    skipped.reason = '世界演变插件未启用';
+    report('skipped', skipped.reason, skipped);
+    return skipped;
+  }
+
+  const chatKey = getCurrentChatKey();
+  const world = await loadWorld(chatKey);
+  if (latest && isMessageAlreadyProcessed(world, targetMessageId, latest.text)) {
+    skipped.status = 'skipped';
+    skipped.reason = `消息楼层 ${targetMessageId} 已处理`;
+    await updateRunRecord(chatKey, targetMessageId, record => ({
+      ...(record ?? createQueuedRunRecord(chatKey, targetMessageId, options?.source ?? 'auto')),
+      status: 'skipped',
+      finishedAt: Date.now(),
+      error: skipped.reason,
+    }));
+    report('skipped', skipped.reason, skipped);
+    return skipped;
+  }
+
+  const source = options?.source === 'manual' ? 'manual' : 'workflow-completed';
+  const recordSource: WorldEvolutionRunRecord['source'] = options?.source === 'manual' ? 'manual' : 'auto';
+  await updateRunRecord(chatKey, targetMessageId, record => ({
+    ...(record ?? createQueuedRunRecord(chatKey, targetMessageId, recordSource)),
+    source: recordSource,
+    status: 'queued',
+    enqueuedAt: record?.enqueuedAt ?? Date.now(),
+    finishedAt: undefined,
+    error: undefined,
+  }));
+  report('waiting', `第 ${targetMessageId} 楼已进入世界演变队列`);
+  return (await ensureWorldEvolutionQueue(settings).schedule(chatKey, targetMessageId, source)) as WorldEvolutionRunResult;
 }
 
 export function getDefaultSettings(): WorldEvolutionSettings {

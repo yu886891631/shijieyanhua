@@ -5,6 +5,10 @@ export type WorldEvolutionVisibility = 'backstage' | 'ai_context' | 'protagonist
 export type WorldEvolutionSettings = {
   enabled: boolean;
   autoRun: boolean;
+  maxRetries: number;
+  retryDelayMs: number;
+  stablePollMs: number;
+  stableSamples: number;
   maxNpcPerRun: number;
   maxOtherEntitiesPerRun: number;
   worldbookName: string;
@@ -49,10 +53,32 @@ export type WorldEvolutionScheduledEvent = {
 export type WorldEvolutionRevision = {
   revision: number;
   messageId: number;
+  messageFingerprint?: string;
   source: 'auto' | 'manual';
   changedEntityIds: string[];
   createdEventIds: string[];
   createdAt: number;
+  beforeEntities?: Record<string, WorldEvolutionEntity | null>;
+  beforeEventCount?: number;
+  beforeScheduledEvents?: WorldEvolutionScheduledEvent[];
+  beforeProcessedMessageKeys?: string[];
+};
+
+export type WorldEvolutionRunRecord = {
+  key: string;
+  chatKey: string;
+  messageId: number;
+  messageFingerprint?: string;
+  source: 'auto' | 'manual' | 'retry';
+  status: 'queued' | 'running' | 'done' | 'skipped' | 'failed' | 'cancelled';
+  attempt: number;
+  enqueuedAt: number;
+  startedAt?: number;
+  finishedAt?: number;
+  candidateNames: string[];
+  changedEntityIds: string[];
+  eventIds: string[];
+  error?: string;
 };
 
 export type WorldEvolutionWorld = {
@@ -63,6 +89,7 @@ export type WorldEvolutionWorld = {
   scheduledEvents: WorldEvolutionScheduledEvent[];
   revisions: WorldEvolutionRevision[];
   processedMessageKeys: string[];
+  runRecords: WorldEvolutionRunRecord[];
   updatedAt: number;
 };
 
@@ -115,6 +142,10 @@ export type WorldEvolutionAiResult = {
 export const DEFAULT_WORLD_EVOLUTION_SETTINGS: WorldEvolutionSettings = {
   enabled: false,
   autoRun: false,
+  maxRetries: 2,
+  retryDelayMs: 1500,
+  stablePollMs: 200,
+  stableSamples: 2,
   maxNpcPerRun: 3,
   maxOtherEntitiesPerRun: 2,
   worldbookName: '',
@@ -133,6 +164,7 @@ export function createEmptyWorld(chatKey: string): WorldEvolutionWorld {
     scheduledEvents: [],
     revisions: [],
     processedMessageKeys: [],
+    runRecords: [],
     updatedAt: Date.now(),
   };
 }
