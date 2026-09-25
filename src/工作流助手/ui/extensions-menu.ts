@@ -37,8 +37,20 @@ async function closeExtensionsMenuIfOpen(): Promise<void> {
   }
 }
 
-export function registerExtensionsMenuEntry(onClick: () => void): { destroy: () => void } {
+export type ExtensionsMenuEntryOptions = {
+  displayName?: string;
+  title?: string;
+  iconClass?: string;
+};
+
+export function registerExtensionsMenuEntry(
+  onClick: () => void,
+  options: ExtensionsMenuEntryOptions = {},
+): { destroy: () => void } {
   const { containerId, itemId } = getMenuIds();
+  const displayName = options.displayName ?? SCRIPT_DISPLAY_NAME;
+  const title = options.title ?? `打开 ${displayName}`;
+  const iconClass = options.iconClass ?? 'fa-sliders';
   let destroyed = false;
   let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -77,9 +89,9 @@ export function registerExtensionsMenuEntry(onClick: () => void): { destroy: () 
       `<div class="extension_container interactable" id="${containerId}" tabindex="0"></div>`,
     );
     const $item = $(
-      `<div class="list-group-item flex-container flexGap5 interactable" id="${itemId}" title="打开 ${SCRIPT_DISPLAY_NAME}">` +
-        `<div class="fa-fw fa-solid fa-sliders extensionsMenuExtensionButton"></div>` +
-        `<span>${SCRIPT_DISPLAY_NAME}</span>` +
+      `<div class="list-group-item flex-container flexGap5 interactable" id="${itemId}" title="${title}">` +
+        `<div class="fa-fw fa-solid ${iconClass} extensionsMenuExtensionButton"></div>` +
+        `<span>${displayName}</span>` +
         `</div>`,
     );
 
