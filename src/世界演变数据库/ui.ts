@@ -1,4 +1,4 @@
-import { createApp, h, reactive } from 'vue';
+import { createApp, h, reactive, toRaw } from 'vue';
 import { createScriptIdDiv, teleportStyle } from '@util/script';
 import { getCurrentChatKey } from '../工作流助手/api/chat-key';
 import {
@@ -95,7 +95,7 @@ export function mountWorldEvolutionDbPanel(): void {
       state.currentWorldbookName = resolveCurrentCharacterWorldbookName() ?? '';
       state.snapshot = await loadDbSnapshot(state.chatKey);
       if (state.currentWorldbookName) {
-        const world = dbSnapshotToWorld(state.snapshot);
+        const world = dbSnapshotToWorld(toRaw(state.snapshot));
         const [projections, inspection] = await Promise.all([
           loadWorldbookProjectionLedger(state.chatKey, state.currentWorldbookName),
           inspectWorldEvolutionWorldbook(state.currentWorldbookName, world),
@@ -141,7 +141,7 @@ export function mountWorldEvolutionDbPanel(): void {
       await refresh();
       if (!state.snapshot) return;
     }
-    const world = dbSnapshotToWorld(state.snapshot);
+    const world = dbSnapshotToWorld(toRaw(state.snapshot));
     const now = Date.now();
     state.projectionBusy = true;
     state.error = '';

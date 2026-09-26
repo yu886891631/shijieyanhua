@@ -1,4 +1,4 @@
-import { createApp, h, reactive, ref } from 'vue';
+import { createApp, h, reactive, ref, toRaw } from 'vue';
 import { createScriptIdDiv, teleportStyle } from '@util/script';
 import { getCurrentChatKey } from '../工作流助手/api/chat-key';
 import { runWorldEvolution, setWorldEvolutionStatusListener, type WorldEvolutionRunResult } from './engine';
@@ -63,7 +63,7 @@ function mountPanel(): void {
       if (state.currentWorldbookName) {
         const [projections, inspection] = await Promise.all([
           loadWorldbookProjectionLedger(state.chatKey, state.currentWorldbookName),
-          inspectWorldEvolutionWorldbook(state.currentWorldbookName, state.world),
+          inspectWorldEvolutionWorldbook(state.currentWorldbookName, toRaw(state.world)),
         ]);
         state.projections = projections;
         state.projectionInspection = inspection;
@@ -77,7 +77,7 @@ function mountPanel(): void {
   };
 
   const syncAfterManualChange = async (): Promise<void> => {
-    const settings = state.settings;
+    const settings = toRaw(state.settings);
     const worldbookName = resolveCurrentCharacterWorldbookName();
     state.currentWorldbookName = worldbookName ?? '';
     if (!settings.worldbookAutoSync || !worldbookName || !state.world) return;
@@ -87,7 +87,7 @@ function mountPanel(): void {
       lastAttemptAt: Date.now(),
     });
     try {
-      await syncWorldEvolutionWorldbook(worldbookName, state.world);
+      await syncWorldEvolutionWorldbook(worldbookName, toRaw(state.world));
       await updateDbWorldbookSyncState(state.chatKey, {
         status: 'synced',
         worldbookName,
@@ -151,12 +151,12 @@ function mountPanel(): void {
           .reverse()
           .find(record => record.status === 'failed')?.messageId;
       const save = () => {
-        saveSettings(state.settings);
+        saveSettings(toRaw(state.settings));
         state.statusMessage = '设置已保存';
       };
       const run = async () => {
         error.value = '';
-        saveSettings(state.settings);
+        saveSettings(toRaw(state.settings));
         const result = await runWorldEvolution(undefined, { source: 'manual' });
         state.lastResult = result;
         await refreshWorld();
@@ -166,7 +166,7 @@ function mountPanel(): void {
         const messageId = failedMessageId();
         if (messageId == null || messageId < 0) return;
         error.value = '';
-        saveSettings(state.settings);
+        saveSettings(toRaw(state.settings));
         const result = await runWorldEvolution(messageId, { source: 'manual' });
         state.lastResult = result;
         await refreshWorld();
@@ -204,7 +204,7 @@ function mountPanel(): void {
           error.value = '当前角色卡未绑定主世界书，无法执行世界书投影操作';
           return;
         }
-        const world = state.world ?? dbSnapshotToWorld(await loadDbSnapshot(state.chatKey));
+        const world = state.world ? toRaw(state.world) : dbSnapshotToWorld(await loadDbSnapshot(state.chatKey));
         state.projectionBusy = true;
         error.value = '';
         const now = Date.now();
