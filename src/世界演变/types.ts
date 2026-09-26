@@ -1,5 +1,7 @@
+import type { WorldEvolutionQueryContext } from './query/types';
+
 export type WorldEvolutionEntityType = 'npc' | 'organization' | 'location' | 'environment' | 'social';
-export const WORLD_EVOLUTION_VERSION = 'A0.0.5';
+export const WORLD_EVOLUTION_VERSION = 'A0.1.0-alpha.8';
 
 export type WorldEvolutionVisibility = 'backstage' | 'ai_context' | 'protagonist_known' | 'revealed';
 
@@ -12,6 +14,10 @@ export type WorldEvolutionSettings = {
   stableSamples: number;
   maxNpcPerRun: number;
   maxOtherEntitiesPerRun: number;
+  /**
+   * 旧版兼容字段。M6+ 的实际写入目标由当前角色卡的 primary 世界书自动解析，
+   * 不再使用此字段作为默认目标。
+   */
   worldbookName: string;
   worldbookAutoSync: boolean;
   manualCandidates: string[];
@@ -128,41 +134,9 @@ export type WorldEvolutionInput = {
   databaseSummary: string;
   databaseSnapshot: unknown;
   candidateNames: string[];
+  queryContext?: WorldEvolutionQueryContext;
   currentTime?: string;
   currentLocation?: string;
-};
-
-export type WorldEvolutionAiUpdate = {
-  type: WorldEvolutionEntityType;
-  id?: string;
-  name: string;
-  visibility?: WorldEvolutionVisibility;
-  changes: Record<string, unknown>;
-};
-
-export type WorldEvolutionAiEvent = {
-  id?: string;
-  type?: string;
-  actors?: string[];
-  summary: string;
-  details?: string;
-  time?: string;
-  location?: string;
-  visibility?: WorldEvolutionVisibility;
-};
-
-export type WorldEvolutionAiResult = {
-  baseRevision: number;
-  updates: WorldEvolutionAiUpdate[];
-  events: WorldEvolutionAiEvent[];
-  scheduledEvents: Array<{
-    id?: string;
-    title: string;
-    trigger?: string;
-    actors?: string[];
-    visibility?: WorldEvolutionVisibility;
-    status?: 'pending' | 'completed' | 'cancelled';
-  }>;
 };
 
 export const DEFAULT_WORLD_EVOLUTION_SETTINGS: WorldEvolutionSettings = {

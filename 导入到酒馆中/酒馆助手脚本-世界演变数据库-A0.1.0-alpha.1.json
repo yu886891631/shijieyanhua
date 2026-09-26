@@ -1,0 +1,19 @@
+{
+  "type": "script",
+  "enabled": true,
+  "name": "世界演变数据库（GitHub版 A0.1.0-alpha.1）",
+  "id": "c3c6d9b2-7e8e-4a76-9b9f-0f8f8fdb0a11",
+ "content": "import 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@main/dist/世界演变数据库/index.js'",
+  "info": "世界演变数据库 A0.1.0-alpha.1 原型：独立 IndexedDB 逻辑表和数据库式管理面板。当前阶段只验证表格读写、聊天隔离、导入导出和页面，不调用 AI、不自动处理楼层。通过脚本按钮“打开世界演变数据库”或魔法棒菜单打开。",
+  "button": {
+    "enabled": true,
+    "buttons": []
+  },
+  "data": {
+    "world_evolution_db_version": "A0.1.0-alpha.1"
+  },
+  "export_with": {
+    "data": true,
+    "button": true
+  }
+}

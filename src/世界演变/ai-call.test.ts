@@ -13,9 +13,7 @@ test('world evolution AI caller can be replaced by a deterministic simulator', a
     calls.push({ prompt, enabled: settings.enabled });
     return JSON.stringify({
       baseRevision: 0,
-      updates: [],
-      events: [],
-      scheduledEvents: [],
+      operations: [],
     });
   });
 
@@ -26,9 +24,7 @@ test('world evolution AI caller can be replaced by a deterministic simulator', a
     });
     assert.deepEqual(JSON.parse(response), {
       baseRevision: 0,
-      updates: [],
-      events: [],
-      scheduledEvents: [],
+      operations: [],
     });
     assert.deepEqual(calls, [{ prompt: '模拟楼层', enabled: true }]);
   } finally {
@@ -81,4 +77,6 @@ test('world evolution prompt includes MVU, workflow and database context without
   assert.match(prompt, /北门/);
   assert.match(prompt, /当前 MVU 快照/);
   assert.match(prompt, /数据库当前表快照/);
+  assert.match(prompt, /"operations"/);
+  assert.doesNotMatch(prompt, /"scheduledEvents"/);
 });

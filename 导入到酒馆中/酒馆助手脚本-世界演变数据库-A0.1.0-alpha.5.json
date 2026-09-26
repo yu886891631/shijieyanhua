@@ -1,0 +1,20 @@
+{
+  "type": "script",
+  "enabled": true,
+  "name": "世界演变数据库（GitHub版 A0.1.0-alpha.5）",
+  "id": "c3c6d9b2-7e8e-4a76-9b9f-0f8f8ddb0a13",
+  "content": "import 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@main/dist/世界演变数据库/index.js?v=A0.1.0-alpha.5'",
+  "info": "世界演变数据库 A0.1.0-alpha.5（M5）：在 M4 AI operations、整批校验和 baseRevision 冲突保护基础上，新增重建后的引用、materialized rows 与旧世界投影一致性校验。删除楼层或确定性重放发现断引用、投影漂移时会终止，不写入不完整结果。独立事实源，不写回 MVU、工作流或 shujuku。GitHub 构建须先推送后才能通过此链接更新。",
+  "button": {
+    "enabled": true,
+    "buttons": []
+  },
+  "data": {
+    "world_evolution_db_version": "A0.1.0-alpha.5",
+    "world_evolution_milestone": "M5"
+  },
+  "export_with": {
+    "data": true,
+    "button": true
+  }
+}

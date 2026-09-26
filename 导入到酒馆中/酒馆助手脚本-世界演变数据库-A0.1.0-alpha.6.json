@@ -1,0 +1,20 @@
+{
+  "type": "script",
+  "enabled": true,
+  "name": "世界演变数据库（GitHub版 A0.1.0-alpha.6）",
+  "id": "c3c6d9b2-7e8e-4a76-9b9f-0f8f8ddb0a16",
+  "content": "import 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@main/dist/世界演变数据库/index.js?v=A0.1.0-alpha.6'",
+  "info": "世界演变数据库 A0.1.0-alpha.6（M6）：新增精确 WorldEvolution-* 世界书投影、稳定投影键、内容指纹、跨聊天隔离、孤儿条目清理和 IndexedDB v3 投影账本。数据库仍是事实源，世界书只作为可重建投影。GitHub 构建须先推送后才能通过此链接更新。",
+  "button": {
+    "enabled": true,
+    "buttons": []
+  },
+  "data": {
+    "world_evolution_db_version": "A0.1.0-alpha.6",
+    "world_evolution_milestone": "M6"
+  },
+  "export_with": {
+    "data": true,
+    "button": true
+  }
+}

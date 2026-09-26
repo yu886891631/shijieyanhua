@@ -1,0 +1,19 @@
+{
+  "type": "script",
+  "enabled": true,
+  "name": "世界演变数据库（GitHub版 A0.1.0-alpha.2）",
+  "id": "c3c6d9b2-7e8e-4a76-9b9f-0f8f8fdb0a12",
+  "content": "import 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@main/dist/世界演变数据库/index.js'",
+  "info": "世界演变数据库 A0.1.0-alpha.2：真实世界演变结果通过 revision 事务提交；删除或滑动楼层后自动确定性重建并标记 stale 历史；提供数据库面板、检查点、楼层回放和导入导出。历史楼层重建不调用 AI。",
+  "button": {
+    "enabled": true,
+    "buttons": []
+  },
+  "data": {
+    "world_evolution_db_version": "A0.1.0-alpha.2"
+  },
+  "export_with": {
+    "data": true,
+    "button": true
+  }
+}

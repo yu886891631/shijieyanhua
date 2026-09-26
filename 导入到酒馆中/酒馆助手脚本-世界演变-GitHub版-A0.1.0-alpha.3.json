@@ -1,0 +1,20 @@
+{
+  "type": "script",
+  "enabled": false,
+  "name": "世界演变（GitHub版 A0.1.0-alpha.3）",
+  "id": "e67ef6e1-6bb5-4cc0-b58f-0b6cc9bfac34",
+  "content": "import 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@main/dist/世界演变/index.js?v=A0.1.0-alpha.3'",
+  "info": "世界演变独立插件 A0.1.0-alpha.3（M3）：在 M2 revision/确定性回放基础上，新增只读候选查询层。候选可来自 ReplicaEnum、MVU 快照、工作流助手楼层结果、shujuku 表格、当前楼层正文、待办计划、最近事件、已有世界演变表和手动名单；结果保留来源、表名、行 ID、证据与数量上限。外部来源只读，不写回 MVU、工作流助手或 shujuku。默认关闭；启用前请先导入并启用对应的世界演变数据库脚本。",
+  "button": {
+    "enabled": true,
+    "buttons": []
+  },
+  "data": {
+    "world_evolution_version": "A0.1.0-alpha.3",
+    "world_evolution_milestone": "M3"
+  },
+  "export_with": {
+    "data": true,
+    "button": true
+  }
+}

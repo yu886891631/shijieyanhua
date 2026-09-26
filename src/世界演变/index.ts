@@ -1,6 +1,6 @@
 import { getCurrentChatKey } from '../工作流助手/api/chat-key';
 import { ACU_PP_WORKFLOW_COMPLETED, type WorkflowCompletedPayload } from '../工作流助手/tasks/events';
-import { loadSettings, recoverInterruptedRuns } from './store';
+import { loadSettings } from './store';
 import { openWorldEvolutionPanel } from './ui';
 import { retryPendingWorldbookSync, runWorldEvolution } from './engine';
 
@@ -26,7 +26,10 @@ function getHostDocument(): Document {
 
 function getHostJQuery(): MenuJQuery {
   try {
-    const hostWindow = window.parent ?? window;
+    const hostWindow = (window.parent ?? window) as Window & {
+      jQuery?: MenuJQuery;
+      $?: MenuJQuery;
+    };
     return hostWindow.jQuery ?? hostWindow.$ ?? $;
   } catch {
     return $;
@@ -186,8 +189,7 @@ function registerWorldEvolution(): void {
   const recoverCurrentChat = (): void => {
     const chatKey = getCurrentChatKey();
     if (!chatKey) return;
-    void recoverInterruptedRuns(chatKey)
-      .then(() => retryPendingWorldbookSync(chatKey))
+    void retryPendingWorldbookSync(chatKey)
       .catch(error => console.warn(`${LOG_PREFIX} 恢复上次运行状态失败:`, error));
   };
   recoverCurrentChat();

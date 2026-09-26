@@ -1,36 +1,26 @@
 import { getCurrentChatKey } from '../工作流助手/api/chat-key';
 import { captureDataSnapshot } from '../工作流助手/bridge/database-api';
+import { loadSettings, saveSettings } from './store';
 import {
-  loadSettings,
-  saveSettings,
-  loadWorld,
-  recoverInterruptedRuns,
-  saveWorldIfRevisionMatches,
-  trimWorldHistory,
-  getWorldEvolutionRunRecordKey,
-  updateWorldEvolutionRunRecord,
-  updateWorldbookSyncState,
-} from './store';
+  loadDbSnapshot,
+  commitDbRevision,
+  rebuildDbAfterDeletingFloor,
+  updateDbFloorRunRecord,
+  updateDbWorldbookSyncState,
+} from '../世界演变数据库/store';
+import { dbSnapshotToWorld, isDbMessageProcessed } from '../世界演变数据库/adapter';
+import { parseWorldEvolutionOperations, validateWorldEvolutionOperations } from '../世界演变数据库/ai-operations';
 import type {
-  WorldEvolutionAiEvent,
-  WorldEvolutionAiResult,
-  WorldEvolutionAiUpdate,
-  WorldEvolutionEntity,
-  WorldEvolutionEntityType,
-  WorldEvolutionEvent,
   WorldEvolutionInput,
   WorldEvolutionSettings,
-  WorldEvolutionVisibility,
   WorldEvolutionWorld,
   WorldEvolutionRunRecord,
-  type WorldEvolutionWorldbookSyncState,
 } from './types';
+import type { WorldEvolutionDbFloorRun } from '../世界演变数据库/types';
 import { DEFAULT_WORLD_EVOLUTION_SETTINGS } from './types';
-import { syncWorldEvolutionWorldbook } from './worldbook';
-import {
-  waitForStableSnapshot,
-  WorldEvolutionFloorQueue,
-} from './floor-queue';
+import { resolveCurrentCharacterWorldbookName, syncWorldEvolutionWorldbook } from './worldbook';
+import { waitForStableSnapshot, WorldEvolutionFloorQueue } from './floor-queue';
+import { queryWorldEvolutionCandidates } from './query';
 
 export type WorldEvolutionRunStatus =
   | 'idle'
@@ -65,10 +55,7 @@ let statusListener: WorldEvolutionStatusListener | undefined;
 const recentMvuSnapshots = new Map<string, unknown>();
 let worldEvolutionQueue: WorldEvolutionFloorQueue | undefined;
 
-export type WorldEvolutionAiCaller = (
-  prompt: string,
-  settings: WorldEvolutionSettings,
-) => Promise<string>;
+export type WorldEvolutionAiCaller = (prompt: string, settings: WorldEvolutionSettings) => Promise<string>;
 
 let worldEvolutionAiCaller: WorldEvolutionAiCaller | undefined;
 
@@ -95,11 +82,85 @@ async function updateRunRecord(
   updater: (record: WorldEvolutionRunRecord | undefined) => WorldEvolutionRunRecord | undefined,
 ): Promise<void> {
   try {
-    await updateWorldEvolutionRunRecord(chatKey, messageId, updater);
+    const snapshot = await loadDbSnapshot(chatKey);
+    const existing = snapshot.floorRuns.find(run => run.messageId === messageId);
+    const current = existing ? dbFloorRunToRunRecord(existing) : undefined;
+    const next = updater(current);
+    if (!next) {
+      if (existing) {
+        await updateDbFloorRunRecord(chatKey, messageId, existing.messageFingerprint, () => undefined);
+      }
+      return;
+    }
+    const messageFingerprint =
+      next.messageFingerprint ??
+      existing?.messageFingerprint ??
+      fingerprintText(getLatestMessage(messageId)?.text ?? '');
+    next.messageFingerprint = messageFingerprint;
+    await updateDbFloorRunRecord(chatKey, messageId, messageFingerprint, previous => {
+      const merged = runRecordToDbFloorRun(next, previous);
+      return merged;
+    });
   } catch (error) {
     // 运行记录是诊断信息，不能让它的写入失败覆盖真正的世界演变结果。
     console.warn('[世界演变] 运行记录写入失败:', error);
   }
+}
+
+function dbFloorRunToRunRecord(run: WorldEvolutionDbFloorRun): WorldEvolutionRunRecord {
+  return {
+    key: run.key,
+    chatKey: run.chatKey,
+    messageId: run.messageId,
+    messageFingerprint: run.messageFingerprint,
+    source: run.source === 'manual' || run.source === 'retry' ? run.source : 'auto',
+    status:
+      run.status === 'queued' ||
+      run.status === 'running' ||
+      run.status === 'done' ||
+      run.status === 'skipped' ||
+      run.status === 'failed' ||
+      run.status === 'cancelled'
+        ? run.status
+        : 'cancelled',
+    attempt: run.attempt ?? 1,
+    enqueuedAt: run.enqueuedAt ?? run.createdAt,
+    startedAt: run.startedAt,
+    finishedAt: run.finishedAt,
+    candidateNames: [...run.candidateNames],
+    changedEntityIds: [...run.changedEntityIds],
+    eventIds: [...run.eventIds],
+    error: run.error,
+  };
+}
+
+function runRecordToDbFloorRun(
+  record: WorldEvolutionRunRecord,
+  previous?: WorldEvolutionDbFloorRun,
+): WorldEvolutionDbFloorRun {
+  const now = Date.now();
+  return {
+    key: record.key,
+    id: previous?.id ?? `floor-${record.chatKey}-${record.messageId}-${record.messageFingerprint ?? ''}`,
+    chatKey: record.chatKey,
+    messageId: record.messageId,
+    messageFingerprint: record.messageFingerprint ?? '',
+    source: record.source,
+    status: record.status,
+    baseRevision: previous?.baseRevision ?? 0,
+    resultRevision: previous?.resultRevision,
+    operationCount: previous?.operationCount ?? 0,
+    error: record.error,
+    attempt: record.attempt,
+    enqueuedAt: record.enqueuedAt,
+    startedAt: record.startedAt,
+    finishedAt: record.finishedAt,
+    candidateNames: [...record.candidateNames],
+    changedEntityIds: [...record.changedEntityIds],
+    eventIds: [...record.eventIds],
+    createdAt: previous?.createdAt ?? record.enqueuedAt ?? now,
+    updatedAt: now,
+  };
 }
 
 function createQueuedRunRecord(
@@ -109,7 +170,7 @@ function createQueuedRunRecord(
   messageFingerprint?: string,
 ): WorldEvolutionRunRecord {
   return {
-    key: getWorldEvolutionRunRecordKey(chatKey, messageId),
+    key: `${chatKey}\u0000${messageId}`,
     chatKey,
     messageId,
     messageFingerprint,
@@ -137,55 +198,11 @@ function fingerprintText(value: string): string {
   return (hash >>> 0).toString(16).padStart(8, '0');
 }
 
-function messageKey(messageId: number, text: string): string {
-  return `${messageId}:${fingerprintText(text)}`;
-}
-
-function isMessageAlreadyProcessed(world: WorldEvolutionWorld, messageId: number, text: string): boolean {
-  const fingerprint = fingerprintText(text);
-  const exactKey = messageKey(messageId, text);
-  if (world.processedMessageKeys.includes(exactKey)) return true;
-  if (!world.processedMessageKeys.includes(`${messageId}`)) return false;
-  const priorRecord = world.runRecords.find(record => record.messageId === messageId);
-  return !priorRecord?.messageFingerprint || priorRecord.messageFingerprint === fingerprint;
-}
-
-function rollbackLatestRegeneratedMessage(
-  world: WorldEvolutionWorld,
-  messageId: number,
-  currentFingerprint: string,
-): boolean {
-  const revision = world.revisions.at(-1);
-  if (
-    !revision ||
-    revision.messageId !== messageId ||
-    !revision.messageFingerprint ||
-    revision.messageFingerprint === currentFingerprint ||
-    !revision.beforeEntities ||
-    revision.beforeEventCount == null ||
-    !revision.beforeScheduledEvents ||
-    !revision.beforeProcessedMessageKeys
-  ) {
-    return false;
-  }
-
-  for (const [entityId, previous] of Object.entries(revision.beforeEntities)) {
-    if (previous) world.entities[entityId] = clone(previous);
-    else delete world.entities[entityId];
-  }
-  world.events = world.events.slice(0, revision.beforeEventCount);
-  world.scheduledEvents = clone(revision.beforeScheduledEvents);
-  world.processedMessageKeys = [...revision.beforeProcessedMessageKeys];
-  world.revisions = world.revisions.slice(0, -1);
-  world.revision = Math.max(0, revision.revision - 1);
-  return true;
-}
-
 function getLatestMessage(messageId?: number): { id: number; text: string } | null {
   const fallback = getChatMessages(-1)[0] as Record<string, unknown> | undefined;
   const message = messageId != null ? (getChatMessages(messageId)[0] as Record<string, unknown> | undefined) : fallback;
   if (!message) return null;
-  const id = typeof message.message_id === 'number' ? message.message_id : messageId ?? getLastMessageId();
+  const id = typeof message.message_id === 'number' ? message.message_id : (messageId ?? getLastMessageId());
   const text = String(message.message ?? message.mes ?? '');
   return { id, text };
 }
@@ -200,7 +217,7 @@ function getMvuSnapshot(messageId: number): unknown {
   }
 }
 
-function getWorkflowSummary(messageId: number): string {
+function getWorkflowSnapshot(messageId: number): unknown {
   try {
     const hostWindow = (window.parent ?? window) as Window & {
       AcuPostProcessAPI?: {
@@ -217,24 +234,28 @@ function getWorkflowSummary(messageId: number): string {
       };
     };
     const status = hostWindow.AcuPostProcessAPI?.getRunStatusForFloor?.(messageId);
-    if (!status?.taskResults?.length) return '';
-    return compactJson(
-      status.taskResults.map(task => ({
-        taskName: task.taskName,
-        success: task.success,
-        skipped: task.skipped,
-        skipReason: task.skipReason,
-        preview: task.preview,
-        extractedTags: task.extractedTags,
-      })),
-      8000,
-    );
+    return status?.taskResults?.length
+      ? clone(
+          status.taskResults.map(task => ({
+            taskName: task.taskName,
+            success: task.success,
+            skipped: task.skipped,
+            skipReason: task.skipReason,
+            preview: task.preview,
+            extractedTags: task.extractedTags,
+          })),
+        )
+      : null;
   } catch {
-    return '';
+    return null;
   }
 }
 
-function getDatabaseSnapshot(): unknown {
+function getWorkflowSummary(messageId: number): string {
+  return compactJson(getWorkflowSnapshot(messageId), 8000);
+}
+
+function getDatabaseSnapshot(): Record<string, unknown> | null {
   try {
     return clone(captureDataSnapshot().tablesJson);
   } catch {
@@ -270,184 +291,6 @@ function extractReplicaNames(text: string): string[] {
   return [...names];
 }
 
-function collectCandidateNames(world: WorldEvolutionWorld, input: WorldEvolutionInput, settings: WorldEvolutionSettings): string[] {
-  const entities = Object.values(world.entities);
-  const byName = new Map(entities.map(entity => [entity.name, entity]));
-  const selected = new Set<string>();
-  let npcSlots = settings.maxNpcPerRun;
-  let otherSlots = settings.maxOtherEntitiesPerRun;
-
-  const tryAdd = (name: string, expectedType?: WorldEvolutionEntityType) => {
-    const normalized = name.trim();
-    if (!normalized || selected.has(normalized)) return;
-    const entity = byName.get(normalized);
-    const type = entity?.type ?? expectedType ?? 'npc';
-    if (isNpcLike(type)) {
-      if (npcSlots <= 0) return;
-      npcSlots -= 1;
-    } else {
-      if (otherSlots <= 0) return;
-      otherSlots -= 1;
-    }
-    selected.add(normalized);
-  };
-
-  // 本轮明示角色与用户手动指定优先，避免候选过多时被旧实体挤掉。
-  for (const name of [...settings.manualCandidates, ...input.candidateNames]) tryAdd(name);
-
-  // 到期/待办事件涉及的对象其次；再按最久未更新排序轮转，让后台 NPC 有机会自主行动。
-  const scheduledActors = world.scheduledEvents
-    .filter(event => event.status === 'pending')
-    .flatMap(event => event.actors);
-  for (const name of scheduledActors) tryAdd(name);
-  for (const entity of entities.sort((left, right) => left.updatedAt - right.updatedAt)) {
-    tryAdd(entity.name, entity.type);
-  }
-  return [...selected];
-}
-
-function isNpcLike(entityType: WorldEvolutionEntityType): boolean {
-  return entityType === 'npc';
-}
-
-function resolveEntityId(world: WorldEvolutionWorld, update: WorldEvolutionAiUpdate): string {
-  if (update.id && world.entities[update.id]) {
-    const byId = world.entities[update.id];
-    if (byId.name !== update.name || byId.type !== update.type) {
-      throw new Error(`对象 ID 与名称/类型不匹配：${update.id} → ${update.name}`);
-    }
-    return update.id;
-  }
-  const byName = Object.values(world.entities).find(entity => entity.name === update.name && entity.type === update.type);
-  if (byName) return byName.id;
-  return `${update.type}:${slugify(update.name)}`;
-}
-
-function slugify(value: string): string {
-  const normalized = value
-    .trim()
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, '-')
-    .replace(/^-+|-+$/g, '');
-  return normalized || `entity-${Date.now()}`;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
-
-function isVisibility(value: unknown): value is WorldEvolutionVisibility {
-  return (
-    typeof value === 'string' &&
-    ['backstage', 'ai_context', 'protagonist_known', 'revealed'].includes(value)
-  );
-}
-
-function optionalText(value: unknown, label: string): string | undefined {
-  if (value == null) return undefined;
-  if (typeof value !== 'string') throw new Error(`${label}必须是文本`);
-  return value.trim() || undefined;
-}
-
-function stringList(value: unknown, label: string): string[] {
-  if (value == null) return [];
-  if (!Array.isArray(value) || value.some(item => typeof item !== 'string')) {
-    throw new Error(`${label}必须是字符串数组`);
-  }
-  return value.map(item => item.trim()).filter(Boolean);
-}
-
-function normalizeUpdate(update: unknown, index: number): WorldEvolutionAiUpdate {
-  const label = `第 ${index + 1} 条对象更新`;
-  if (!isRecord(update)) throw new Error(`${label}不是对象`);
-  if (
-    typeof update.type !== 'string' ||
-    !['npc', 'organization', 'location', 'environment', 'social'].includes(update.type)
-  ) {
-    throw new Error(`${label}的 type 无效`);
-  }
-  if (update.visibility != null && !isVisibility(update.visibility)) {
-    throw new Error(`${label}的 visibility 无效`);
-  }
-  if (typeof update.name !== 'string' || !update.name.trim()) {
-    throw new Error(`${label}缺少有效的 name`);
-  }
-  if (update.id != null && (typeof update.id !== 'string' || !update.id.trim())) {
-    throw new Error(`${label}的 id 无效`);
-  }
-  if (!isRecord(update.changes)) throw new Error(`${label}的 changes 必须是对象`);
-
-  return {
-    type: update.type as WorldEvolutionEntityType,
-    id: typeof update.id === 'string' ? update.id.trim() : undefined,
-    name: update.name.trim(),
-    visibility: update.visibility as WorldEvolutionAiUpdate['visibility'],
-    changes: clone(update.changes),
-  };
-}
-
-function normalizeEvent(event: unknown, index: number): WorldEvolutionAiEvent {
-  const label = `第 ${index + 1} 条事件`;
-  if (!isRecord(event)) throw new Error(`${label}不是对象`);
-  const summary = optionalText(event.summary, `${label}的 summary`);
-  if (!summary) throw new Error(`${label}缺少有效的 summary`);
-  if (event.visibility != null && !isVisibility(event.visibility)) {
-    throw new Error(`${label}的 visibility 无效`);
-  }
-  return {
-    id: optionalText(event.id, `${label}的 id`),
-    type: optionalText(event.type, `${label}的 type`) ?? 'world_change',
-    actors: stringList(event.actors, `${label}的 actors`),
-    summary,
-    details: optionalText(event.details, `${label}的 details`),
-    time: optionalText(event.time, `${label}的 time`),
-    location: optionalText(event.location, `${label}的 location`),
-    visibility: event.visibility as WorldEvolutionVisibility | undefined,
-  };
-}
-
-function normalizeScheduledEvent(
-  event: unknown,
-  index: number,
-): WorldEvolutionAiResult['scheduledEvents'][number] {
-  const label = `第 ${index + 1} 条待办计划`;
-  if (!isRecord(event)) throw new Error(`${label}不是对象`);
-  const title = optionalText(event.title, `${label}的 title`);
-  if (!title) throw new Error(`${label}缺少有效的 title`);
-  if (event.visibility != null && !isVisibility(event.visibility)) {
-    throw new Error(`${label}的 visibility 无效`);
-  }
-  if (
-    event.status != null &&
-    event.status !== 'pending' &&
-    event.status !== 'completed' &&
-    event.status !== 'cancelled'
-  ) {
-    throw new Error(`${label}的 status 无效`);
-  }
-  return {
-    id: optionalText(event.id, `${label}的 id`),
-    title,
-    trigger: optionalText(event.trigger, `${label}的 trigger`),
-    actors: stringList(event.actors, `${label}的 actors`),
-    visibility: event.visibility as WorldEvolutionVisibility | undefined,
-    status: event.status as 'pending' | 'completed' | 'cancelled' | undefined,
-  };
-}
-
-function parseWorldEvolutionResponse(raw: string): WorldEvolutionAiResult {
-  let text = raw.trim();
-  const tagged = text.match(/<WorldEvolution>([\s\S]*?)<\/WorldEvolution>/i);
-  if (tagged?.[1]) text = tagged[1].trim();
-  text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
-  const parsed = JSON.parse(text) as unknown;
-  if (!isRecord(parsed)) throw new Error('世界演变 AI 返回的不是 JSON 对象');
-  if (!Array.isArray(parsed.updates)) throw new Error('世界演变 AI 返回缺少 updates 数组');
-  if (!Array.isArray(parsed.events)) throw new Error('世界演变 AI 返回缺少 events 数组');
-  if (!Array.isArray(parsed.scheduledEvents)) throw new Error('世界演变 AI 返回缺少 scheduledEvents 数组');
-  return parsed as unknown as WorldEvolutionAiResult;
-}
-
 export function buildWorldEvolutionPrompt(
   input: WorldEvolutionInput,
   world: WorldEvolutionWorld,
@@ -468,7 +311,11 @@ export function buildWorldEvolutionPrompt(
     '你只处理候选对象，让主角视线之外的 NPC、组织、社会和环境继续合理行动。',
     settings.modelInstruction,
     '禁止改写主角已经知道的资料，禁止让后台秘密自动变成主角已知。',
-    '只输出 JSON，不要 Markdown，不要解释，不要输出 SQL。',
+    '只输出单个 JSON 对象：baseRevision 和 operations；不要 Markdown、标签、解释或 SQL。',
+    '只允许 upsert 实体、append 新事件/计划、update_status 已有事件/计划、delete 无任何引用的 backstage 实体。',
+    '实体必须同时给出本库稳定 id 和候选全名 name；已有实体沿用下方 ID，新实体使用表名:姓名（society 使用 social:姓名）。外部表行 ID 不是本库 ID。',
+    'changes 仅更新实体 data 的普通状态键；不得改写元数据或姓名。event/plan 用 actorIds、locationId 等本库实体 ID 引用。',
+    '不可自动写 protagonist_known/revealed；事件和计划每类最多为 NPC 与其他对象上限之和。无变化输出空 operations。',
     '',
     '【当前输入】',
     `聊天标识：${input.chatKey}`,
@@ -481,6 +328,18 @@ export function buildWorldEvolutionPrompt(
     `当前 MVU 快照：\n${compactJson(input.mvuSnapshot, 12000)}`,
     `本轮主AI消息：\n${input.latestMessage.slice(-12000)}`,
     `候选对象：${input.candidateNames.join('、') || '无'}`,
+    `候选来源与证据：\n${compactJson(
+      input.queryContext?.candidates.map(candidate => ({
+        table: candidate.table,
+        rowId: candidate.rowId,
+        name: candidate.name,
+        source: candidate.source,
+        priority: candidate.priority,
+        evidence: candidate.evidence,
+      })) ?? [],
+      8000,
+    )}`,
+    `候选相关表格行（保留表名与行边界）：\n${compactJson(input.queryContext?.tables ?? [], 10000)}`,
     `本轮上限：NPC 最多 ${settings.maxNpcPerRun} 个，其他对象最多 ${settings.maxOtherEntitiesPerRun} 个。`,
     `已有世界演变状态：\n${compactJson(entities, 10000)}`,
     `最近后台事件：\n${compactJson(world.events.slice(-20), 6000)}`,
@@ -490,26 +349,25 @@ export function buildWorldEvolutionPrompt(
     JSON.stringify(
       {
         baseRevision: world.revision,
-        updates: [
+        operations: [
           {
-            type: 'npc',
-            id: '可选，已有对象优先使用',
+            op: 'upsert',
+            table: 'npc',
+            id: 'npc:角色全名',
             name: '角色全名',
-            visibility: 'ai_context',
-            changes: { current_location: '新状态', current_goal: '新目标' },
+            changes: { current_goal: '新目标' },
           },
-        ],
-        events: [
           {
-            id: '可选，建议使用 EV-时间-序号',
-            type: 'npc_action',
-            actors: ['角色全名'],
-            summary: '一句话描述后台行动',
-            details: '可选的客观细节',
-            visibility: 'ai_context',
+            op: 'append',
+            table: 'event',
+            data: {
+              eventType: 'npc_action',
+              actorIds: ['npc:角色全名'],
+              summary: '一句话描述后台行动',
+              visibility: 'ai_context',
+            },
           },
         ],
-        scheduledEvents: [],
       },
       null,
       2,
@@ -537,73 +395,39 @@ async function defaultCallEvolutionAi(prompt: string): Promise<string> {
     },
     json_schema: {
       name: 'world_evolution',
-      description: '批量世界演变更新',
-      // changes 是用户自定义世界状态键，必须允许扩展；用宽松 schema 后仍由本地校验完整性。
+      description: 'baseRevision 和受限的批量数据库 operations',
+      // 可扩展的实体 data 键由本地验证器做最终约束。
       strict: false,
       value: {
         type: 'object',
         properties: {
           baseRevision: { type: 'integer' },
-          updates: {
+          operations: {
             type: 'array',
             items: {
               type: 'object',
               properties: {
-                type: { type: 'string', enum: ['npc', 'organization', 'location', 'environment', 'social'] },
+                op: { type: 'string', enum: ['upsert', 'append', 'update_status', 'delete'] },
+                table: {
+                  type: 'string',
+                  enum: ['npc', 'organization', 'location', 'society', 'environment', 'event', 'plan'],
+                },
                 id: { type: 'string' },
                 name: { type: 'string' },
-                visibility: {
-                  type: 'string',
-                  enum: ['backstage', 'ai_context', 'protagonist_known', 'revealed'],
-                },
                 changes: { type: 'object', additionalProperties: true },
-              },
-              required: ['type', 'name', 'changes'],
-              additionalProperties: false,
-            },
-          },
-          events: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                id: { type: 'string' },
-                type: { type: 'string' },
-                actors: { type: 'array', items: { type: 'string' } },
-                summary: { type: 'string' },
-                details: { type: 'string' },
-                time: { type: 'string' },
-                location: { type: 'string' },
+                data: { type: 'object', additionalProperties: true },
+                status: { type: 'string' },
                 visibility: {
                   type: 'string',
                   enum: ['backstage', 'ai_context', 'protagonist_known', 'revealed'],
                 },
               },
-              required: ['summary'],
-              additionalProperties: false,
-            },
-          },
-          scheduledEvents: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                id: { type: 'string' },
-                title: { type: 'string' },
-                trigger: { type: 'string' },
-                actors: { type: 'array', items: { type: 'string' } },
-                visibility: {
-                  type: 'string',
-                  enum: ['backstage', 'ai_context', 'protagonist_known', 'revealed'],
-                },
-                status: { type: 'string', enum: ['pending', 'completed', 'cancelled'] },
-              },
-              required: ['title'],
+              required: ['op', 'table'],
               additionalProperties: false,
             },
           },
         },
-        required: ['baseRevision', 'updates', 'events', 'scheduledEvents'],
+        required: ['baseRevision', 'operations'],
         additionalProperties: false,
       },
     },
@@ -623,15 +447,18 @@ export async function callWorldEvolutionAi(prompt: string, settings: WorldEvolut
   return callEvolutionAi(prompt, settings);
 }
 
-function buildInput(chatKey: string, messageId: number, text: string, settings: WorldEvolutionSettings): WorldEvolutionInput {
+function buildInput(
+  chatKey: string,
+  messageId: number,
+  text: string,
+  settings: WorldEvolutionSettings,
+): WorldEvolutionInput {
   const mvuSnapshot = getMvuSnapshot(messageId);
   const databaseSnapshot = getDatabaseSnapshot();
   const previous = recentMvuSnapshots.get(chatKey);
   recentMvuSnapshots.set(chatKey, clone(mvuSnapshot));
   const mvuChangeSummary =
-    previous == null
-      ? '本轮没有可比较的上一份 MVU 快照。'
-      : compactJson({ previous, current: mvuSnapshot }, 8000);
+    previous == null ? '本轮没有可比较的上一份 MVU 快照。' : compactJson({ previous, current: mvuSnapshot }, 8000);
   const replicaNames = extractReplicaNames(text);
   return {
     chatKey,
@@ -640,156 +467,12 @@ function buildInput(chatKey: string, messageId: number, text: string, settings: 
     mvuSnapshot,
     previousMvuSnapshot: previous,
     mvuChangeSummary,
-    databaseSummary: compactJson(
-      { workflow: getWorkflowSummary(messageId), tables: databaseSnapshot },
-      10000,
-    ),
+    databaseSummary: compactJson({ workflow: getWorkflowSummary(messageId), tables: databaseSnapshot }, 10000),
     databaseSnapshot,
     candidateNames: [...new Set([...replicaNames, ...settings.manualCandidates])],
     currentTime: undefined,
     currentLocation: undefined,
   };
-}
-
-function validateAndCommit(
-  world: WorldEvolutionWorld,
-  parsed: WorldEvolutionAiResult,
-  input: WorldEvolutionInput,
-  settings: WorldEvolutionSettings,
-  source: 'auto' | 'manual',
-): { world: WorldEvolutionWorld; changedEntityIds: string[]; eventIds: string[] } {
-  if (!Number.isInteger(parsed.baseRevision)) {
-    throw new Error('世界演变结果缺少有效的 baseRevision，已拒绝提交');
-  }
-  if (parsed.baseRevision != null && parsed.baseRevision !== world.revision) {
-    throw new Error(`世界演变版本冲突：AI基于 ${parsed.baseRevision}，当前是 ${world.revision}`);
-  }
-
-  if (!Array.isArray(parsed.updates)) throw new Error('世界演变结果缺少 updates 数组，已拒绝提交');
-  const updates = parsed.updates.map((update, index) => normalizeUpdate(update, index));
-  const events = parsed.events.map((event, index) => normalizeEvent(event, index));
-  const scheduledEvents = parsed.scheduledEvents.map((event, index) => normalizeScheduledEvent(event, index));
-  const updateIds = updates.map(update => {
-    if (!input.candidateNames.includes(update.name) && !settings.manualCandidates.includes(update.name)) {
-      throw new Error(`AI 修改了非候选对象：${update.name}`);
-    }
-    return resolveEntityId(world, update);
-  });
-  if (new Set(updateIds).size !== updateIds.length) {
-    throw new Error('AI 更新批次包含重复对象，已拒绝整批提交');
-  }
-
-  const npcCount = updates.filter(update => isNpcLike(update.type)).length;
-  const otherCount = updates.length - npcCount;
-  if (npcCount > settings.maxNpcPerRun) throw new Error(`本轮 NPC 更新 ${npcCount} 条，超过上限 ${settings.maxNpcPerRun}`);
-  if (otherCount > settings.maxOtherEntitiesPerRun) {
-    throw new Error(`本轮其他对象更新 ${otherCount} 条，超过上限 ${settings.maxOtherEntitiesPerRun}`);
-  }
-
-  const beforeEntities: Record<string, WorldEvolutionEntity | null> = {};
-  for (const id of updateIds) {
-    beforeEntities[id] = world.entities[id] ? clone(world.entities[id]) : null;
-  }
-  const beforeEventCount = world.events.length;
-  const beforeScheduledEvents = clone(world.scheduledEvents);
-  const beforeProcessedMessageKeys = [...world.processedMessageKeys];
-  const next = clone(world);
-  const changedEntityIds: string[] = [];
-  const now = Date.now();
-  for (const [index, update] of updates.entries()) {
-    const id = updateIds[index];
-    const previous = next.entities[id];
-    const entity: WorldEvolutionEntity = previous ?? {
-      id,
-      type: update.type,
-      name: update.name,
-      state: {},
-      visibility: update.visibility ?? 'ai_context',
-      updatedAt: now,
-      sourceMessageId: input.messageId,
-    };
-    entity.state = { ...entity.state, ...clone(update.changes) };
-    entity.visibility = update.visibility ?? entity.visibility;
-    entity.updatedAt = now;
-    entity.sourceMessageId = input.messageId;
-    next.entities[id] = entity;
-    changedEntityIds.push(id);
-  }
-
-  const eventIds: string[] = [];
-  for (const event of events) {
-    const id = event.id?.trim() || `EV-${input.messageId}-${next.revision + eventIds.length + 1}`;
-    if (next.events.some(item => item.id === id)) continue;
-    const normalized: WorldEvolutionEvent = {
-      id,
-      type: event.type ?? 'world_change',
-      actors: event.actors ?? [],
-      summary: event.summary,
-      details: event.details,
-      time: event.time,
-      location: event.location,
-      visibility: event.visibility ?? 'ai_context',
-      sourceMessageId: input.messageId,
-      createdAt: now,
-    };
-    next.events.push(normalized);
-    eventIds.push(id);
-  }
-
-  for (const rawEvent of scheduledEvents) {
-    const id = rawEvent.id?.trim() || `SE-${input.messageId}-${next.revision + next.scheduledEvents.length + 1}`;
-    const existing = next.scheduledEvents.find(item => item.id === id);
-    if (existing) {
-      if (
-        existing.status === 'pending' &&
-        (rawEvent.status === 'completed' || rawEvent.status === 'cancelled')
-      ) {
-        existing.status = rawEvent.status;
-      }
-      continue;
-    }
-    next.scheduledEvents.push({
-      id,
-      title: rawEvent.title,
-      trigger: rawEvent.trigger,
-      actors: rawEvent.actors ?? [],
-      visibility: rawEvent.visibility ?? 'ai_context',
-      status:
-        rawEvent.status === 'completed' || rawEvent.status === 'cancelled'
-          ? rawEvent.status
-          : 'pending',
-      createdAt: now,
-    });
-  }
-
-  next.revision += 1;
-  next.revisions.push({
-    revision: next.revision,
-    messageId: input.messageId,
-    messageFingerprint: fingerprintText(input.latestMessage),
-    source,
-    changedEntityIds,
-    createdEventIds: eventIds,
-    createdAt: now,
-    beforeEntities,
-    beforeEventCount,
-    beforeScheduledEvents,
-    beforeProcessedMessageKeys,
-  });
-  next.processedMessageKeys.push(messageKey(input.messageId, input.latestMessage));
-  next.checkpoints.push({
-    id: `CP-${input.messageId}-${next.revision}-${fingerprintText(input.latestMessage)}`,
-    revision: next.revision,
-    messageId: input.messageId,
-    messageFingerprint: fingerprintText(input.latestMessage),
-    reason: 'auto',
-    createdAt: now,
-    entities: clone(next.entities),
-    events: clone(next.events),
-    scheduledEvents: clone(next.scheduledEvents),
-    processedMessageKeys: [...next.processedMessageKeys],
-  });
-  return { world: trimWorldHistory(next), changedEntityIds, eventIds };
 }
 
 async function executeWorldEvolution(
@@ -821,12 +504,17 @@ async function executeWorldEvolution(
   }
 
   const chatKey = getCurrentChatKey();
-  const storedWorld = await loadWorld(chatKey);
-  const expectedRevision = storedWorld.revision;
+  let dbSnapshot = await loadDbSnapshot(chatKey);
   const fingerprint = fingerprintText(latest.text);
-  const world = clone(storedWorld);
-  const regeneratedLatest = rollbackLatestRegeneratedMessage(world, targetMessageId, fingerprint);
-  const wasProcessed = !regeneratedLatest && isMessageAlreadyProcessed(world, targetMessageId, latest.text);
+  if (
+    dbSnapshot.floorRuns.some(
+      run => run.messageId === targetMessageId && run.status === 'done' && run.messageFingerprint !== fingerprint,
+    )
+  ) {
+    dbSnapshot = await rebuildDbAfterDeletingFloor(chatKey, targetMessageId);
+  }
+  const world = dbSnapshotToWorld(dbSnapshot);
+  const wasProcessed = isDbMessageProcessed(dbSnapshot, targetMessageId, fingerprint);
   if (wasProcessed) {
     result.status = 'skipped';
     result.reason = `消息楼层 ${targetMessageId} 已处理`;
@@ -858,7 +546,29 @@ async function executeWorldEvolution(
   try {
     report('collecting', `正在收集第 ${targetMessageId} 楼输入`);
     const input = buildInput(chatKey, targetMessageId, latest.text, settings);
-    const candidateNames = collectCandidateNames(world, input, settings);
+    input.databaseSnapshot = clone(dbSnapshot);
+    input.databaseSummary = compactJson(
+      {
+        workflow: getWorkflowSnapshot(targetMessageId),
+        worldEvolutionDatabase: dbSnapshot,
+      },
+      12000,
+    );
+    const externalDatabaseSnapshot = getDatabaseSnapshot();
+    const queryContext = queryWorldEvolutionCandidates({
+      messageId: targetMessageId,
+      messageText: latest.text,
+      databaseSnapshot: dbSnapshot,
+      mvuSnapshot: input.mvuSnapshot,
+      previousMvuSnapshot: input.previousMvuSnapshot,
+      workflowSnapshot: getWorkflowSnapshot(targetMessageId),
+      shujukuSnapshot: externalDatabaseSnapshot,
+      manualCandidates: settings.manualCandidates,
+      maxNpcCandidates: settings.maxNpcPerRun,
+      maxOtherCandidates: settings.maxOtherEntitiesPerRun,
+    });
+    input.queryContext = queryContext;
+    const candidateNames = queryContext.candidates.map(candidate => candidate.name);
     result.candidateNames = candidateNames;
     if (!candidateNames.length) {
       result.status = 'skipped';
@@ -892,18 +602,23 @@ async function executeWorldEvolution(
     report('generating', `正在批量演变 ${input.candidateNames.length} 个候选对象`);
     const rawResponse = await callEvolutionAi(buildWorldEvolutionPrompt(input, world, settings), settings);
     result.rawResponse = rawResponse;
-    const parsed = parseWorldEvolutionResponse(rawResponse);
+    const parsed = parseWorldEvolutionOperations(rawResponse);
 
     report('committing', '正在校验并提交世界演变结果');
-    const committed = validateAndCommit(world, parsed, input, settings, options?.source ?? 'manual');
-    const saved = await saveWorldIfRevisionMatches(committed.world, expectedRevision);
-    if (!saved) {
-      throw new Error('世界演变数据已被其他任务更新；为避免覆盖，本轮结果未写入，请重新运行');
-    }
+    const converted = validateWorldEvolutionOperations(dbSnapshot, parsed, input, settings);
+    const committed = await commitDbRevision({
+      chatKey,
+      messageId: targetMessageId,
+      messageFingerprint: fingerprint,
+      source: options?.source ?? 'auto',
+      baseRevision: parsed.baseRevision,
+      operations: converted.operations,
+    });
+    const committedWorld = dbSnapshotToWorld(committed.snapshot);
     result.status = 'done';
-    result.world = committed.world;
-    result.changedEntityIds = committed.changedEntityIds;
-    result.eventIds = committed.eventIds;
+    result.world = committedWorld;
+    result.changedEntityIds = converted.changedEntityIds;
+    result.eventIds = converted.eventIds;
 
     await updateRunRecord(chatKey, targetMessageId, record => ({
       ...(record ?? createQueuedRunRecord(chatKey, targetMessageId, runSource, fingerprint)),
@@ -913,32 +628,33 @@ async function executeWorldEvolution(
       attempt,
       finishedAt: Date.now(),
       candidateNames: [...input.candidateNames],
-      changedEntityIds: [...committed.changedEntityIds],
-      eventIds: [...committed.eventIds],
+      changedEntityIds: [...converted.changedEntityIds],
+      eventIds: [...converted.eventIds],
       error: undefined,
     }));
 
-    if (settings.worldbookAutoSync && settings.worldbookName.trim()) {
-      await updateWorldbookSyncState(chatKey, {
+    const worldbookName = settings.worldbookAutoSync ? resolveCurrentCharacterWorldbookName() : null;
+    if (settings.worldbookAutoSync && worldbookName) {
+      await updateDbWorldbookSyncState(chatKey, {
         status: 'pending',
-        worldbookName: settings.worldbookName.trim(),
+        worldbookName,
         lastAttemptAt: Date.now(),
       }).catch(error => console.warn('[世界演变] 标记世界书待同步失败:', error));
       try {
         report('syncing', '正在同步 WorldEvolution 世界书条目');
-        await syncWorldEvolutionWorldbook(settings.worldbookName.trim(), committed.world);
-        await updateWorldbookSyncState(chatKey, {
+        await syncWorldEvolutionWorldbook(worldbookName, committedWorld);
+        await updateDbWorldbookSyncState(chatKey, {
           status: 'synced',
-          worldbookName: settings.worldbookName.trim(),
+          worldbookName,
           lastAttemptAt: Date.now(),
           lastSuccessAt: Date.now(),
         });
       } catch (error) {
         // 世界书是投影层；同步失败不应让已提交的世界状态再次调用 AI。
         result.error = `世界书同步失败：${error instanceof Error ? error.message : String(error)}`;
-        await updateWorldbookSyncState(chatKey, {
+        await updateDbWorldbookSyncState(chatKey, {
           status: 'failed',
-          worldbookName: settings.worldbookName.trim(),
+          worldbookName,
           lastAttemptAt: Date.now(),
           error: result.error,
         }).catch(syncError => console.warn('[世界演变] 记录世界书失败状态失败:', syncError));
@@ -949,14 +665,23 @@ async function executeWorldEvolution(
           attempt,
           finishedAt: Date.now(),
           candidateNames: [...input.candidateNames],
-          changedEntityIds: [...committed.changedEntityIds],
-          eventIds: [...committed.eventIds],
+          changedEntityIds: [...converted.changedEntityIds],
+          eventIds: [...converted.eventIds],
           error: result.error,
         }));
         console.warn('[世界演变] 世界书同步失败，保留已提交状态:', error);
       }
+    } else if (settings.worldbookAutoSync) {
+      await updateDbWorldbookSyncState(chatKey, {
+        status: 'never',
+        error: '当前角色卡未绑定主世界书，已跳过世界书投影',
+      }).catch(error => console.warn('[世界演变] 记录世界书跳过状态失败:', error));
     }
-    report('done', `世界演变完成：${committed.changedEntityIds.length} 个对象，${committed.eventIds.length} 条事件`, result);
+    report(
+      'done',
+      `世界演变完成：${converted.changedEntityIds.length} 个对象，${converted.eventIds.length} 条事件`,
+      result,
+    );
     return result;
   } catch (error) {
     result.status = 'failed';
@@ -981,29 +706,35 @@ export async function retryPendingWorldbookSync(
   chatKey = getCurrentChatKey(),
   settings = loadSettings(),
 ): Promise<boolean> {
-  if (!settings.worldbookAutoSync || !settings.worldbookName.trim()) return false;
-  const world = await loadWorld(chatKey);
-  const syncState = world.worldbookSync;
-  if (syncState.status === 'synced' && syncState.worldbookName === settings.worldbookName.trim()) return false;
+  if (!settings.worldbookAutoSync) return false;
+  const worldbookName = resolveCurrentCharacterWorldbookName();
+  if (!worldbookName) {
+    await updateDbWorldbookSyncState(chatKey, {
+      status: 'never',
+      error: '当前角色卡未绑定主世界书，已跳过世界书投影',
+    }).catch(error => console.warn('[世界演变] 记录世界书跳过状态失败:', error));
+    return false;
+  }
+  const world = dbSnapshotToWorld(await loadDbSnapshot(chatKey));
   const now = Date.now();
-  await updateWorldbookSyncState(chatKey, {
+  await updateDbWorldbookSyncState(chatKey, {
     status: 'pending',
-    worldbookName: settings.worldbookName.trim(),
+    worldbookName,
     lastAttemptAt: now,
   });
   try {
-    await syncWorldEvolutionWorldbook(settings.worldbookName.trim(), world);
-    await updateWorldbookSyncState(chatKey, {
+    await syncWorldEvolutionWorldbook(worldbookName, world);
+    await updateDbWorldbookSyncState(chatKey, {
       status: 'synced',
-      worldbookName: settings.worldbookName.trim(),
+      worldbookName,
       lastAttemptAt: now,
       lastSuccessAt: Date.now(),
     });
     return true;
   } catch (error) {
-    await updateWorldbookSyncState(chatKey, {
+    await updateDbWorldbookSyncState(chatKey, {
       status: 'failed',
-      worldbookName: settings.worldbookName.trim(),
+      worldbookName,
       lastAttemptAt: now,
       error: error instanceof Error ? error.message : String(error),
     });
@@ -1075,8 +806,8 @@ export async function runWorldEvolution(
   }
 
   const chatKey = getCurrentChatKey();
-  const world = await loadWorld(chatKey);
-  if (latest && isMessageAlreadyProcessed(world, targetMessageId, latest.text)) {
+  const dbSnapshot = await loadDbSnapshot(chatKey);
+  if (latest && isDbMessageProcessed(dbSnapshot, targetMessageId, fingerprintText(latest.text))) {
     skipped.status = 'skipped';
     skipped.reason = `消息楼层 ${targetMessageId} 已处理`;
     await updateRunRecord(chatKey, targetMessageId, record => ({
@@ -1100,7 +831,11 @@ export async function runWorldEvolution(
     error: undefined,
   }));
   report('waiting', `第 ${targetMessageId} 楼已进入世界演变队列`);
-  return (await ensureWorldEvolutionQueue(settings).schedule(chatKey, targetMessageId, source)) as WorldEvolutionRunResult;
+  return (await ensureWorldEvolutionQueue(settings).schedule(
+    chatKey,
+    targetMessageId,
+    source,
+  )) as WorldEvolutionRunResult;
 }
 
 export function getDefaultSettings(): WorldEvolutionSettings {

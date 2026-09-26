@@ -1,0 +1,20 @@
+{
+  "type": "script",
+  "enabled": true,
+  "name": "世界演变数据库（GitHub版 A0.1.0-alpha.7）",
+  "id": "c3c6d9b2-7e8e-4a76-9b9f-0f8f8ddb0a16",
+  "content": "import 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@main/dist/世界演变数据库/index.js?v=A0.1.0-alpha.7'",
+  "info": "世界演变数据库 A0.1.0-alpha.7（M7）：提供数据库管理面板与当前角色卡主世界书投影账本视图，支持同步、漂移修复、孤儿清理、失败重试和完整重建。数据库仍是事实源，世界书只作为可重建投影。GitHub 构建须先推送后才能通过此链接更新。",
+  "button": {
+    "enabled": true,
+    "buttons": []
+  },
+  "data": {
+    "world_evolution_db_version": "A0.1.0-alpha.7",
+    "world_evolution_milestone": "M7"
+  },
+  "export_with": {
+    "data": true,
+    "button": true
+  }
+}
