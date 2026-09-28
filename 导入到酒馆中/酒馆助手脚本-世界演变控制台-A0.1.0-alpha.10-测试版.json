@@ -3,8 +3,8 @@
   "enabled": false,
   "name": "世界演变控制台（A0.1.0-alpha.10 测试版）",
   "id": "fbea55d4-8d49-4807-bfcd-79bfbdf20d6d",
-  "content": "import 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@main/dist/世界演变/index.js?v=A0.1.0-alpha.10';\nimport 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@main/dist/世界演变数据库/index.js?v=A0.1.0-alpha.10'",
-  "info": "A0.1.0-alpha.10 多页面 UI 测试包：一份脚本同时加载世界演变统一控制台和数据库楼层删除/滑动回放监听。默认关闭，使用新脚本 ID。此包不是数据沙盒，会继续读取/写入当前聊天已有世界演变数据库。导入后先保持关闭；启用前禁用 alpha.9 测试包及仍启用的 alpha.8 旧脚本，但不要删除旧脚本或清理聊天/数据库数据。本轮仅检查 UI，不要启用自动演变或点击手动运行，避免调用真实 API。",
+  "content": "import 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@5014c02/dist/世界演变/index.js?v=A0.1.0-alpha.10';\nimport 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@5014c02/dist/世界演变数据库/index.js?v=A0.1.0-alpha.10'",
+  "info": "A0.1.0-alpha.10 多页面 UI 测试包：一份脚本同时加载世界演变统一控制台和数据库楼层删除/滑动回放监听。默认关闭，使用新脚本 ID。导入地址固定到已验证的打包提交 5014c02，避免 @main CDN 缓存仍返回 alpha.9。此包不是数据沙盒，会继续读取/写入当前聊天已有世界演变数据库。导入后先保持关闭；启用前禁用 alpha.9 测试包及仍启用的 alpha.8 旧脚本，但不要删除旧脚本或清理聊天/数据库数据。本轮仅检查 UI，不要启用自动演变或点击手动运行，避免调用真实 API。",
   "button": {
     "enabled": true,
     "buttons": []
