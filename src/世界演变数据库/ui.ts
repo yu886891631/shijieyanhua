@@ -39,11 +39,17 @@ let root: JQuery<HTMLDivElement> | null = null;
 let styleDestroy: (() => void) | null = null;
 let stopChatChangeListener: EventOnReturn | undefined;
 
+export type WorldEvolutionDbPanelPage = 'tables' | 'history' | 'worldbook' | 'backup';
+export type WorldEvolutionDbPanelController = (page: WorldEvolutionDbPanelPage) => void;
+
+let navigateWorldEvolutionDbPanel: WorldEvolutionDbPanelController | undefined;
+
 const css = `
 .wedb-panel{position:fixed;right:16px;bottom:16px;z-index:10090;width:min(980px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;background:#101827;color:#e5e7eb;border:1px solid #334155;border-radius:14px;box-shadow:0 16px 44px #0009;font:13px/1.45 system-ui,sans-serif}
 .wedb-panel-embedded{position:relative;inset:auto;z-index:auto;width:100%;max-height:none;overflow:visible;background:transparent;border:0;border-radius:0;box-shadow:none;font:inherit}
 .wedb-panel-embedded .wedb-head{display:none}.wedb-panel-embedded .wedb-body{padding:0}
 .wedb-panel *{box-sizing:border-box}.wedb-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid #334155}.wedb-title{font-weight:700}.wedb-close,.wedb-btn{border:1px solid #475569;background:#1e293b;color:#e5e7eb;border-radius:7px;padding:6px 10px;cursor:pointer}.wedb-btn:hover,.wedb-close:hover{background:#334155}.wedb-btn:disabled{opacity:.5;cursor:not-allowed}.wedb-body{padding:14px;display:grid;gap:12px}.wedb-banner{border:1px solid #36506c;background:#12243a;color:#bfdbfe;border-radius:8px;padding:9px 10px}.wedb-muted{color:#94a3b8;font-size:12px}.wedb-danger{color:#fca5a5}.wedb-ok{color:#86efac}.wedb-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.wedb-input,.wedb-select,.wedb-textarea{background:#0b1220;color:#f8fafc;border:1px solid #475569;border-radius:7px;padding:7px 9px}.wedb-input{min-width:180px;flex:1}.wedb-select{min-width:135px}.wedb-textarea{width:100%;min-height:96px;resize:vertical;font:12px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace}.wedb-tabs{display:flex;gap:6px;overflow:auto;padding-bottom:2px}.wedb-tab{white-space:nowrap;border:1px solid #334155;background:#172033;color:#cbd5e1;border-radius:999px;padding:6px 10px;cursor:pointer}.wedb-tab.active{background:#0e7490;border-color:#22d3ee;color:#ecfeff}.wedb-section{border:1px solid #334155;border-radius:9px;padding:10px;display:grid;gap:9px}.wedb-section-title{font-weight:650;color:#f1f5f9}.wedb-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.wedb-stat{background:#0b1220;border:1px solid #263448;border-radius:8px;padding:8px}.wedb-stat strong{display:block;font-size:18px;color:#67e8f9}.wedb-table-wrap{overflow:auto;border:1px solid #263448;border-radius:8px}.wedb-table{width:100%;border-collapse:collapse;min-width:700px}.wedb-table th,.wedb-table td{padding:8px;border-bottom:1px solid #263448;text-align:left;vertical-align:top}.wedb-table th{color:#94a3b8;font-weight:500;background:#111c2d;position:sticky;top:0}.wedb-cell-json{white-space:pre-wrap;max-width:420px;max-height:90px;overflow:auto;color:#cbd5e1;font:11px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace}.wedb-actions{display:flex;gap:5px;flex-wrap:wrap}.wedb-small{padding:4px 7px;font-size:12px}.wedb-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.wedb-form-grid .full{grid-column:1/-1}@media(max-width:700px){.wedb-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.wedb-form-grid{grid-template-columns:1fr}.wedb-form-grid .full{grid-column:auto}}
+.wedb-page-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:2px 2px 4px}.wedb-page-heading .wedb-section-title{font-size:19px;letter-spacing:.01em}.wedb-page-heading .wedb-muted{margin-top:3px}.wedb-chat-key{max-width:42%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wedb-page-toolbar{justify-content:flex-end}.wedb-page-toolbar>.wedb-ok,.wedb-page-toolbar>.wedb-danger{margin-right:auto}.wedb-section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:10px}.wedb-section-heading>.wedb-muted{text-align:right}.wedb-table-section{min-height:180px}.wedb-object-tabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(116px,1fr));gap:8px;padding:2px}.wedb-object-tabs .wedb-tab{display:flex;align-items:center;gap:8px;justify-content:flex-start;min-height:46px;border-radius:10px;padding:8px 10px}.wedb-object-tabs .wedb-tab.active{background:#1d423d;border-color:#64a89c;color:#d8fff4}.wedb-table-icon{display:grid;place-items:center;width:27px;height:27px;border-radius:8px;background:#26384c;color:#8dd8cb;font-size:15px}.wedb-table-count{margin-left:auto;color:#93a4b5;font-size:10px}.wedb-btn-primary{border-color:#5b967d;background:#31715e;color:#f0fff8;font-weight:700}.wedb-danger-btn{border-color:#71434c;background:#482a33;color:#ffdbe0}.wedb-empty-cell{height:86px;text-align:center!important;vertical-align:middle!important}.wedb-error-cell{max-width:260px;color:#fca5a5}.wedb-projection-summary{grid-template-columns:repeat(4,minmax(0,1fr))}.wedb-migration-report{display:grid;gap:8px;padding:10px;border:1px solid #334155;border-radius:8px;background:#0b1220}.wedb-danger-zone{border-color:#754652}.wedb-danger-zone .wedb-section-title{color:#fda4af}.wedb-add-section .wedb-textarea{min-height:110px}
 `;
 
 const visibilityOptions: Array<[WorldEvolutionDbVisibility, string]> = [
@@ -71,11 +77,40 @@ function rowDisplayName(row: WorldEvolutionDbRow): string {
   return row.name ?? row.title ?? row.id;
 }
 
-export function mountWorldEvolutionDbPanel(target?: HTMLElement): void {
-  if (root?.length) return;
+function tableIcon(table: WorldEvolutionDbTable): string {
+  return {
+    npc: '♙',
+    organization: '⌘',
+    location: '⌖',
+    society: '◎',
+    environment: '☼',
+    event: '◷',
+    plan: '◇',
+  }[table];
+}
+
+function visibilityLabel(visibility: WorldEvolutionDbVisibility): string {
+  return {
+    backstage: '后台',
+    ai_context: '提供给 AI',
+    protagonist_known: '主角已知',
+    revealed: '已公开',
+  }[visibility];
+}
+
+export function mountWorldEvolutionDbPanel(
+  target?: HTMLElement,
+  options: { initialPage?: WorldEvolutionDbPanelPage; hideNavigation?: boolean } = {},
+): WorldEvolutionDbPanelController | undefined {
+  if (root?.length) {
+    if (options.initialPage) navigateWorldEvolutionDbPanel?.(options.initialPage);
+    return navigateWorldEvolutionDbPanel;
+  }
   const embedded = target !== undefined;
   const state = reactive({
     chatKey: getCurrentChatKey(),
+    page: options.initialPage ?? 'tables' as WorldEvolutionDbPanelPage,
+    hideNavigation: options.hideNavigation === true,
     selectedTable: 'npc' as WorldEvolutionDbTable,
     query: '',
     visible: true,
@@ -92,6 +127,10 @@ export function mountWorldEvolutionDbPanel(target?: HTMLElement): void {
     migrationPreview: null as WorldEvolutionMigrationPreview | null,
     migrationBusy: false,
   });
+  const navigate = (page: WorldEvolutionDbPanelPage) => {
+    state.page = page;
+  };
+  navigateWorldEvolutionDbPanel = navigate;
 
   const refresh = async () => {
     try {
@@ -358,8 +397,468 @@ export function mountWorldEvolutionDbPanel(target?: HTMLElement): void {
 
   const Panel = {
     setup() {
-      return () =>
-        h('div', { class: ['wedb-panel', embedded ? 'wedb-panel-embedded' : ''] }, [
+      const titleByPage: Record<WorldEvolutionDbPanelPage, [string, string]> = {
+        tables: ['世界资料表', '按对象分类查看和编辑本聊天的世界状态数据。'],
+        history: ['楼层与版本记录', '检查每轮运行、revision 操作和可用检查点；楼层重建只回放已保存操作，不调用 AI。'],
+        worldbook: ['世界书投影', '将数据库中允许暴露的记录精确同步到当前角色卡 primary 世界书。'],
+        backup: ['备份与迁移', '导入、导出或迁移当前聊天的数据；危险操作会再次确认。'],
+      };
+
+      const renderPageHeading = () =>
+        h('div', { class: 'wedb-page-heading' }, [
+          h('div', [
+            h('div', { class: 'wedb-section-title' }, titleByPage[state.page][0]),
+            h('div', { class: 'wedb-muted' }, titleByPage[state.page][1]),
+          ]),
+          h('div', { class: 'wedb-muted wedb-chat-key' }, state.chatKey),
+        ]);
+
+      const renderNavigation = () =>
+        h(
+          'div',
+          { class: 'wedb-tabs', role: 'tablist', 'aria-label': '数据库页面' },
+          (
+            [
+              ['tables', '世界资料'],
+              ['history', '楼层记录'],
+              ['worldbook', '世界书投影'],
+              ['backup', '备份与迁移'],
+            ] as Array<[WorldEvolutionDbPanelPage, string]>
+          ).map(([page, label]) =>
+            h(
+              'button',
+              {
+                class: ['wedb-tab', state.page === page ? 'active' : ''],
+                role: 'tab',
+                'aria-selected': String(state.page === page),
+                onClick: () => navigate(page),
+              },
+              label,
+            ),
+          ),
+        );
+
+      const renderSummary = () =>
+        h(
+          'div',
+          { class: 'wedb-summary' },
+          [
+            ['revision', state.snapshot?.meta.revision ?? 0],
+            ['NPC', state.snapshot?.rows.npc.length ?? 0],
+            ['事件', state.snapshot?.rows.event.length ?? 0],
+            ['楼层记录', state.snapshot?.floorRuns.length ?? 0],
+            ['检查点', state.snapshot?.checkpoints.length ?? 0],
+          ].map(([label, value]) =>
+            h('div', { class: 'wedb-stat' }, [
+              h('strong', undefined, String(value)),
+              h('span', { class: 'wedb-muted' }, label),
+            ]),
+          ),
+        );
+
+      const renderTableEditor = () => [
+        h(
+          'div',
+          { class: 'wedb-tabs wedb-object-tabs', role: 'tablist', 'aria-label': '世界对象分类' },
+          WORLD_EVOLUTION_DB_TABLES.map(table =>
+            h(
+              'button',
+              {
+                class: ['wedb-tab', state.selectedTable === table ? 'active' : ''],
+                role: 'tab',
+                'aria-selected': String(state.selectedTable === table),
+                onClick: () => {
+                  state.selectedTable = table;
+                  state.query = '';
+                },
+              },
+              [
+                h('span', { class: 'wedb-table-icon' }, tableIcon(table)),
+                WORLD_EVOLUTION_DB_TABLE_LABELS[table],
+                h('small', { class: 'wedb-table-count' }, String(state.snapshot?.rows[table].length ?? 0)),
+              ],
+            ),
+          ),
+        ),
+        h('div', { class: 'wedb-section wedb-add-section' }, [
+          h('div', { class: 'wedb-section-heading' }, [
+            h('div', { class: 'wedb-section-title' }, `新增${WORLD_EVOLUTION_DB_TABLE_LABELS[state.selectedTable]}记录`),
+            h('span', { class: 'wedb-muted' }, '字段以 JSON 保存，可后续由提示词生成 operations 写入同一张表。'),
+          ]),
+          h('div', { class: 'wedb-form-grid' }, [
+            h('input', {
+              class: 'wedb-input',
+              value: state.formName,
+              placeholder:
+                state.selectedTable === 'event' || state.selectedTable === 'plan'
+                  ? '事件标题 / 计划标题'
+                  : '名称',
+              onInput: (event: Event) => (state.formName = (event.target as HTMLInputElement).value),
+            }),
+            h(
+              'select',
+              {
+                class: 'wedb-select',
+                value: state.formVisibility,
+                onChange: (event: Event) =>
+                  (state.formVisibility = (event.target as HTMLSelectElement).value as WorldEvolutionDbVisibility),
+              },
+              visibilityOptions.map(([value, label]) => h('option', { value }, label)),
+            ),
+            h('textarea', {
+              class: 'wedb-textarea full',
+              value: state.formJson,
+              onInput: (event: Event) => (state.formJson = (event.target as HTMLTextAreaElement).value),
+            }),
+          ]),
+          h(
+            'button',
+            { class: 'wedb-btn wedb-btn-primary', onClick: () => void addRow() },
+            `写入${WORLD_EVOLUTION_DB_TABLE_LABELS[state.selectedTable]}`,
+          ),
+        ]),
+        h('div', { class: 'wedb-section wedb-table-section' }, [
+          h('div', { class: 'wedb-toolbar' }, [
+            h('div', { class: 'wedb-section-title' }, `${WORLD_EVOLUTION_DB_TABLE_LABELS[state.selectedTable]}表`),
+            h('input', {
+              class: 'wedb-input',
+              value: state.query,
+              placeholder: '搜索名称、ID或字段',
+              onInput: (event: Event) => (state.query = (event.target as HTMLInputElement).value),
+            }),
+          ]),
+          h('div', { class: 'wedb-table-wrap' }, [
+            h('table', { class: 'wedb-table' }, [
+              h('thead', undefined, [
+                h(
+                  'tr',
+                  undefined,
+                  ['ID', '名称 / 标题', '可见性', 'revision', '字段', '操作'].map(label => h('th', undefined, label)),
+                ),
+              ]),
+              h(
+                'tbody',
+                undefined,
+                currentRows().length
+                  ? currentRows().map(row =>
+                      h('tr', { key: row.id }, [
+                        h('td', undefined, row.id),
+                        h('td', undefined, rowDisplayName(row)),
+                        h('td', undefined, visibilityLabel(row.visibility)),
+                        h('td', undefined, String(row.revision)),
+                        h('td', { class: 'wedb-cell-json' }, prettyJson(row.data)),
+                        h('td', { class: 'wedb-actions' }, [
+                          h('button', { class: 'wedb-btn wedb-small', onClick: () => void editRow(row) }, '编辑'),
+                          h(
+                            'button',
+                            { class: 'wedb-btn wedb-small wedb-danger-btn', onClick: () => void deleteRow(row) },
+                            '删除',
+                          ),
+                        ]),
+                      ]),
+                    )
+                  : [
+                      h('tr', undefined, [
+                        h('td', { colspan: 6, class: 'wedb-muted wedb-empty-cell' }, '当前分类暂无记录；可以在上方直接新增。'),
+                      ]),
+                    ],
+              ),
+            ]),
+          ]),
+        ]),
+      ];
+
+      const renderTablesPage = () => [
+        renderSummary(),
+        h('div', { class: 'wedb-toolbar wedb-page-toolbar' }, [
+          h('span', { class: state.error ? 'wedb-danger' : 'wedb-ok' }, state.error || state.status),
+          h('button', { class: 'wedb-btn', onClick: () => void refresh() }, '刷新数据'),
+        ]),
+        ...renderTableEditor(),
+      ];
+
+      const renderWorldbookPage = () => {
+        const counts = projectionCounts();
+        return [
+          h('div', { class: 'wedb-banner' }, [
+            h('strong', undefined, state.currentWorldbookName ? '目标角色卡世界书' : '尚未绑定主世界书'),
+            h(
+              'span',
+              undefined,
+              state.currentWorldbookName
+                ? ` ${state.currentWorldbookName} · primary`
+                : '　当前角色卡未绑定 primary 世界书，投影暂不可用。',
+            ),
+          ]),
+          h('div', { class: 'wedb-summary wedb-projection-summary' }, [
+            ['托管条目', counts.total],
+            ['已同步', counts.synced],
+            ['待处理 / 失败', counts.pending + counts.failed],
+            ['缺失 / 漂移 / 孤儿', counts.missing + counts.drift + counts.orphaned],
+          ].map(([label, value]) =>
+            h('div', { class: 'wedb-stat' }, [
+              h('strong', undefined, String(value)),
+              h('span', { class: 'wedb-muted' }, label),
+            ]),
+          )),
+          h('div', { class: 'wedb-section' }, [
+            h('div', { class: 'wedb-section-heading' }, [
+              h('div', { class: 'wedb-section-title' }, '投影操作'),
+              h('span', { class: 'wedb-muted' }, '只写入 WorldEvolution-* 托管条目，不覆盖用户或 shujuku 内容。'),
+            ]),
+            h('div', { class: 'wedb-toolbar' }, [
+              h(
+                'button',
+                {
+                  class: 'wedb-btn wedb-btn-primary',
+                  disabled: state.projectionBusy || !state.currentWorldbookName,
+                  onClick: () => void syncProjection('reconcile', '世界书投影同步'),
+                },
+                state.projectionBusy ? '处理中…' : '立即同步',
+              ),
+              h(
+                'button',
+                {
+                  class: 'wedb-btn',
+                  disabled: state.projectionBusy || !state.currentWorldbookName,
+                  onClick: () => void syncProjection('reconcile', '孤儿清理与漂移修复'),
+                },
+                '检查并修复',
+              ),
+              h(
+                'button',
+                {
+                  class: 'wedb-btn',
+                  disabled: state.projectionBusy || !state.currentWorldbookName,
+                  onClick: () => void rebuildProjection(),
+                },
+                '完整重建',
+              ),
+              h('span', { class: state.error ? 'wedb-danger' : 'wedb-ok' }, state.error || state.status),
+            ]),
+          ]),
+          h('div', { class: 'wedb-section' }, [
+            h('div', { class: 'wedb-section-heading' }, [
+              h('div', { class: 'wedb-section-title' }, '投影明细'),
+              h('span', { class: 'wedb-muted' }, '稳定键用于重命名后的条目复用；指纹用于跳过无变化写入。'),
+            ]),
+            h('div', { class: 'wedb-table-wrap' }, [
+              h('table', { class: 'wedb-table' }, [
+                h('thead', undefined, [
+                  h('tr', undefined, ['类型', '记录 ID', '状态', 'UID', 'revision', '内容指纹'].map(label => h('th', undefined, label))),
+                ]),
+                h(
+                  'tbody',
+                  undefined,
+                  state.projections.length
+                    ? state.projections.map(projection =>
+                        h('tr', { key: projection.key }, [
+                          h('td', undefined, projection.table),
+                          h('td', undefined, projection.rowId),
+                          h('td', undefined, projection.status),
+                          h('td', undefined, String(projection.uid ?? '未绑定')),
+                          h('td', undefined, String(projection.sourceRevision)),
+                          h('td', { class: 'wedb-cell-json' }, projection.contentFingerprint),
+                        ]),
+                      )
+                    : [
+                        h('tr', undefined, [
+                          h('td', { colspan: 6, class: 'wedb-muted wedb-empty-cell' },
+                            state.currentWorldbookName ? '当前没有投影账本记录。' : '绑定角色卡 primary 世界书后显示投影状态。',
+                          ),
+                        ]),
+                      ],
+                ),
+              ]),
+            ]),
+          ]),
+        ];
+      };
+
+      const renderHistoryPage = () => [
+        renderSummary(),
+        h('div', { class: 'wedb-toolbar wedb-page-toolbar' }, [
+          h('span', { class: state.error ? 'wedb-danger' : 'wedb-ok' }, state.error || state.status),
+          h('button', { class: 'wedb-btn', onClick: () => void createCheckpoint() }, '创建检查点'),
+          h('button', { class: 'wedb-btn', onClick: () => void rebuildFloor() }, '手动重建楼层'),
+          h('button', { class: 'wedb-btn', onClick: () => void refresh() }, '刷新记录'),
+        ]),
+        h('div', { class: 'wedb-section' }, [
+          h('div', { class: 'wedb-section-heading' }, [
+            h('div', { class: 'wedb-section-title' }, '楼层运行'),
+            h('span', { class: 'wedb-muted' }, '这里显示每个处理过的消息楼层及其状态、候选对象和错误。'),
+          ]),
+          h('div', { class: 'wedb-table-wrap' }, [
+            h('table', { class: 'wedb-table' }, [
+              h('thead', undefined, [
+                h('tr', undefined, ['楼层', '状态', '来源', 'revision', '候选对象', '错误'].map(label => h('th', undefined, label))),
+              ]),
+              h(
+                'tbody',
+                undefined,
+                (state.snapshot?.floorRuns ?? []).length
+                  ? (state.snapshot?.floorRuns ?? [])
+                      .slice()
+                      .sort((left, right) => right.messageId - left.messageId)
+                      .map(run =>
+                        h('tr', { key: run.key }, [
+                          h('td', undefined, String(run.messageId)),
+                          h('td', { class: run.status === 'failed' ? 'wedb-danger' : 'wedb-ok' }, run.status),
+                          h('td', undefined, run.source),
+                          h('td', undefined, String(run.resultRevision ?? run.baseRevision)),
+                          h('td', undefined, run.candidateNames.join('、') || '—'),
+                          h('td', { class: 'wedb-cell-json wedb-error-cell' }, run.error || '—'),
+                        ]),
+                      )
+                  : [h('tr', undefined, [h('td', { colspan: 6, class: 'wedb-muted wedb-empty-cell' }, '还没有楼层运行记录。')])],
+              ),
+            ]),
+          ]),
+        ]),
+        h('div', { class: 'wedb-section' }, [
+          h('div', { class: 'wedb-section-heading' }, [
+            h('div', { class: 'wedb-section-title' }, 'Revision 操作'),
+            h('span', { class: 'wedb-muted' }, 'stale 记录保留审计信息；当前状态由有效 operations 确定性回放。'),
+          ]),
+          h('div', { class: 'wedb-table-wrap' }, [
+            h('table', { class: 'wedb-table' }, [
+              h('thead', undefined, [
+                h('tr', undefined, ['revision', '楼层', '来源', '状态', '操作数'].map(label => h('th', undefined, label))),
+              ]),
+              h(
+                'tbody',
+                undefined,
+                (state.snapshot?.revisions ?? [])
+                  .slice()
+                  .reverse()
+                  .map(revision =>
+                    h('tr', { key: revision.key }, [
+                      h('td', undefined, String(revision.revision)),
+                      h('td', undefined, String(revision.messageId)),
+                      h('td', undefined, revision.source),
+                      h('td', { class: revision.status === 'stale' ? 'wedb-danger' : 'wedb-ok' }, revision.status),
+                      h('td', undefined, String(revision.operations.length)),
+                    ]),
+                  ),
+              ),
+            ]),
+          ]),
+        ]),
+        h('div', { class: 'wedb-section' }, [
+          h('div', { class: 'wedb-section-heading' }, [
+            h('div', { class: 'wedb-section-title' }, '检查点'),
+            h('span', { class: 'wedb-muted' }, '检查点用于加速恢复与长历史重建。'),
+          ]),
+          h('div', { class: 'wedb-table-wrap' }, [
+            h('table', { class: 'wedb-table' }, [
+              h('thead', undefined, [h('tr', undefined, ['ID', 'revision', '楼层', '原因', '创建时间'].map(label => h('th', undefined, label)))]),
+              h(
+                'tbody',
+                undefined,
+                (state.snapshot?.checkpoints ?? []).length
+                  ? (state.snapshot?.checkpoints ?? [])
+                      .slice()
+                      .reverse()
+                      .map(checkpoint =>
+                        h('tr', { key: checkpoint.key }, [
+                          h('td', undefined, checkpoint.id),
+                          h('td', undefined, String(checkpoint.revision)),
+                          h('td', undefined, String(checkpoint.messageId)),
+                          h('td', undefined, checkpoint.reason),
+                          h('td', undefined, new Date(checkpoint.createdAt).toLocaleString()),
+                        ]),
+                      )
+                  : [h('tr', undefined, [h('td', { colspan: 5, class: 'wedb-muted wedb-empty-cell' }, '还没有检查点。')])],
+              ),
+            ]),
+          ]),
+        ]),
+      ];
+
+      const renderBackupPage = () => [
+        h('div', { class: 'wedb-banner' }, [
+          h('strong', undefined, '数据安全'),
+          h('span', undefined, '迁移不会覆盖已有数据库；清空操作只影响当前聊天，并要求二次确认。'),
+        ]),
+        h('div', { class: 'wedb-section' }, [
+          h('div', { class: 'wedb-section-heading' }, [
+            h('div', { class: 'wedb-section-title' }, '备份文件'),
+            h('span', { class: 'wedb-muted' }, '导出当前聊天的全部世界演变数据库记录。'),
+          ]),
+          h('div', { class: 'wedb-toolbar' }, [
+            h('button', { class: 'wedb-btn wedb-btn-primary', onClick: () => void exportDatabase() }, '导出数据库 JSON'),
+            h('button', { class: 'wedb-btn', onClick: importDatabase }, '导入数据库备份'),
+          ]),
+        ]),
+        h('div', { class: 'wedb-section' }, [
+          h('div', { class: 'wedb-section-heading' }, [
+            h('div', { class: 'wedb-section-title' }, '旧版数据迁移'),
+            h('span', { class: 'wedb-muted' }, '从 A0.0.5 旧格式备份生成预检报告，再由你确认写入。'),
+          ]),
+          h(
+            'button',
+            {
+              class: 'wedb-btn',
+              disabled: state.migrationBusy,
+              onClick: migrateLegacyDatabase,
+            },
+            state.migrationBusy ? '正在预检 / 迁移…' : '选择 A0.0.5 备份并迁移',
+          ),
+          state.migrationPreview
+            ? h('div', { class: 'wedb-migration-report' }, [
+                h(
+                  'div',
+                  { class: state.migrationPreview.canMigrate ? 'wedb-ok' : 'wedb-danger' },
+                  state.migrationPreview.canMigrate
+                    ? `可迁移：${state.migrationPreview.sourceVersion} → ${WORLD_EVOLUTION_DB_VERSION}`
+                    : '不可迁移：请先处理以下冲突',
+                ),
+                h(
+                  'div',
+                  { class: 'wedb-muted' },
+                  `实体 ${state.migrationPreview.counts.entities} · 事件 ${state.migrationPreview.counts.events} · ` +
+                    `计划 ${state.migrationPreview.counts.plans} · revision ${state.migrationPreview.sourceRevision}`,
+                ),
+                state.migrationPreview.conflicts.length
+                  ? h(
+                      'ul',
+                      undefined,
+                      state.migrationPreview.conflicts.map(conflict =>
+                        h(
+                          'li',
+                          { class: conflict.severity === 'error' ? 'wedb-danger' : 'wedb-muted' },
+                          `[${conflict.severity}] ${conflict.path}：${conflict.message}`,
+                        ),
+                      ),
+                    )
+                  : h('div', { class: 'wedb-ok' }, '未发现迁移冲突'),
+              ])
+            : null,
+        ]),
+        h('div', { class: 'wedb-section wedb-danger-zone' }, [
+          h('div', { class: 'wedb-section-heading' }, [
+            h('div', { class: 'wedb-section-title' }, '危险操作'),
+            h('span', { class: 'wedb-muted' }, '清空不能自动撤销，请先导出备份。'),
+          ]),
+          h(
+            'button',
+            { class: 'wedb-btn wedb-danger-btn', onClick: () => void clearDatabase() },
+            '清空当前聊天数据库',
+          ),
+          h('span', { class: state.error ? 'wedb-danger' : 'wedb-ok' }, state.error || state.status),
+        ]),
+      ];
+
+      return () => {
+        const pageContent =
+          state.page === 'tables'
+            ? renderTablesPage()
+            : state.page === 'worldbook'
+              ? renderWorldbookPage()
+              : state.page === 'history'
+                ? renderHistoryPage()
+                : renderBackupPage();
+        return h('div', { class: ['wedb-panel', embedded ? 'wedb-panel-embedded' : ''] }, [
           embedded
             ? null
             : h('div', { class: 'wedb-head' }, [
@@ -372,320 +871,21 @@ export function mountWorldEvolutionDbPanel(target?: HTMLElement): void {
               ]),
           state.visible
             ? h('div', { class: 'wedb-body' }, [
-                h(
-                  'div',
-                  { class: 'wedb-banner' },
-                  '表格是事实源，世界书只是投影。真实世界演变结果会通过 revision 事务提交；删除或滑动楼层后自动执行确定性回放，不会为历史楼层重新调用 AI。',
-                ),
-                h('div', { class: 'wedb-muted' }, `当前聊天：${state.chatKey}`),
-                h(
-                  'div',
-                  { class: 'wedb-summary' },
-                  [
-                    ['revision', state.snapshot?.meta.revision ?? 0],
-                    ['NPC', state.snapshot?.rows.npc.length ?? 0],
-                    ['事件', state.snapshot?.rows.event.length ?? 0],
-                    ['楼层记录', state.snapshot?.floorRuns.length ?? 0],
-                    ['检查点', state.snapshot?.checkpoints.length ?? 0],
-                  ].map(([label, value]) =>
-                    h('div', { class: 'wedb-stat' }, [
-                      h('strong', undefined, String(value)),
-                      h('span', { class: 'wedb-muted' }, label),
-                    ]),
-                  ),
-                ),
-                h('div', { class: 'wedb-toolbar' }, [
-                  h('button', { class: 'wedb-btn', onClick: () => void refresh() }, '刷新'),
-                  h('button', { class: 'wedb-btn', onClick: () => void createCheckpoint() }, '创建检查点'),
-                  h('button', { class: 'wedb-btn', onClick: () => void rebuildFloor() }, '手动重建楼层'),
-                  h('button', { class: 'wedb-btn', onClick: () => void exportDatabase() }, '导出数据库'),
-                  h('button', { class: 'wedb-btn', onClick: importDatabase }, '导入数据库'),
+                h('div', { class: 'wedb-banner' }, [
+                  h('strong', undefined, '数据库是事实源'),
                   h(
-                    'button',
-                    {
-                      class: 'wedb-btn',
-                      disabled: state.migrationBusy,
-                      onClick: migrateLegacyDatabase,
-                    },
-                    state.migrationBusy ? '迁移中…' : '迁移 A0.0.5 旧版备份',
-                  ),
-                  h('button', { class: 'wedb-btn', onClick: () => void clearDatabase() }, '清空当前聊天'),
-                  h('span', { class: state.error ? 'wedb-danger' : 'wedb-ok' }, state.error || state.status),
-                ]),
-                state.migrationPreview
-                  ? h('div', { class: 'wedb-section' }, [
-                      h('div', { class: 'wedb-section-title' }, '旧版迁移预检报告'),
-                      h(
-                        'div',
-                        { class: state.migrationPreview.canMigrate ? 'wedb-ok' : 'wedb-danger' },
-                        state.migrationPreview.canMigrate
-                          ? `可迁移：${state.migrationPreview.sourceVersion} → ${WORLD_EVOLUTION_DB_VERSION}`
-                          : '不可迁移：请先处理以下冲突',
-                      ),
-                      h(
-                        'div',
-                        { class: 'wedb-muted' },
-                        `实体 ${state.migrationPreview.counts.entities} · 事件 ${state.migrationPreview.counts.events} · ` +
-                          `计划 ${state.migrationPreview.counts.plans} · revision ${state.migrationPreview.sourceRevision}`,
-                      ),
-                      state.migrationPreview.conflicts.length
-                        ? h(
-                            'ul',
-                            { class: 'wedb-muted' },
-                            state.migrationPreview.conflicts.map(conflict =>
-                              h(
-                                'li',
-                                { class: conflict.severity === 'error' ? 'wedb-danger' : 'wedb-muted' },
-                                `[${conflict.severity}] ${conflict.path}：${conflict.message}`,
-                              ),
-                            ),
-                          )
-                        : h('div', { class: 'wedb-ok' }, '未发现迁移冲突'),
-                    ])
-                  : null,
-                h('div', { class: 'wedb-section' }, [
-                  h('div', { class: 'wedb-section-title' }, '角色卡主世界书投影管理'),
-                  h(
-                    'div',
-                    { class: state.currentWorldbookName ? 'wedb-muted' : 'wedb-danger' },
-                    state.currentWorldbookName
-                      ? `目标：${state.currentWorldbookName}（当前角色卡 primary）`
-                      : '当前角色卡未绑定主世界书，投影暂不可用',
-                  ),
-                  (() => {
-                    const counts = projectionCounts();
-                    return h(
-                      'div',
-                      { class: 'wedb-muted' },
-                      `账本 ${counts.total} 条 · 已同步 ${counts.synced} · 待处理 ${counts.pending} · 失败 ${counts.failed} · ` +
-                        `缺失 ${counts.missing} · 漂移 ${counts.drift} · 孤儿 ${counts.orphaned} · 旧条目 ${counts.legacy}`,
-                    );
-                  })(),
-                  h('div', { class: 'wedb-toolbar' }, [
-                    h(
-                      'button',
-                      {
-                        class: 'wedb-btn',
-                        disabled: state.projectionBusy || !state.currentWorldbookName,
-                        onClick: () => void syncProjection('reconcile', '世界书投影同步'),
-                      },
-                      state.projectionBusy ? '处理中…' : '立即同步',
-                    ),
-                    h(
-                      'button',
-                      {
-                        class: 'wedb-btn',
-                        disabled: state.projectionBusy || !state.currentWorldbookName,
-                        onClick: () => void syncProjection('reconcile', '孤儿清理与漂移修复'),
-                      },
-                      '清理孤儿/修复漂移',
-                    ),
-                    h(
-                      'button',
-                      {
-                        class: 'wedb-btn',
-                        disabled: state.projectionBusy || !state.currentWorldbookName,
-                        onClick: () => void rebuildProjection(),
-                      },
-                      '完整重建',
-                    ),
-                  ]),
-                  h('div', { class: 'wedb-table-wrap' }, [
-                    h('table', { class: 'wedb-table' }, [
-                      h('thead', undefined, [
-                        h(
-                          'tr',
-                          undefined,
-                          ['表', '行 ID', '状态', 'UID', 'revision', '指纹'].map(label => h('th', undefined, label)),
-                        ),
-                      ]),
-                      h(
-                        'tbody',
-                        undefined,
-                        state.projections.length
-                          ? state.projections.map(projection =>
-                              h('tr', { key: projection.key }, [
-                                h('td', undefined, projection.table),
-                                h('td', undefined, projection.rowId),
-                                h('td', undefined, projection.status),
-                                h('td', undefined, String(projection.uid ?? '未绑定')),
-                                h('td', undefined, String(projection.sourceRevision)),
-                                h('td', { class: 'wedb-cell-json' }, projection.contentFingerprint),
-                              ]),
-                            )
-                          : [
-                              h('tr', undefined, [
-                                h(
-                                  'td',
-                                  { colspan: 6, class: 'wedb-muted' },
-                                  state.currentWorldbookName
-                                    ? '当前没有投影账本记录'
-                                    : '绑定角色卡主世界书后显示投影账本',
-                                ),
-                              ]),
-                            ],
-                      ),
-                    ]),
-                  ]),
-                ]),
-                h(
-                  'div',
-                  { class: 'wedb-tabs' },
-                  WORLD_EVOLUTION_DB_TABLES.map(table =>
-                    h(
-                      'button',
-                      {
-                        class: ['wedb-tab', state.selectedTable === table ? 'active' : ''],
-                        onClick: () => {
-                          state.selectedTable = table;
-                          state.query = '';
-                        },
-                      },
-                      WORLD_EVOLUTION_DB_TABLE_LABELS[table],
-                    ),
-                  ),
-                ),
-                h('div', { class: 'wedb-section' }, [
-                  h(
-                    'div',
-                    { class: 'wedb-section-title' },
-                    `新增${WORLD_EVOLUTION_DB_TABLE_LABELS[state.selectedTable]}记录`,
-                  ),
-                  h('div', { class: 'wedb-form-grid' }, [
-                    h('input', {
-                      class: 'wedb-input',
-                      value: state.formName,
-                      placeholder:
-                        state.selectedTable === 'event' || state.selectedTable === 'plan'
-                          ? '事件标题 / 计划标题'
-                          : '名称',
-                      onInput: (event: Event) => (state.formName = (event.target as HTMLInputElement).value),
-                    }),
-                    h(
-                      'select',
-                      {
-                        class: 'wedb-select',
-                        value: state.formVisibility,
-                        onChange: (event: Event) =>
-                          (state.formVisibility = (event.target as HTMLSelectElement)
-                            .value as WorldEvolutionDbVisibility),
-                      },
-                      visibilityOptions.map(([value, label]) => h('option', { value }, label)),
-                    ),
-                    h('textarea', {
-                      class: 'wedb-textarea full',
-                      value: state.formJson,
-                      onInput: (event: Event) => (state.formJson = (event.target as HTMLTextAreaElement).value),
-                    }),
-                  ]),
-                  h('button', { class: 'wedb-btn', onClick: () => void addRow() }, '写入表格'),
-                  h(
-                    'div',
-                    { class: 'wedb-muted' },
-                    '名称/标题和字段 JSON 都是本地数据库记录；后续 AI 操作协议会复用同一套表格。',
+                    'span',
+                    undefined,
+                    '　世界书只是按需重建的投影；楼层删除后使用已保存 operations 回放，不会为历史内容重新调用 AI。',
                   ),
                 ]),
-                h('div', { class: 'wedb-section' }, [
-                  h('div', { class: 'wedb-toolbar' }, [
-                    h(
-                      'div',
-                      { class: 'wedb-section-title' },
-                      `${WORLD_EVOLUTION_DB_TABLE_LABELS[state.selectedTable]}表`,
-                    ),
-                    h('input', {
-                      class: 'wedb-input',
-                      value: state.query,
-                      placeholder: '搜索名称、ID或字段',
-                      onInput: (event: Event) => (state.query = (event.target as HTMLInputElement).value),
-                    }),
-                  ]),
-                  h('div', { class: 'wedb-table-wrap' }, [
-                    h('table', { class: 'wedb-table' }, [
-                      h('thead', undefined, [
-                        h(
-                          'tr',
-                          undefined,
-                          ['ID', '名称/标题', '可见性', 'revision', '字段', '操作'].map(label =>
-                            h('th', undefined, label),
-                          ),
-                        ),
-                      ]),
-                      h(
-                        'tbody',
-                        undefined,
-                        currentRows().length
-                          ? currentRows().map(row =>
-                              h('tr', { key: row.id }, [
-                                h('td', undefined, row.id),
-                                h('td', undefined, rowDisplayName(row)),
-                                h('td', undefined, row.visibility),
-                                h('td', undefined, String(row.revision)),
-                                h('td', { class: 'wedb-cell-json' }, prettyJson(row.data)),
-                                h('td', { class: 'wedb-actions' }, [
-                                  h(
-                                    'button',
-                                    { class: 'wedb-btn wedb-small', onClick: () => void editRow(row) },
-                                    '编辑',
-                                  ),
-                                  h(
-                                    'button',
-                                    { class: 'wedb-btn wedb-small', onClick: () => void deleteRow(row) },
-                                    '删除',
-                                  ),
-                                ]),
-                              ]),
-                            )
-                          : [
-                              h('tr', undefined, [
-                                h('td', { colspan: 6, class: 'wedb-muted' }, '当前表暂无记录；可以在上方直接新增。'),
-                              ]),
-                            ],
-                      ),
-                    ]),
-                  ]),
-                ]),
-                h('div', { class: 'wedb-section' }, [
-                  h('div', { class: 'wedb-section-title' }, 'Revision 事务与楼层回放'),
-                  h('div', { class: 'wedb-table-wrap' }, [
-                    h('table', { class: 'wedb-table' }, [
-                      h('thead', undefined, [
-                        h(
-                          'tr',
-                          undefined,
-                          ['revision', '楼层', '来源', '状态', 'operations'].map(label => h('th', undefined, label)),
-                        ),
-                      ]),
-                      h(
-                        'tbody',
-                        undefined,
-                        (state.snapshot?.revisions ?? [])
-                          .slice()
-                          .reverse()
-                          .map(revision =>
-                            h('tr', { key: revision.key }, [
-                              h('td', undefined, String(revision.revision)),
-                              h('td', undefined, String(revision.messageId)),
-                              h('td', undefined, revision.source),
-                              h(
-                                'td',
-                                { class: revision.status === 'stale' ? 'wedb-danger' : 'wedb-ok' },
-                                revision.status,
-                              ),
-                              h('td', undefined, String(revision.operations.length)),
-                            ]),
-                          ),
-                      ),
-                    ]),
-                  ]),
-                  h(
-                    'div',
-                    { class: 'wedb-muted' },
-                    'stale revision 仅保留历史审计；删除/滑动楼层的当前状态由已保存 operations 确定性回放得到。',
-                  ),
-                ]),
+                renderPageHeading(),
+                state.hideNavigation ? null : renderNavigation(),
+                ...pageContent,
               ])
             : null,
         ]);
+      };
     },
   };
 
@@ -709,7 +909,10 @@ export function mountWorldEvolutionDbPanel(target?: HTMLElement): void {
     styleDestroy = null;
     root?.remove();
     root = null;
+    navigateWorldEvolutionDbPanel = undefined;
   });
+
+  return navigate;
 }
 
 export function openWorldEvolutionDbPanel(): void {
