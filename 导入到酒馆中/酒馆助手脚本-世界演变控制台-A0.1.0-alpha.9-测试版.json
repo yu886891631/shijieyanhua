@@ -4,7 +4,7 @@
   "name": "世界演变控制台（A0.1.0-alpha.9 测试版）",
   "id": "b8b65f43-496f-48c0-9b7c-acc20c043705",
   "content": "import 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@main/dist/世界演变/index.js?v=A0.1.0-alpha.9';\nimport 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@main/dist/世界演变数据库/index.js?v=A0.1.0-alpha.9'",
-  "info": "A0.1.0-alpha.9 独立测试导入包（M11）：一份脚本同时加载世界演变统一控制台和数据库楼层删除/滑动回放监听。默认关闭。此包仅独立脚本入口和 ID，不隔离 IndexedDB；会继续读取/写入当前聊天已有世界演变数据库。GitHub 尚未推送 alpha.9 构建前，此链接仍会加载旧版；推送并确认 dist 更新后再启用。测试前请禁用原有 alpha.8「世界演变」和「世界演变数据库」脚本，但不要删除旧脚本或清理聊天/数据库数据，以便回退。",
+  "info": "A0.1.0-alpha.9 独立测试导入包（M11）：一份脚本同时加载世界演变统一控制台和数据库楼层删除/滑动回放监听。默认关闭。已确认两个远程构建地址可加载 alpha.9。此包仅独立脚本入口和 ID，不隔离 IndexedDB；会继续读取/写入当前聊天已有世界演变数据库。启用前请禁用原有 alpha.8「世界演变」和「世界演变数据库」脚本，但不要删除旧脚本或清理聊天/数据库数据，以便回退。",
   "button": {
     "enabled": true,
     "buttons": []
