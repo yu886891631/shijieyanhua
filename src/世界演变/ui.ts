@@ -32,12 +32,15 @@ let stopChatChangeListener: EventOnReturn | undefined;
 
 const css = `
 .we-panel{position:fixed;right:16px;bottom:16px;z-index:10080;width:min(720px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;background:#111827;color:#e5e7eb;border:1px solid #374151;border-radius:12px;box-shadow:0 12px 36px #0008;font:13px/1.45 system-ui,sans-serif}
+.we-panel-embedded{position:relative;inset:auto;z-index:auto;width:100%;max-height:none;overflow:visible;background:transparent;border:0;border-radius:0;box-shadow:none;font:inherit}
+.we-panel-embedded .we-head{display:none}.we-panel-embedded .we-body{padding:0}
 .we-panel *{box-sizing:border-box}.we-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid #374151}.we-title{font-weight:700}.we-close,.we-btn{border:1px solid #4b5563;background:#1f2937;color:#e5e7eb;border-radius:7px;padding:6px 10px;cursor:pointer}.we-btn:hover,.we-close:hover{background:#374151}.we-body{padding:14px;display:grid;gap:10px}.we-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.we-label{color:#9ca3af;min-width:130px}.we-input{flex:1;min-width:150px;background:#0b1220;color:#f3f4f6;border:1px solid #4b5563;border-radius:6px;padding:6px 8px}.we-status{white-space:pre-wrap;background:#0b1220;border:1px solid #374151;border-radius:7px;padding:8px;max-height:180px;overflow:auto}.we-danger{color:#fca5a5}.we-ok{color:#86efac}.we-muted{color:#9ca3af;font-size:12px}.we-check{accent-color:#38bdf8}
 .we-section{border:1px solid #374151;border-radius:8px;padding:10px;display:grid;gap:8px}.we-section-title{font-weight:600;color:#d1d5db}.we-list{display:grid;gap:6px}.we-card{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;background:#0b1220;border:1px solid #263244;border-radius:7px;padding:8px}.we-card-title{font-weight:600}.we-card-meta{color:#9ca3af;font-size:12px}.we-card-state{white-space:pre-wrap;color:#cbd5e1;font-size:12px;max-height:90px;overflow:auto}.we-card-actions{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}.we-small{padding:4px 7px;font-size:12px}.we-select{background:#0b1220;color:#f3f4f6;border:1px solid #4b5563;border-radius:6px;padding:6px 8px}
 `;
 
-function mountPanel(): void {
+function mountPanel(target?: HTMLElement): void {
   if (root?.length) return;
+  const embedded = target !== undefined;
   const state = reactive({
     settings: loadSettings(),
     status: 'idle',
@@ -118,7 +121,7 @@ function mountPanel(): void {
 
   const Panel = {
     setup() {
-      const visible = ref(false);
+      const visible = ref(embedded);
       const error = ref('');
       const resultText = () => {
         const result = state.lastResult;
@@ -349,15 +352,17 @@ function mountPanel(): void {
         input.click();
       };
       return () =>
-        h('div', { class: 'we-panel' }, [
-          h('div', { class: 'we-head' }, [
-            h('div', { class: 'we-title' }, `世界演变 · 独立插件 ${WORLD_EVOLUTION_VERSION}`),
-            h(
-              'button',
-              { class: 'we-close', onClick: () => (visible.value = !visible.value) },
-              visible.value ? '收起' : '展开',
-            ),
-          ]),
+        h('div', { class: ['we-panel', embedded ? 'we-panel-embedded' : ''] }, [
+          embedded
+            ? null
+            : h('div', { class: 'we-head' }, [
+                h('div', { class: 'we-title' }, `世界演变 · 独立插件 ${WORLD_EVOLUTION_VERSION}`),
+                h(
+                  'button',
+                  { class: 'we-close', onClick: () => (visible.value = !visible.value) },
+                  visible.value ? '收起' : '展开',
+                ),
+              ]),
           visible.value
             ? h('div', { class: 'we-body' }, [
                 h('div', { class: 'we-row' }, [
@@ -759,7 +764,7 @@ function mountPanel(): void {
     },
   };
 
-  root = createScriptIdDiv().appendTo('body');
+  root = createScriptIdDiv().appendTo(target ?? 'body');
   root.append('<div id="world-evolution-mount"></div>');
   styleDestroy = teleportStyle().destroy;
   const style = $('<style data-world-evolution-style>').text(css).appendTo('head');
@@ -787,4 +792,8 @@ function mountPanel(): void {
 
 export function openWorldEvolutionPanel(): void {
   mountPanel();
+}
+
+export function mountWorldEvolutionPanel(target: HTMLElement): void {
+  mountPanel(target);
 }

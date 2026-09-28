@@ -41,6 +41,8 @@ let stopChatChangeListener: EventOnReturn | undefined;
 
 const css = `
 .wedb-panel{position:fixed;right:16px;bottom:16px;z-index:10090;width:min(980px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;background:#101827;color:#e5e7eb;border:1px solid #334155;border-radius:14px;box-shadow:0 16px 44px #0009;font:13px/1.45 system-ui,sans-serif}
+.wedb-panel-embedded{position:relative;inset:auto;z-index:auto;width:100%;max-height:none;overflow:visible;background:transparent;border:0;border-radius:0;box-shadow:none;font:inherit}
+.wedb-panel-embedded .wedb-head{display:none}.wedb-panel-embedded .wedb-body{padding:0}
 .wedb-panel *{box-sizing:border-box}.wedb-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid #334155}.wedb-title{font-weight:700}.wedb-close,.wedb-btn{border:1px solid #475569;background:#1e293b;color:#e5e7eb;border-radius:7px;padding:6px 10px;cursor:pointer}.wedb-btn:hover,.wedb-close:hover{background:#334155}.wedb-btn:disabled{opacity:.5;cursor:not-allowed}.wedb-body{padding:14px;display:grid;gap:12px}.wedb-banner{border:1px solid #36506c;background:#12243a;color:#bfdbfe;border-radius:8px;padding:9px 10px}.wedb-muted{color:#94a3b8;font-size:12px}.wedb-danger{color:#fca5a5}.wedb-ok{color:#86efac}.wedb-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.wedb-input,.wedb-select,.wedb-textarea{background:#0b1220;color:#f8fafc;border:1px solid #475569;border-radius:7px;padding:7px 9px}.wedb-input{min-width:180px;flex:1}.wedb-select{min-width:135px}.wedb-textarea{width:100%;min-height:96px;resize:vertical;font:12px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace}.wedb-tabs{display:flex;gap:6px;overflow:auto;padding-bottom:2px}.wedb-tab{white-space:nowrap;border:1px solid #334155;background:#172033;color:#cbd5e1;border-radius:999px;padding:6px 10px;cursor:pointer}.wedb-tab.active{background:#0e7490;border-color:#22d3ee;color:#ecfeff}.wedb-section{border:1px solid #334155;border-radius:9px;padding:10px;display:grid;gap:9px}.wedb-section-title{font-weight:650;color:#f1f5f9}.wedb-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.wedb-stat{background:#0b1220;border:1px solid #263448;border-radius:8px;padding:8px}.wedb-stat strong{display:block;font-size:18px;color:#67e8f9}.wedb-table-wrap{overflow:auto;border:1px solid #263448;border-radius:8px}.wedb-table{width:100%;border-collapse:collapse;min-width:700px}.wedb-table th,.wedb-table td{padding:8px;border-bottom:1px solid #263448;text-align:left;vertical-align:top}.wedb-table th{color:#94a3b8;font-weight:500;background:#111c2d;position:sticky;top:0}.wedb-cell-json{white-space:pre-wrap;max-width:420px;max-height:90px;overflow:auto;color:#cbd5e1;font:11px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace}.wedb-actions{display:flex;gap:5px;flex-wrap:wrap}.wedb-small{padding:4px 7px;font-size:12px}.wedb-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.wedb-form-grid .full{grid-column:1/-1}@media(max-width:700px){.wedb-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.wedb-form-grid{grid-template-columns:1fr}.wedb-form-grid .full{grid-column:auto}}
 `;
 
@@ -69,8 +71,9 @@ function rowDisplayName(row: WorldEvolutionDbRow): string {
   return row.name ?? row.title ?? row.id;
 }
 
-export function mountWorldEvolutionDbPanel(): void {
+export function mountWorldEvolutionDbPanel(target?: HTMLElement): void {
   if (root?.length) return;
+  const embedded = target !== undefined;
   const state = reactive({
     chatKey: getCurrentChatKey(),
     selectedTable: 'npc' as WorldEvolutionDbTable,
@@ -356,15 +359,17 @@ export function mountWorldEvolutionDbPanel(): void {
   const Panel = {
     setup() {
       return () =>
-        h('div', { class: 'wedb-panel' }, [
-          h('div', { class: 'wedb-head' }, [
-            h('div', { class: 'wedb-title' }, `世界演变数据库 · ${WORLD_EVOLUTION_DB_VERSION}`),
-            h(
-              'button',
-              { class: 'wedb-close', onClick: () => (state.visible = !state.visible) },
-              state.visible ? '收起' : '展开',
-            ),
-          ]),
+        h('div', { class: ['wedb-panel', embedded ? 'wedb-panel-embedded' : ''] }, [
+          embedded
+            ? null
+            : h('div', { class: 'wedb-head' }, [
+                h('div', { class: 'wedb-title' }, `世界演变数据库 · ${WORLD_EVOLUTION_DB_VERSION}`),
+                h(
+                  'button',
+                  { class: 'wedb-close', onClick: () => (state.visible = !state.visible) },
+                  state.visible ? '收起' : '展开',
+                ),
+              ]),
           state.visible
             ? h('div', { class: 'wedb-body' }, [
                 h(
@@ -684,7 +689,7 @@ export function mountWorldEvolutionDbPanel(): void {
     },
   };
 
-  root = createScriptIdDiv().appendTo('body');
+  root = createScriptIdDiv().appendTo(target ?? 'body');
   root.append('<div id="world-evolution-db-mount"></div>');
   styleDestroy = teleportStyle().destroy;
   const style = $('<style data-world-evolution-db-style>').text(css).appendTo('head');

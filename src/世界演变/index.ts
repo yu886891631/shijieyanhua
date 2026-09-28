@@ -1,7 +1,7 @@
 import { getCurrentChatKey } from '../工作流助手/api/chat-key';
 import { ACU_PP_WORKFLOW_COMPLETED, type WorkflowCompletedPayload } from '../工作流助手/tasks/events';
 import { loadSettings } from './store';
-import { openWorldEvolutionPanel } from './ui';
+import { openWorldEvolutionConsole } from './console';
 import { retryPendingWorldbookSync, runWorldEvolution } from './engine';
 
 const SCRIPT_BUTTON = '打开世界演变面板';
@@ -78,9 +78,9 @@ function registerWorldEvolutionMenuEntry(onClick: () => void): { destroy: () => 
 
     const item = host$(
       `<div class="list-group-item flex-container flexGap5 interactable" id="${MENU_ITEM_ID}" ` +
-        'title="打开世界演变" tabindex="0">' +
+        'title="打开世界演变控制台" tabindex="0">' +
         '<i class="fa-fw fa-solid fa-globe extensionsMenuExtensionButton"></i>' +
-        '<span>世界演变</span>' +
+        '<span>世界演变控制台</span>' +
         '</div>',
     );
     item.on(MENU_CLICK_NAMESPACE, handleClick);
@@ -103,7 +103,7 @@ function registerWorldEvolutionMenuEntry(onClick: () => void): { destroy: () => 
 }
 
 function registerWorldEvolution(): void {
-  const menuEntry = registerWorldEvolutionMenuEntry(() => openWorldEvolutionPanel());
+  const menuEntry = registerWorldEvolutionMenuEntry(() => openWorldEvolutionConsole());
   const generationFallbackTimers = new Map<number, ReturnType<typeof setTimeout>>();
   const generationFallbackPolls = new Map<number, number>();
 
@@ -184,7 +184,7 @@ function registerWorldEvolution(): void {
   };
 
   appendInexistentScriptButtons([{ name: SCRIPT_BUTTON, visible: true }]);
-  eventOn(getButtonEvent(SCRIPT_BUTTON), () => openWorldEvolutionPanel());
+  eventOn(getButtonEvent(SCRIPT_BUTTON), () => openWorldEvolutionConsole());
 
   const recoverCurrentChat = (): void => {
     const chatKey = getCurrentChatKey();
