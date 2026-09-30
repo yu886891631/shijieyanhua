@@ -1,7 +1,7 @@
 import type { WorldEvolutionQueryContext } from './query/types';
 
 export type WorldEvolutionEntityType = 'npc' | 'organization' | 'location' | 'environment' | 'social';
-export const WORLD_EVOLUTION_VERSION = 'A0.1.0-alpha.11';
+export const WORLD_EVOLUTION_VERSION = 'A0.1.0-alpha.12';
 
 export type WorldEvolutionVisibility = 'backstage' | 'ai_context' | 'protagonist_known' | 'revealed';
 

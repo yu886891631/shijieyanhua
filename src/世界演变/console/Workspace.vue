@@ -167,7 +167,10 @@
           </section>
 
           <section v-show="isDatabasePage" ref="databaseHost" class="we-page we-database-page" />
-          <section v-show="page === 'evolution'" ref="evolutionHost" class="we-page we-evolution-page" />
+          <section v-show="page === 'evolution'" class="we-page we-evolution-page">
+            <ApiSettingsPanel />
+            <div ref="evolutionHost" class="we-evolution-runtime" />
+          </section>
           <section v-show="page === 'prompts'" class="we-page">
             <PromptWorkbench />
           </section>
@@ -254,6 +257,7 @@ import {
   type WorldEvolutionDbSnapshot,
 } from '../../世界演变数据库/types';
 import PromptWorkbench from './PromptWorkbench.vue';
+import ApiSettingsPanel from './ApiSettingsPanel.vue';
 
 const props = defineProps<{ onClose: () => void }>();
 const evolutionVersion = WORLD_EVOLUTION_VERSION;
@@ -1304,6 +1308,16 @@ onUnmounted(() => {
 .we-database-page,
 .we-evolution-page {
   width: 100%;
+}
+
+.we-evolution-page {
+  display: grid;
+  align-content: start;
+  gap: 17px;
+}
+
+.we-evolution-runtime {
+  min-width: 0;
 }
 
 :global(.we-console-page-host) {

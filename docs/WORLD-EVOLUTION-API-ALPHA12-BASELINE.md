@@ -4,7 +4,7 @@
 > 对应旧版：A0.1.0-alpha.11  
 > 对应提交：`7a0dd7724b931c1d54228c69db1c9ca4283cf7b6`  
 > 开发分支：`codex/world-evolution-alpha12-api`  
-> 状态：S1、S2、S3 已完成
+> 状态：S1、S2、S3、S4 已完成
 
 ## 1. 基线目的
 
@@ -102,4 +102,24 @@ S3 实现文件：
 - `src/世界演变/api-client.ts`
 - `src/世界演变/api-client.test.ts`
 
-下一阶段：**S4：控制台 API 页面**。
+上一阶段：**S3：API 客户端与模拟请求**。
+
+## 8. S4 完成检查
+
+- [x] 在世界演变控制台增加内置 API 配置页面；
+- [x] 支持预设列表、新建、编辑、删除和复制；
+- [x] 支持 Endpoint、模型、Key、超时和重试设置；
+- [x] 支持主 API、备用 API 和备用顺序编辑；
+- [x] 支持工作流助手桥接状态展示；
+- [x] 支持本地模拟连接测试，不访问网络；
+- [x] 控制台开发版本标记为 `A0.1.0-alpha.12`；
+- [x] 数据库版本仍保持 `A0.1.0-alpha.11`，未触发数据库迁移；
+- [x] 未开启自动演变，未调用真实 API。
+
+S4 实现文件：
+
+- `src/世界演变/console/ApiSettingsPanel.vue`
+- `src/世界演变/console/Workspace.vue`
+- `src/世界演变/types.ts`
+
+下一阶段：**S5：路由与工作流助手兼容**。
