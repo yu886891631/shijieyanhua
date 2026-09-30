@@ -4,7 +4,7 @@
 > 对应旧版：A0.1.0-alpha.11  
 > 对应提交：`7a0dd7724b931c1d54228c69db1c9ca4283cf7b6`  
 > 开发分支：`codex/world-evolution-alpha12-api`  
-> 状态：S1、S2、S3、S4、S5、S6 已完成；下一阶段为 S7
+> 状态：S1、S2、S3、S4、S5、S6、S7 已完成；下一阶段为 S8
 
 ## 1. 基线目的
 
@@ -158,4 +158,22 @@ S6 实现文件：
 - `src/世界演变/engine.ts`
 - `src/世界演变/ai-call.test.ts`
 
-下一阶段：**S7：事务、投影与恢复测试**。
+## 11. S7 完成检查
+
+- [x] revision 冲突在提交前失败，原快照和 revision 链保持不变；
+- [x] 暂时失败后的重试只产生一个成功 revision，不重复写入已成功操作；
+- [x] 取消尚未开始的楼层不会运行提交器，也不会产生 revision；
+- [x] 已处理楼层的 `done` 记录保持幂等，不会被重复请求改成 `skipped`；
+- [x] 删除楼层后可确定性重建，受影响 revision/floor_run 标记为 stale；
+- [x] 世界书投影失败不改变已提交的数据库世界，修复后可以重试；
+- [x] 世界书完整重建失败后可以恢复当前聊天的全部投影；
+- [x] 投影测试覆盖 stable key、content fingerprint、孤儿清理和其它聊天隔离；
+- [x] S7 相关模拟测试 36 项全部通过，未调用真实 API。
+
+S7 实现与测试文件：
+
+- `src/世界演变/engine.ts`
+- `src/世界演变数据库/s7-transaction.test.ts`
+- `src/世界演变/worldbook.test.ts`
+
+下一阶段：**S8：真机验收与 alpha.12 发布**。

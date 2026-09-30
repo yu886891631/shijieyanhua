@@ -360,3 +360,60 @@ test('完整重建只重建当前聊天投影并保留用户与其它聊天条�
   assert.ok(state.entries.some(entry => entry.name === 'WorldEvolution-NPC-npc:visible'));
   assert.equal(state.entries.filter(entry => entry.extra?.chatKey === 'rebuild-chat').length, 4);
 });
+
+test('投影写入失败不修改输入世界，修复写入后可安全重试', async () => {
+  const state = installMock([]);
+  const originalCreate = globalThis.createWorldbookEntries;
+  const world = createWorld('projection-retry-chat');
+  const before = structuredClone(world);
+  let fail = true;
+  globalThis.createWorldbookEntries = async (...args) => {
+    if (fail) throw new Error('simulated-worldbook-write-failure');
+    return originalCreate!(...args);
+  };
+
+  await assert.rejects(
+    syncWorldEvolutionWorldbook('Projection Retry Book', world),
+    /simulated-worldbook-write-failure/,
+  );
+  assert.deepEqual(world, before);
+  assert.equal(state.entries.length, 0);
+
+  fail = false;
+  await syncWorldEvolutionWorldbook('Projection Retry Book', world);
+  assert.equal(state.entries.filter(entry => entry.extra?.chatKey === 'projection-retry-chat').length, 4);
+});
+
+test('重建过程中世界书写入失败不会改变数据库世界，下一次重建可恢复全部条目', async () => {
+  const state = installMock([]);
+  const originalCreate = globalThis.createWorldbookEntries;
+  const world = createWorld('projection-rebuild-recovery-chat');
+  await syncWorldEvolutionWorldbook('Projection Recovery Book', world);
+  const expectedWorld = structuredClone(world);
+  let fail = true;
+  globalThis.createWorldbookEntries = async (...args) => {
+    if (fail) throw new Error('simulated-rebuild-create-failure');
+    return originalCreate!(...args);
+  };
+
+  await assert.rejects(
+    rebuildWorldEvolutionWorldbook('Projection Recovery Book', world),
+    /simulated-rebuild-create-failure/,
+  );
+  // 这是投影层的失败：传入的数据库世界保持不变，且下一次同步可以重新构造条目。
+  assert.deepEqual(world, expectedWorld);
+  assert.equal(state.entries.filter(entry => entry.extra?.chatKey === 'projection-rebuild-recovery-chat').length, 0);
+
+  fail = false;
+  await rebuildWorldEvolutionWorldbook('Projection Recovery Book', world);
+  assert.equal(state.entries.filter(entry => entry.extra?.chatKey === 'projection-rebuild-recovery-chat').length, 4);
+  const inspection = await inspectWorldEvolutionWorldbook('Projection Recovery Book', world);
+  assert.deepEqual(
+    {
+      missingCount: inspection.missingCount,
+      orphanCount: inspection.orphanCount,
+      driftCount: inspection.driftCount,
+    },
+    { missingCount: 0, orphanCount: 0, driftCount: 0 },
+  );
+});

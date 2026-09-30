@@ -480,13 +480,9 @@ async function executeWorldEvolution(
   if (wasProcessed) {
     result.status = 'skipped';
     result.reason = `消息楼层 ${targetMessageId} 已处理`;
-    await updateRunRecord(chatKey, targetMessageId, record => ({
-      ...(record ?? createQueuedRunRecord(chatKey, targetMessageId, options?.source ?? 'auto', fingerprint)),
-      status: 'skipped',
-      messageFingerprint: fingerprint,
-      finishedAt: Date.now(),
-      error: result.reason,
-    }));
+    // 保留已经成功提交的 done floor_run。将其改成 skipped 会让
+    // isDbMessageProcessed() 在下一次调用时失效，进而重复提交同一楼层。
+    // “skipped” 只描述本次调用，不是对历史成功运行记录的状态覆写。
     report('skipped', result.reason, result);
     return result;
   }
@@ -772,12 +768,8 @@ export async function runWorldEvolution(
   if (latest && isDbMessageProcessed(dbSnapshot, targetMessageId, fingerprintText(latest.text))) {
     skipped.status = 'skipped';
     skipped.reason = `消息楼层 ${targetMessageId} 已处理`;
-    await updateRunRecord(chatKey, targetMessageId, record => ({
-      ...(record ?? createQueuedRunRecord(chatKey, targetMessageId, options?.source ?? 'auto')),
-      status: 'skipped',
-      finishedAt: Date.now(),
-      error: skipped.reason,
-    }));
+    // 不要把已成功提交的 done floor_run 覆盖为 skipped，否则下一次
+    // isDbMessageProcessed() 会再次放行该楼层并重复调用 AI/提交 revision。
     report('skipped', skipped.reason, skipped);
     return skipped;
   }
