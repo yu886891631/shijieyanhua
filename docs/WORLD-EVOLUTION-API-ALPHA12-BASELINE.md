@@ -4,7 +4,7 @@
 > 对应旧版：A0.1.0-alpha.11  
 > 对应提交：`7a0dd7724b931c1d54228c69db1c9ca4283cf7b6`  
 > 开发分支：`codex/world-evolution-alpha12-api`  
-> 状态：S1、S2、S3、S4、S5、S6、S7 已完成；下一阶段为 S8
+> 状态：S1、S2、S3、S4、S5、S6、S7 已完成；S8 发布候选包已准备，等待 SillyTavern 真机验收
 
 ## 1. 基线目的
 
@@ -176,4 +176,17 @@ S7 实现与测试文件：
 - `src/世界演变数据库/s7-transaction.test.ts`
 - `src/世界演变/worldbook.test.ts`
 
-下一阶段：**S8：真机验收与 alpha.12 发布**。
+## 12. S8 发布候选检查
+
+- [x] 生成独立脚本 ID 的 alpha.12 导入包；
+- [x] 导入包默认关闭，自动演变和自动 API 调用保持关闭；
+- [x] 导入包同时加载世界演变控制台与世界演变数据库；
+- [x] CDN 地址固定到不可变源码 commit，不使用 `@main`；
+- [x] alpha.11 导入包 SHA-256 仍为 `E137BEBCEE4918172B47C21AE4630B687B8B9FBF23E3BC8F062EE1FC71C61480`；
+- [x] 本地模拟测试、ESLint 和生产构建通过；
+- [ ] 用户在 SillyTavern 中完成页面、保存、模拟连接和回退验收；
+- [ ] 用户明确确认后再进行低额度真实 API 测试。
+
+验收说明：`docs/WORLD-EVOLUTION-ALPHA12-API-TEST.md`。
+
+下一阶段：**S8 真机验收完成后，决定是否将 alpha.12 标记为可用测试版**。
