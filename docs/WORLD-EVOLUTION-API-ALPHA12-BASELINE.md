@@ -4,7 +4,7 @@
 > 对应旧版：A0.1.0-alpha.11  
 > 对应提交：`7a0dd7724b931c1d54228c69db1c9ca4283cf7b6`  
 > 开发分支：`codex/world-evolution-alpha12-api`  
-> 状态：S1、S2 已完成
+> 状态：S1、S2、S3 已完成
 
 ## 1. 基线目的
 
@@ -84,4 +84,22 @@ S2 实现文件：
 - `src/世界演变/api-config.ts`
 - `src/世界演变/api-config.test.ts`
 
-下一阶段：**S3：API 客户端与模拟请求**。
+上一阶段：**S2：API 配置数据层**。
+
+## 7. S3 完成检查
+
+- [x] 增加 OpenAI 兼容 JSON 请求客户端；
+- [x] 增加请求超时和外部取消；
+- [x] 增加网络、HTTP、超时、解析、配置和取消错误分类；
+- [x] 增加按预设配置的指数退避重试；
+- [x] 增加主 API 失败后的备用路由切换；
+- [x] 认证失败和格式错误不会盲目切换备用 API；
+- [x] 使用注入式 fetch 和 sleep 完成模拟测试；
+- [x] 未调用真实 API。
+
+S3 实现文件：
+
+- `src/世界演变/api-client.ts`
+- `src/世界演变/api-client.test.ts`
+
+下一阶段：**S4：控制台 API 页面**。
