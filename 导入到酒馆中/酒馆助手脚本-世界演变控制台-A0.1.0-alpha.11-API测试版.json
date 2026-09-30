@@ -3,7 +3,7 @@
   "enabled": false,
   "name": "世界演变控制台（A0.1.0-alpha.11 API 测试版）",
   "id": "3cb5137f-4dd5-4ae7-9cc8-3fb9a955ee11",
-  "content": "import 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@main/dist/世界演变/index.js?v=A0.1.0-alpha.11';\nimport 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@main/dist/世界演变数据库/index.js?v=A0.1.0-alpha.11'",
+  "content": "import 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@1590c5f/dist/世界演变/index.js?v=A0.1.0-alpha.11';\nimport 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@1590c5f/dist/世界演变数据库/index.js?v=A0.1.0-alpha.11'",
   "info": "A0.1.0-alpha.11 API 路由测试包：世界演变通过工作流助手 API 预设调用，并支持备用路由；API Key 继续由工作流助手保存；主机名、模型和 Key 状态会显示，但不会向插件暴露原始端点 URL。依赖同时启用工作流助手并在其 API 页面完成配置。默认关闭，使用独立脚本 ID；与 alpha.10 共用当前聊天数据库。导入后保持世界演变关闭，只检查 API 配置区显示、主预设和备用路由设置及保存；不要启用自动演变、不要点击手动运行，避免真实 API 消耗。",
   "button": {
     "enabled": true,
