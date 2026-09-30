@@ -4,7 +4,7 @@
 > 对应旧版：A0.1.0-alpha.11  
 > 对应提交：`7a0dd7724b931c1d54228c69db1c9ca4283cf7b6`  
 > 开发分支：`codex/world-evolution-alpha12-api`  
-> 状态：S1 已完成
+> 状态：S1、S2 已完成
 
 ## 1. 基线目的
 
@@ -68,4 +68,20 @@ Get-FileHash -Algorithm SHA256 -LiteralPath `
 - [x] 保持当前 alpha.11 源码和导入包未改写；
 - [x] 未调用真实 API。
 
-下一阶段：**S2：API 配置数据层**。
+## 6. S2 完成检查
+
+- [x] 增加版本化 API 配置结构；
+- [x] 增加内置 API 预设和主备路由字段；
+- [x] 增加 alpha.11 工作流助手名称迁移；
+- [x] 增加 API Key 脱敏导出；
+- [x] 增加配置增删改和路由引用一致性处理；
+- [x] 增加独立脚本变量存储；
+- [x] 增加本地持久化和脱敏测试；
+- [x] 未调用真实 API。
+
+S2 实现文件：
+
+- `src/世界演变/api-config.ts`
+- `src/世界演变/api-config.test.ts`
+
+下一阶段：**S3：API 客户端与模拟请求**。
