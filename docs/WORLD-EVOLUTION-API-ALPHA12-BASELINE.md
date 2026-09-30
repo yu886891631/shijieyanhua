@@ -4,7 +4,7 @@
 > 对应旧版：A0.1.0-alpha.11  
 > 对应提交：`7a0dd7724b931c1d54228c69db1c9ca4283cf7b6`  
 > 开发分支：`codex/world-evolution-alpha12-api`  
-> 状态：S1、S2、S3、S4 已完成
+> 状态：S1、S2、S3、S4、S5、S6 已完成；下一阶段为 S7
 
 ## 1. 基线目的
 
@@ -141,4 +141,21 @@ S5 实现文件：
 - `src/世界演变/api-routing.test.ts`
 - `src/世界演变/console/ApiSettingsPanel.vue`
 
-下一阶段：**S6：接入世界演变引擎**。
+## 10. S6 完成检查
+
+- [x] 世界演变引擎的默认 AI 调用已切换到统一内置 API / 工作流助手路由；
+- [x] 内置 API 成功时不会调用工作流助手桥接；
+- [x] 无内置来源时按既有路由设置兼容工作流助手桥接；
+- [x] 不再隐式回退到 SillyTavern 当前全局 API；
+- [x] 现有上下文组装、operations 校验、`baseRevision` 检查和 revision 提交顺序保持不变；
+- [x] API 调用失败或没有路由时不会提交 revision 或更新世界书；
+- [x] 使用模拟 `fetch` 完成默认调用路径测试，未访问真实网络；
+- [x] ESLint、S6 联合测试和生产构建已通过；
+- [x] alpha.11 导入包、数据库数据、世界书和工作流助手配置未被覆盖。
+
+S6 实现文件：
+
+- `src/世界演变/engine.ts`
+- `src/世界演变/ai-call.test.ts`
+
+下一阶段：**S7：事务、投影与恢复测试**。

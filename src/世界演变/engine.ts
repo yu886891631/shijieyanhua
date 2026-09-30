@@ -21,6 +21,8 @@ import { DEFAULT_WORLD_EVOLUTION_SETTINGS } from './types';
 import { resolveCurrentCharacterWorldbookName, syncWorldEvolutionWorldbook } from './worldbook';
 import { waitForStableSnapshot, WorldEvolutionFloorQueue } from './floor-queue';
 import { queryWorldEvolutionCandidates } from './query';
+import { loadWorldEvolutionApiConfiguration } from './api-config';
+import { callWorldEvolutionApiWithRouting, getWorldEvolutionWorkflowAssistantBridge } from './api-routing';
 
 export type WorldEvolutionRunStatus =
   | 'idle'
@@ -376,33 +378,23 @@ export function buildWorldEvolutionPrompt(
 }
 
 async function defaultCallEvolutionAi(prompt: string, settings: WorldEvolutionSettings): Promise<string> {
-  const hostWindow = ((typeof window === 'undefined' ? undefined : (window.parent ?? window)) ?? undefined) as
-    | (Window & {
-        AcuPostProcessAPI?: {
-          callApi?: (
-            messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string; name?: string }>,
-            options?: { presetName?: string; fallbackNames?: string[]; generationId?: string },
-          ) => Promise<{ content?: string }>;
-        };
-      })
-    | undefined;
-  const api = hostWindow?.AcuPostProcessAPI;
-  if (typeof api?.callApi !== 'function') {
-    throw new Error('未检测到工作流助手 API 桥接。请先启用工作流助手，再配置 API 预设。');
-  }
-
-  const result = await api.callApi(
+  const config = loadWorldEvolutionApiConfiguration({
+    apiPresetName: settings.apiPresetName,
+    apiFallbackPresetNames: settings.apiFallbackPresetNames,
+  });
+  const result = await callWorldEvolutionApiWithRouting(
+    config,
     [
       { role: 'system', content: '你负责严格生成世界演变 JSON。' },
       { role: 'user', content: prompt },
     ],
     {
-      presetName: settings.apiPresetName.trim() || undefined,
-      fallbackNames: settings.apiFallbackPresetNames,
+      bridge: getWorldEvolutionWorkflowAssistantBridge(),
       generationId: `world-evolution-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     },
   );
-  return String(result.content ?? '');
+  if (!result.ok) throw new Error(result.message);
+  return result.text;
 }
 
 async function callEvolutionAi(prompt: string, settings: WorldEvolutionSettings): Promise<string> {
@@ -410,8 +402,8 @@ async function callEvolutionAi(prompt: string, settings: WorldEvolutionSettings)
 }
 
 /**
- * 测试/宿主注入入口：生产环境只走工作流助手 API 路由，
- * 桥接不可用时明确失败；模拟测试可注入纯函数而不消耗真实 API。
+ * 测试/宿主注入入口：生产环境统一走内置 API / 工作流助手兼容路由，
+ * 没有可用来源时明确失败；模拟测试可注入纯函数而不消耗真实 API。
  */
 export async function callWorldEvolutionAi(prompt: string, settings: WorldEvolutionSettings): Promise<string> {
   return callEvolutionAi(prompt, settings);
