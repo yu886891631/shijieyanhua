@@ -1,7 +1,7 @@
 import type { WorldEvolutionQueryContext } from './query/types';
 
 export type WorldEvolutionEntityType = 'npc' | 'organization' | 'location' | 'environment' | 'social';
-export const WORLD_EVOLUTION_VERSION = 'A0.1.0-alpha.10';
+export const WORLD_EVOLUTION_VERSION = 'A0.1.0-alpha.11';
 
 export type WorldEvolutionVisibility = 'backstage' | 'ai_context' | 'protagonist_known' | 'revealed';
 
@@ -22,6 +22,10 @@ export type WorldEvolutionSettings = {
   worldbookAutoSync: boolean;
   manualCandidates: string[];
   modelInstruction: string;
+  /** 绑定工作流助手中的 API 预设；空值表示跟随当前聊天的有效预设。 */
+  apiPresetName: string;
+  /** 在主预设调用失败时依次尝试的备用工作流助手 API 预设。 */
+  apiFallbackPresetNames: string[];
 };
 
 export type WorldEvolutionEntity = {
@@ -153,6 +157,8 @@ export const DEFAULT_WORLD_EVOLUTION_SETTINGS: WorldEvolutionSettings = {
   manualCandidates: [],
   modelInstruction:
     '只处理给定候选对象。让 NPC、组织、社会和环境在主角视线之外合理行动；不要改写主角已经知道的事实，不要凭空结束剧情。',
+  apiPresetName: '',
+  apiFallbackPresetNames: [],
 };
 
 export function createEmptyWorld(chatKey: string): WorldEvolutionWorld {

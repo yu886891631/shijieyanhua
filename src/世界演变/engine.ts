@@ -375,73 +375,43 @@ export function buildWorldEvolutionPrompt(
   ].join('\n');
 }
 
-async function defaultCallEvolutionAi(prompt: string): Promise<string> {
-  const result = await generateRaw({
-    ordered_prompts: [
+async function defaultCallEvolutionAi(prompt: string, settings: WorldEvolutionSettings): Promise<string> {
+  const hostWindow = ((typeof window === 'undefined' ? undefined : (window.parent ?? window)) ?? undefined) as
+    | (Window & {
+        AcuPostProcessAPI?: {
+          callApi?: (
+            messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string; name?: string }>,
+            options?: { presetName?: string; fallbackNames?: string[]; generationId?: string },
+          ) => Promise<{ content?: string }>;
+        };
+      })
+    | undefined;
+  const api = hostWindow?.AcuPostProcessAPI;
+  if (typeof api?.callApi !== 'function') {
+    throw new Error('未检测到工作流助手 API 桥接。请先启用工作流助手，再配置 API 预设。');
+  }
+
+  const result = await api.callApi(
+    [
       { role: 'system', content: '你负责严格生成世界演变 JSON。' },
       { role: 'user', content: prompt },
     ],
-    should_silence: true,
-    max_chat_history: 0,
-    overrides: {
-      world_info_before: '',
-      world_info_after: '',
-      persona_description: '',
-      char_description: '',
-      char_personality: '',
-      scenario: '',
-      dialogue_examples: '',
-      chat_history: { with_depth_entries: false, prompts: [] },
+    {
+      presetName: settings.apiPresetName.trim() || undefined,
+      fallbackNames: settings.apiFallbackPresetNames,
+      generationId: `world-evolution-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     },
-    json_schema: {
-      name: 'world_evolution',
-      description: 'baseRevision 和受限的批量数据库 operations',
-      // 可扩展的实体 data 键由本地验证器做最终约束。
-      strict: false,
-      value: {
-        type: 'object',
-        properties: {
-          baseRevision: { type: 'integer' },
-          operations: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                op: { type: 'string', enum: ['upsert', 'append', 'update_status', 'delete'] },
-                table: {
-                  type: 'string',
-                  enum: ['npc', 'organization', 'location', 'society', 'environment', 'event', 'plan'],
-                },
-                id: { type: 'string' },
-                name: { type: 'string' },
-                changes: { type: 'object', additionalProperties: true },
-                data: { type: 'object', additionalProperties: true },
-                status: { type: 'string' },
-                visibility: {
-                  type: 'string',
-                  enum: ['backstage', 'ai_context', 'protagonist_known', 'revealed'],
-                },
-              },
-              required: ['op', 'table'],
-              additionalProperties: false,
-            },
-          },
-        },
-        required: ['baseRevision', 'operations'],
-        additionalProperties: false,
-      },
-    },
-  });
-  return typeof result === 'string' ? result : result.content;
+  );
+  return String(result.content ?? '');
 }
 
 async function callEvolutionAi(prompt: string, settings: WorldEvolutionSettings): Promise<string> {
-  return (worldEvolutionAiCaller ?? defaultCallEvolutionAi)(prompt, settings);
+  return worldEvolutionAiCaller ? worldEvolutionAiCaller(prompt, settings) : defaultCallEvolutionAi(prompt, settings);
 }
 
 /**
- * 测试/宿主注入入口：生产环境默认走 SillyTavern 的 generateRaw，
- * 模拟测试可注入纯函数而不消耗真实 API。
+ * 测试/宿主注入入口：生产环境只走工作流助手 API 路由，
+ * 桥接不可用时明确失败；模拟测试可注入纯函数而不消耗真实 API。
  */
 export async function callWorldEvolutionAi(prompt: string, settings: WorldEvolutionSettings): Promise<string> {
   return callEvolutionAi(prompt, settings);

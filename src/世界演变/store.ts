@@ -55,7 +55,9 @@ export async function loadWorld(chatKey: string): Promise<WorldEvolutionWorld> {
   const database = await openDatabase();
   try {
     const transaction = database.transaction(STORE_NAME, 'readonly');
-    const value = await requestResult<WorldEvolutionWorld | undefined>(transaction.objectStore(STORE_NAME).get(chatKey));
+    const value = await requestResult<WorldEvolutionWorld | undefined>(
+      transaction.objectStore(STORE_NAME).get(chatKey),
+    );
     return normalizeWorld(chatKey, value);
   } finally {
     database.close();
@@ -77,22 +79,22 @@ export function normalizeWorld(chatKey: string, parsed: unknown): WorldEvolution
   world.revisions = Array.isArray(raw.revisions)
     ? (clone(raw.revisions) as WorldEvolutionRevision[]).map(revision => ({
         ...revision,
-        messageFingerprint:
-          typeof revision.messageFingerprint === 'string' ? revision.messageFingerprint : undefined,
+        messageFingerprint: typeof revision.messageFingerprint === 'string' ? revision.messageFingerprint : undefined,
       }))
     : [];
   world.checkpoints = Array.isArray(raw.checkpoints)
-    ? (clone(raw.checkpoints) as WorldEvolutionCheckpoint[]).filter(checkpoint => (
-        typeof checkpoint.id === 'string' &&
-        Number.isInteger(checkpoint.revision) &&
-        isRecord(checkpoint.entities) &&
-        Array.isArray(checkpoint.events) &&
-        Array.isArray(checkpoint.scheduledEvents) &&
-        Array.isArray(checkpoint.processedMessageKeys)
-      ))
+    ? (clone(raw.checkpoints) as WorldEvolutionCheckpoint[]).filter(
+        checkpoint =>
+          typeof checkpoint.id === 'string' &&
+          Number.isInteger(checkpoint.revision) &&
+          isRecord(checkpoint.entities) &&
+          Array.isArray(checkpoint.events) &&
+          Array.isArray(checkpoint.scheduledEvents) &&
+          Array.isArray(checkpoint.processedMessageKeys),
+      )
     : [];
   world.processedMessageKeys = Array.isArray(raw.processedMessageKeys)
-    ? raw.processedMessageKeys.filter(value => typeof value === 'string') as string[]
+    ? (raw.processedMessageKeys.filter(value => typeof value === 'string') as string[])
     : [];
   world.runRecords = Array.isArray(raw.runRecords)
     ? raw.runRecords
@@ -110,12 +112,8 @@ function normalizeRunRecord(chatKey: string, value: Record<string, unknown>): Wo
     key: typeof value.key === 'string' ? value.key : '',
     chatKey,
     messageId: typeof value.messageId === 'number' ? value.messageId : -1,
-    messageFingerprint:
-      typeof value.messageFingerprint === 'string' ? value.messageFingerprint : undefined,
-    source:
-      value.source === 'manual' || value.source === 'retry' || value.source === 'auto'
-        ? value.source
-        : 'auto',
+    messageFingerprint: typeof value.messageFingerprint === 'string' ? value.messageFingerprint : undefined,
+    source: value.source === 'manual' || value.source === 'retry' || value.source === 'auto' ? value.source : 'auto',
     status:
       value.status === 'queued' ||
       value.status === 'running' ||
@@ -135,9 +133,7 @@ function normalizeRunRecord(chatKey: string, value: Record<string, unknown>): Wo
     changedEntityIds: Array.isArray(value.changedEntityIds)
       ? value.changedEntityIds.filter(item => typeof item === 'string')
       : [],
-    eventIds: Array.isArray(value.eventIds)
-      ? value.eventIds.filter(item => typeof item === 'string')
-      : [],
+    eventIds: Array.isArray(value.eventIds) ? value.eventIds.filter(item => typeof item === 'string') : [],
     error: typeof value.error === 'string' ? value.error : undefined,
   };
 }
@@ -146,10 +142,7 @@ function normalizeWorldbookSync(value: unknown): WorldEvolutionWorldbookSyncStat
   if (!isRecord(value)) return { status: 'never' };
   return {
     status:
-      value.status === 'pending' ||
-      value.status === 'synced' ||
-      value.status === 'failed' ||
-      value.status === 'never'
+      value.status === 'pending' || value.status === 'synced' || value.status === 'failed' || value.status === 'never'
         ? value.status
         : 'never',
     worldbookName: typeof value.worldbookName === 'string' ? value.worldbookName : undefined,
@@ -314,10 +307,7 @@ export async function updateWorldEntityManually(
   });
 }
 
-export async function deleteWorldEntityManually(
-  chatKey: string,
-  entityId: string,
-): Promise<WorldEvolutionWorld> {
+export async function deleteWorldEntityManually(chatKey: string, entityId: string): Promise<WorldEvolutionWorld> {
   return mutateWorldManually(chatKey, world => {
     if (!world.entities[entityId]) throw new Error(`对象不存在：${entityId}`);
     delete world.entities[entityId];
@@ -350,10 +340,7 @@ export async function saveWorldCheckpoint(
   throw new Error('创建世界演变 checkpoint 冲突，请稍后重试');
 }
 
-export async function rollbackWorldToCheckpoint(
-  chatKey: string,
-  checkpointId: string,
-): Promise<WorldEvolutionWorld> {
+export async function rollbackWorldToCheckpoint(chatKey: string, checkpointId: string): Promise<WorldEvolutionWorld> {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const current = await loadWorld(chatKey);
     const checkpoint = current.checkpoints.find(item => item.id === checkpointId);
@@ -389,7 +376,10 @@ export async function recoverInterruptedRuns(chatKey: string): Promise<WorldEvol
   throw new Error('恢复中断任务时发生版本冲突，请稍后重试');
 }
 
-export function markInterruptedRuns(world: WorldEvolutionWorld, now = Date.now()): {
+export function markInterruptedRuns(
+  world: WorldEvolutionWorld,
+  now = Date.now(),
+): {
   world: WorldEvolutionWorld;
   changed: boolean;
 } {
@@ -453,6 +443,10 @@ export function loadSettings(): WorldEvolutionSettings {
           typeof value.modelInstruction === 'string' && value.modelInstruction.trim()
             ? value.modelInstruction.trim()
             : '只处理给定候选对象。让 NPC、组织、社会和环境在主角视线之外合理行动；不要改写主角已经知道的事实，不要凭空结束剧情。',
+        apiPresetName: typeof value.apiPresetName === 'string' ? value.apiPresetName.trim() : '',
+        apiFallbackPresetNames: Array.isArray(value.apiFallbackPresetNames)
+          ? [...new Set(value.apiFallbackPresetNames.filter(item => typeof item === 'string').map(item => item.trim()))]
+          : [],
       };
     }
   } catch (error) {
@@ -473,6 +467,8 @@ export function loadSettings(): WorldEvolutionSettings {
     manualCandidates: [],
     modelInstruction:
       '只处理给定候选对象。让 NPC、组织、社会和环境在主角视线之外合理行动；不要改写主角已经知道的事实，不要凭空结束剧情。',
+    apiPresetName: '',
+    apiFallbackPresetNames: [],
   };
 }
 
@@ -488,6 +484,8 @@ export function saveSettings(settings: WorldEvolutionSettings): void {
         maxNpcPerRun: normalizeLimit(settings.maxNpcPerRun, 3),
         maxOtherEntitiesPerRun: normalizeLimit(settings.maxOtherEntitiesPerRun, 2),
         manualCandidates: settings.manualCandidates.map(item => item.trim()).filter(Boolean),
+        apiPresetName: settings.apiPresetName.trim(),
+        apiFallbackPresetNames: [...new Set(settings.apiFallbackPresetNames.map(item => item.trim()).filter(Boolean))],
       },
     },
     { type: 'script', script_id: getScriptId() },

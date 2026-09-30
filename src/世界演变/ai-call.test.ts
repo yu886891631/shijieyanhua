@@ -1,10 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import {
-  buildWorldEvolutionPrompt,
-  callWorldEvolutionAi,
-  setWorldEvolutionAiCaller,
-} from './engine';
+import { buildWorldEvolutionPrompt, callWorldEvolutionAi, setWorldEvolutionAiCaller } from './engine';
 import { createEmptyWorld, DEFAULT_WORLD_EVOLUTION_SETTINGS, type WorldEvolutionInput } from './types';
 
 test('world evolution AI caller can be replaced by a deterministic simulator', async () => {
@@ -38,12 +34,35 @@ test('world evolution AI caller propagates simulated failures without calling a 
   });
 
   try {
-    await assert.rejects(
-      callWorldEvolutionAi('超时楼层', DEFAULT_WORLD_EVOLUTION_SETTINGS),
-      /simulated-timeout/,
-    );
+    await assert.rejects(callWorldEvolutionAi('超时楼层', DEFAULT_WORLD_EVOLUTION_SETTINGS), /simulated-timeout/);
   } finally {
     setWorldEvolutionAiCaller(undefined);
+  }
+});
+
+test('world evolution does not silently fall back to the active SillyTavern API', async () => {
+  const globals = globalThis as typeof globalThis & {
+    window?: Window & typeof globalThis;
+    generateRaw?: (...args: unknown[]) => Promise<unknown>;
+  };
+  const originalWindow = globals.window;
+  const originalGenerateRaw = globals.generateRaw;
+  let generateRawCalled = false;
+  globals.window = { parent: {} } as Window & typeof globalThis;
+  globals.generateRaw = async () => {
+    generateRawCalled = true;
+    return 'should-not-be-used';
+  };
+
+  try {
+    await assert.rejects(
+      callWorldEvolutionAi('no fallback', DEFAULT_WORLD_EVOLUTION_SETTINGS),
+      /未检测到工作流助手 API 桥接/,
+    );
+    assert.equal(generateRawCalled, false);
+  } finally {
+    globals.window = originalWindow;
+    globals.generateRaw = originalGenerateRaw;
   }
 });
 

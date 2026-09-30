@@ -65,10 +65,16 @@ import {
 } from '../tasks/task-store';
 import { buildEffectivePromptGroups } from '../tasks/prompt-auto-segments';
 import { rerunCurrentFloor, triggerTask, type TriggerTaskOptions } from '../tasks/trigger';
+import { getLastPromptMessages, getLastPlaceholderVars } from '../tasks/runtime';
+import { getCurrentChatKey } from '../api/chat-key';
 import {
-  getLastPromptMessages,
-  getLastPlaceholderVars,
-} from '../tasks/runtime';
+  listExternalApiPresetDetails,
+  resolveExternalApiPresetChain,
+  resolveExternalApiPresetName,
+  type ExternalApiPresetDetails,
+  type ExternalApiPresetInfo,
+} from '../api/external-api-route';
+import { callTaskApiWithRouteFallback, type TaskApiRouteCallResult } from '../api/task-api-route';
 import { sanitizeSettingsForExternalApi } from '../settings-security';
 import type {
   ApiPresetMode,
@@ -77,6 +83,7 @@ import type {
   PlotWorldbookMode,
   PostProcessTask,
   ReplicaFamilyScheduleMode,
+  RunLogMessage,
   ScriptSettings,
   TaskContextConfig,
 } from '../tasks/schema';
@@ -87,6 +94,12 @@ import type { z } from 'zod';
 type PromptGroup = z.infer<typeof PromptGroupSchema>;
 export type PromptAutoSlotPatch = Partial<z.infer<typeof PromptAutoSlotSchema>>;
 export type PromptAutoSegmentPatch = Partial<z.infer<typeof PromptAutoSegmentSchema>>;
+export type AcuApiCallOptions = {
+  presetName?: string;
+  fallbackNames?: string[];
+  generationId?: string;
+};
+export type AcuApiPresetDetails = ExternalApiPresetDetails;
 
 export type { TaskExecutionOptionsPatch, TaskSchedulePatch, TaskApiPresetRoutingPatch, TriggerTaskOptions };
 
@@ -129,11 +142,7 @@ export interface AcuPostProcessTaskAPI {
   updatePromptAutoSlot(taskId: string, slotIndex: number, patch: PromptAutoSlotPatch): Promise<PostProcessTask>;
   addPromptAutoSegment(taskId: string, slotId: string, partial?: PromptAutoSegmentPatch): Promise<PostProcessTask>;
   removePromptAutoSegment(taskId: string, segmentId: string): Promise<PostProcessTask>;
-  updatePromptAutoSegment(
-    taskId: string,
-    segmentId: string,
-    patch: PromptAutoSegmentPatch,
-  ): Promise<PostProcessTask>;
+  updatePromptAutoSegment(taskId: string, segmentId: string, patch: PromptAutoSegmentPatch): Promise<PostProcessTask>;
   setTaskEnabled(taskId: string, enabled: boolean): Promise<PostProcessTask>;
   renameTask(taskId: string, name: string): Promise<PostProcessTask>;
   duplicateTask(taskId: string, options?: { afterTaskId?: string }): Promise<PostProcessTask>;
@@ -145,14 +154,15 @@ export interface AcuPostProcessTaskAPI {
   getActivePresetName(): string;
   getLastPromptMessages(): ReturnType<typeof getLastPromptMessages>;
   getLastPlaceholderVars(): ReturnType<typeof getLastPlaceholderVars>;
+  /** External plugins can use saved API credentials without receiving them. */
+  listApiPresetDetails(): ExternalApiPresetInfo;
+  getEffectiveApiPresetName(): string;
+  callApi(messages: RunLogMessage[], options?: AcuApiCallOptions): Promise<TaskApiRouteCallResult>;
   buildEffectivePromptGroups(taskId: string): PromptGroup[];
   validateReplicaFamily(taskId: string): ReturnType<typeof validateReplicaFamily>;
   listReplicaFamilyMembers(rootId: string): PostProcessTask[];
   updateReplicaFamilyScheduleMode(rootId: string, mode: ReplicaFamilyScheduleMode): Promise<PostProcessTask>;
-  updateReplicaMemberSchedule(
-    memberId: string,
-    patch: { launched?: boolean },
-  ): Promise<PostProcessTask>;
+  updateReplicaMemberSchedule(memberId: string, patch: { launched?: boolean }): Promise<PostProcessTask>;
   ensureReplicaFamilyMember(
     rootId: string,
     attrValue: string,
@@ -191,22 +201,18 @@ export const acuPostProcessTaskApi: AcuPostProcessTaskAPI = {
   replaceTasks: (tasks: PostProcessTask[]) => apiCall(() => replaceTasks(tasks, 'api')) as Promise<void>,
   getChatScopeState: () => getChatScopeState(),
   clearChatScope: () => apiCall(() => clearChatScope('api')) as Promise<void>,
-  promoteChatScopeToPreset: (name?: string) =>
-    apiCall(() => promoteChatScopeToPreset(name)) as Promise<string | null>,
+  promoteChatScopeToPreset: (name?: string) => apiCall(() => promoteChatScopeToPreset(name)) as Promise<string | null>,
   saveChatSnapshotAsGlobalPreset: (name?: string) =>
     apiCall(() => saveChatSnapshotAsGlobalPreset(name)) as Promise<string | null>,
-  setChatScopeActiveView: input =>
-    apiCall(() => setChatScopeActiveView(input)) as Promise<ChatTaskScopeState | null>,
-  updatePresetFields: (fields: PresetFieldsPatch) =>
-    apiCall(() => updatePresetFields(fields, 'api')) as Promise<void>,
+  setChatScopeActiveView: input => apiCall(() => setChatScopeActiveView(input)) as Promise<ChatTaskScopeState | null>,
+  updatePresetFields: (fields: PresetFieldsPatch) => apiCall(() => updatePresetFields(fields, 'api')) as Promise<void>,
   updateTaskPlotWorldbook: (taskId, input) =>
     apiCall(() => updateTaskPlotWorldbook(taskId, input, 'api')) as Promise<PostProcessTask>,
   updateTaskContext: (taskId, input) =>
     apiCall(() => updateTaskContext(taskId, input, 'api')) as Promise<PostProcessTask>,
   updatePromptGroup: (taskId, index, patch) =>
     apiCall(() => updatePromptGroup(taskId, index, patch, 'api')) as Promise<PostProcessTask>,
-  updateTaskStage: (taskId, stage) =>
-    apiCall(() => updateTaskStage(taskId, stage, 'api')) as Promise<PostProcessTask>,
+  updateTaskStage: (taskId, stage) => apiCall(() => updateTaskStage(taskId, stage, 'api')) as Promise<PostProcessTask>,
   updateTaskSchedule: (taskId, patch) =>
     apiCall(() => updateTaskSchedule(taskId, patch, 'api')) as Promise<PostProcessTask>,
   updateTaskExtractTags: (taskId, tags) =>
@@ -219,8 +225,7 @@ export const acuPostProcessTaskApi: AcuPostProcessTaskAPI = {
     apiCall(() => updateTaskApiPresetRouting(taskId, patch, 'api')) as Promise<PostProcessTask>,
   updateTaskApiPresetMode: (taskId, mode) =>
     apiCall(() => updateTaskApiPresetMode(taskId, mode, 'api')) as Promise<PostProcessTask>,
-  addPromptGroup: (taskId, group) =>
-    apiCall(() => addPromptGroup(taskId, group, 'api')) as Promise<PostProcessTask>,
+  addPromptGroup: (taskId, group) => apiCall(() => addPromptGroup(taskId, group, 'api')) as Promise<PostProcessTask>,
   removePromptGroup: (taskId, index) =>
     apiCall(() => removePromptGroup(taskId, index, 'api')) as Promise<PostProcessTask>,
   movePromptGroup: (taskId, index, delta) =>
@@ -240,17 +245,31 @@ export const acuPostProcessTaskApi: AcuPostProcessTaskAPI = {
   setTaskEnabled: (taskId, enabled) =>
     apiCall(() => setTaskEnabled(taskId, enabled, 'api')) as Promise<PostProcessTask>,
   renameTask: (taskId, name) => apiCall(() => renameTask(taskId, name, 'api')) as Promise<PostProcessTask>,
-  duplicateTask: (taskId, options) =>
-    apiCall(() => duplicateTask(taskId, options, 'api')) as Promise<PostProcessTask>,
+  duplicateTask: (taskId, options) => apiCall(() => duplicateTask(taskId, options, 'api')) as Promise<PostProcessTask>,
   moveTask: (taskId, delta) => apiCall(() => moveTask(taskId, delta, 'api')) as Promise<void>,
-  moveTaskToIndex: (taskId, toIndex) =>
-    apiCall(() => moveTaskToIndex(taskId, toIndex, 'api')) as Promise<void>,
+  moveTaskToIndex: (taskId, toIndex) => apiCall(() => moveTaskToIndex(taskId, toIndex, 'api')) as Promise<void>,
   rerunCurrentFloor: () => rerunCurrentFloor(),
   triggerTask: (taskId, options) => triggerTask(taskId, options),
   getEffectiveSettings: () => sanitizeSettingsForExternalApi(getEffectiveSettings()),
   getActivePresetName: () => getActivePresetName(),
   getLastPromptMessages: () => getLastPromptMessages(),
   getLastPlaceholderVars: () => getLastPlaceholderVars(),
+  listApiPresetDetails: () => {
+    const settings = getEffectiveSettings();
+    return listExternalApiPresetDetails(settings, getCurrentChatKey());
+  },
+  getEffectiveApiPresetName: () => resolveExternalApiPresetName(getEffectiveSettings(), getCurrentChatKey()),
+  callApi: (messages, options) => {
+    const settings = getEffectiveSettings();
+    return callTaskApiWithRouteFallback(
+      messages,
+      settings,
+      resolveExternalApiPresetChain(settings, getCurrentChatKey(), options),
+      null,
+      options?.generationId || `external-api-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      { preferPrimaryOnly: false },
+    );
+  },
   buildEffectivePromptGroups: (taskId: string) => {
     const task = getTask(taskId);
     if (!task) throw new Error(`任务不存在: ${taskId}`);
@@ -275,8 +294,7 @@ export const acuPostProcessTaskApi: AcuPostProcessTaskAPI = {
     apiCall(() =>
       applyReplicaFamilyCleanupInStore(keepBySpec, messageId ?? getLastMessageId(), 'api'),
     ) as Promise<void>,
-  resetReplicaFamilyCleanupCycle: () =>
-    apiCall(() => resetReplicaFamilyCleanupCycleInStore('api')) as Promise<void>,
+  resetReplicaFamilyCleanupCycle: () => apiCall(() => resetReplicaFamilyCleanupCycleInStore('api')) as Promise<void>,
   listTaskWorkflowPresets: (taskId: string) => listTaskWorkflowPresets(taskId),
   saveTaskWorkflowPreset: (taskId, name) =>
     apiCall(() => saveTaskWorkflowPreset(taskId, name, 'api')) as Promise<PostProcessTask>,
@@ -288,14 +306,12 @@ export const acuPostProcessTaskApi: AcuPostProcessTaskAPI = {
   getRunStatusForFloor: (messageId: number) => getRunStatusForFloor(messageId),
   listApiPresets: () => listApiPresetNames(),
   resolveTaskApiPresetName: (taskId: string) => resolveTaskApiPresetName(taskId),
-  resetTaskScheduleState: (taskId?: string) =>
-    apiCall(() => resetTaskScheduleState(taskId, 'api')) as Promise<void>,
+  resetTaskScheduleState: (taskId?: string) => apiCall(() => resetTaskScheduleState(taskId, 'api')) as Promise<void>,
 };
 
 export function mountAcuPostProcessAPI(): void {
   try {
-    (window.parent as Window & { AcuPostProcessAPI?: AcuPostProcessTaskAPI }).AcuPostProcessAPI =
-      acuPostProcessTaskApi;
+    (window.parent as Window & { AcuPostProcessAPI?: AcuPostProcessTaskAPI }).AcuPostProcessAPI = acuPostProcessTaskApi;
   } catch (error) {
     console.warn('[工作流助手] 挂载 AcuPostProcessAPI 失败:', error);
   }

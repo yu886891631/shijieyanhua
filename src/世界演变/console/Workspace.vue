@@ -256,6 +256,8 @@ import {
 import PromptWorkbench from './PromptWorkbench.vue';
 
 const props = defineProps<{ onClose: () => void }>();
+const evolutionVersion = WORLD_EVOLUTION_VERSION;
+const databaseVersion = WORLD_EVOLUTION_DB_VERSION;
 
 type WorkspacePage = 'overview' | 'data' | 'history' | 'worldbook' | 'backup' | 'evolution' | 'prompts' | 'appearance';
 type ThemeId = 'light' | 'dark' | 'cream' | 'landmine';

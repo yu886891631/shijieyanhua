@@ -1,4 +1,4 @@
-export const WORLD_EVOLUTION_DB_VERSION = 'A0.1.0-alpha.10';
+export const WORLD_EVOLUTION_DB_VERSION = 'A0.1.0-alpha.11';
 
 export type WorldEvolutionDbTable =
   | 'npc'

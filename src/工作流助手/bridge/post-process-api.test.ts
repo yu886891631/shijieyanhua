@@ -43,6 +43,9 @@ const expectedMethods = [
   'getActivePresetName',
   'getLastPromptMessages',
   'getLastPlaceholderVars',
+  'listApiPresetDetails',
+  'getEffectiveApiPresetName',
+  'callApi',
   'buildEffectivePromptGroups',
   'validateReplicaFamily',
   'listReplicaFamilyMembers',
@@ -88,13 +91,23 @@ async function main(): Promise<void> {
     const { acuPostProcessTaskApi } = await import('./post-process-api.js');
     const missing = expectedMethods.filter(m => typeof acuPostProcessTaskApi[m] !== 'function');
     assert.deepEqual(missing, []);
-    assert.equal(expectedMethods.length, 61);
+    assert.equal(expectedMethods.length, 64);
 
     const exposed = acuPostProcessTaskApi.getEffectiveSettings();
     assert.equal(exposed.apiConfig.apiKey, '');
     for (const preset of exposed.apiPresets) {
       assert.equal(preset.apiConfig.apiKey, '');
     }
+    assert.deepEqual(acuPostProcessTaskApi.listApiPresetDetails(), {
+      available: true,
+      activePresetName: '',
+      defaultConfig: { model: '', endpointConfigured: false, keyConfigured: false },
+      presets: [],
+    });
+    await assert.rejects(
+      acuPostProcessTaskApi.callApi([{ role: 'user', content: 'must not call a real API', name: '' }]),
+      /尚未配置 API 预设/,
+    );
 
     console.log('ok acuPostProcessTaskApi exposes all P0-P2 methods');
   } catch (e) {

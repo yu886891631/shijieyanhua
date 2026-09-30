@@ -3,10 +3,7 @@ import { test } from 'node:test';
 import { dbSnapshotToWorld } from './adapter';
 import { parseWorldEvolutionOperations, validateWorldEvolutionOperations } from './ai-operations';
 import { createEmptyDbSnapshot } from './types';
-import type {
-  WorldEvolutionInput,
-  WorldEvolutionSettings,
-} from '../世界演变/types';
+import type { WorldEvolutionInput, WorldEvolutionSettings } from '../世界演变/types';
 
 const settings: WorldEvolutionSettings = {
   enabled: true,
@@ -21,6 +18,8 @@ const settings: WorldEvolutionSettings = {
   worldbookAutoSync: false,
   manualCandidates: [],
   modelInstruction: '',
+  apiPresetName: '',
+  apiFallbackPresetNames: [],
 };
 
 const input: WorldEvolutionInput = {
@@ -36,40 +35,40 @@ const input: WorldEvolutionInput = {
 
 test('AI operations 转换为可提交的数据库行操作，并能投影回旧读取模型', () => {
   const snapshot = createEmptyDbSnapshot(input.chatKey);
-  const parsed = parseWorldEvolutionOperations(JSON.stringify({
-    baseRevision: 0,
-    operations: [
-      {
-        op: 'upsert',
-        table: 'npc',
-        id: 'npc:林遥',
-        name: '林遥',
-        changes: { current_goal: '调查旧港口' },
-        visibility: 'ai_context',
-      },
-      {
-        op: 'append',
-        table: 'event',
-        data: { eventType: 'npc_action', actorIds: ['npc:林遥'], summary: '林遥开始调查旧港口' },
-      },
-      {
-        op: 'append',
-        table: 'plan',
-        data: { title: '旧港口回报', actorIds: ['npc:林遥'] },
-      },
-    ],
-  }));
-
-  const result = validateWorldEvolutionOperations(
-    snapshot,
-    parsed,
-    input,
-    settings,
+  const parsed = parseWorldEvolutionOperations(
+    JSON.stringify({
+      baseRevision: 0,
+      operations: [
+        {
+          op: 'upsert',
+          table: 'npc',
+          id: 'npc:林遥',
+          name: '林遥',
+          changes: { current_goal: '调查旧港口' },
+          visibility: 'ai_context',
+        },
+        {
+          op: 'append',
+          table: 'event',
+          data: { eventType: 'npc_action', actorIds: ['npc:林遥'], summary: '林遥开始调查旧港口' },
+        },
+        {
+          op: 'append',
+          table: 'plan',
+          data: { title: '旧港口回报', actorIds: ['npc:林遥'] },
+        },
+      ],
+    }),
   );
+
+  const result = validateWorldEvolutionOperations(snapshot, parsed, input, settings);
 
   assert.deepEqual(result.changedEntityIds, ['npc:林遥']);
   assert.equal(result.eventIds.length, 1);
-  assert.deepEqual(result.operations.map(operation => operation.table), ['npc', 'event', 'plan']);
+  assert.deepEqual(
+    result.operations.map(operation => operation.table),
+    ['npc', 'event', 'plan'],
+  );
   const projected = dbSnapshotToWorld({
     ...snapshot,
     meta: { ...snapshot.meta, revision: 1 },
