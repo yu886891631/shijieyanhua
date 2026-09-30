@@ -88,7 +88,7 @@ async function main(): Promise<void> {
     g.generateRaw = async () => '';
     g.TavernHelper = {};
 
-    const { acuPostProcessTaskApi } = await import('./post-process-api.js');
+    const { acuPostProcessTaskApi, buildAcuApiRouteCallOptions } = await import('./post-process-api.js');
     const missing = expectedMethods.filter(m => typeof acuPostProcessTaskApi[m] !== 'function');
     assert.deepEqual(missing, []);
     assert.equal(expectedMethods.length, 64);
@@ -107,6 +107,14 @@ async function main(): Promise<void> {
     await assert.rejects(
       acuPostProcessTaskApi.callApi([{ role: 'user', content: 'must not call a real API', name: '' }]),
       /尚未配置 API 预设/,
+    );
+
+    const controller = new AbortController();
+    assert.deepEqual(buildAcuApiRouteCallOptions(), { preferPrimaryOnly: false });
+    assert.equal(
+      buildAcuApiRouteCallOptions({ signal: controller.signal }).signal,
+      controller.signal,
+      'bridge should forward AbortSignal to the internal route call',
     );
 
     console.log('ok acuPostProcessTaskApi exposes all P0-P2 methods');

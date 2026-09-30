@@ -98,8 +98,26 @@ export type AcuApiCallOptions = {
   presetName?: string;
   fallbackNames?: string[];
   generationId?: string;
+  /** 允许外部调用方取消本轮请求；旧调用不传时保持原有行为。 */
+  signal?: AbortSignal;
 };
 export type AcuApiPresetDetails = ExternalApiPresetDetails;
+
+/**
+ * 将桥接层的调用选项转换为内部路由选项。
+ *
+ * 单独抽成纯函数，避免桥接调用在向后兼容时丢失 AbortSignal；未传 signal
+ * 时不额外改变现有路由行为。
+ */
+export function buildAcuApiRouteCallOptions(options?: AcuApiCallOptions): {
+  preferPrimaryOnly: false;
+  signal?: AbortSignal;
+} {
+  return {
+    preferPrimaryOnly: false,
+    ...(options?.signal ? { signal: options.signal } : {}),
+  };
+}
 
 export type { TaskExecutionOptionsPatch, TaskSchedulePatch, TaskApiPresetRoutingPatch, TriggerTaskOptions };
 
@@ -267,7 +285,7 @@ export const acuPostProcessTaskApi: AcuPostProcessTaskAPI = {
       resolveExternalApiPresetChain(settings, getCurrentChatKey(), options),
       null,
       options?.generationId || `external-api-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      { preferPrimaryOnly: false },
+      buildAcuApiRouteCallOptions(options),
     );
   },
   buildEffectivePromptGroups: (taskId: string) => {

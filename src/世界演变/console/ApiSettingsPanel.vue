@@ -11,7 +11,7 @@
           {{ config.presets.length }} 个内置预设
         </span>
         <span class="we-api-badge" :class="{ good: bridge.available }">
-          工作流助手：{{ bridge.available ? '已连接' : '未连接' }}
+          工作流助手：{{ bridge.available ? '已配置' : '未配置' }}
         </span>
       </div>
     </div>
@@ -186,8 +186,9 @@
         </label>
       </div>
       <div class="we-api-route-summary">
-        当前路由：
-        <strong>{{ routeSummary }}</strong>
+        <div>配置路由：<strong>{{ routeSummary }}</strong></div>
+        <div>有效来源：<strong>{{ effectiveRouteSummary.state }}</strong></div>
+        <div>实际尝试顺序：<strong>{{ effectiveRouteSummary.order }}</strong></div>
       </div>
     </section>
 
@@ -223,6 +224,7 @@ import {
   type WorldEvolutionApiProvider,
 } from '../api-config';
 import { callWorldEvolutionApiPreset } from '../api-client';
+import { resolveWorldEvolutionApiRouting } from '../api-routing';
 
 type ApiForm = {
   id: string;
@@ -239,7 +241,8 @@ type ApiForm = {
 type BridgeInfo = {
   available: boolean;
   activePresetName: string;
-  presets: Array<{ name: string }>;
+  defaultConfig: { model: string; endpointConfigured: boolean; keyConfigured: boolean };
+  presets: Array<{ name: string; model: string; endpointConfigured: boolean; keyConfigured: boolean }>;
 };
 
 const legacy = loadSettings();
@@ -253,7 +256,12 @@ const form = reactive<ApiForm>(emptyForm());
 const busy = ref(false);
 const message = ref('');
 const messageType = ref<'ok' | 'error'>('ok');
-const bridge = ref<BridgeInfo>({ available: false, activePresetName: '', presets: [] });
+const bridge = ref<BridgeInfo>({
+  available: false,
+  activePresetName: '',
+  defaultConfig: { model: '', endpointConfigured: false, keyConfigured: false },
+  presets: [],
+});
 
 const selectedPreset = computed(() => config.value.presets.find(preset => preset.id === form.id));
 const fallbackCandidates = computed(() =>
@@ -266,6 +274,27 @@ const routeSummary = computed(() => {
     : '未选择';
   const fallbacks = config.value.routing.fallbackPresetIds.map(id => names.get(id) ?? '未知预设');
   return fallbacks.length ? `${primary} → ${fallbacks.join(' → ')}` : primary;
+});
+const effectiveRouteSummary = computed(() => {
+  // 这里只用一个无副作用探针判断桥接是否存在，不会调用它或接触任何凭据。
+  const bridgeProbe = bridge.value.available ? { callApi: async () => ({ content: '' }) } : null;
+  const resolved = resolveWorldEvolutionApiRouting(config.value, { bridge: bridgeProbe });
+  const names = new Map(config.value.presets.map(preset => [preset.id, preset.name]));
+  const labels = resolved.effectiveRoutes.map(route => {
+    if (route.source === 'builtin') return `内置：${names.get(route.presetId ?? '') ?? '未知预设'}`;
+    return `工作流助手：${route.presetName || bridge.value.activePresetName || '跟随当前预设'}`;
+  });
+  return {
+    state:
+      resolved.state === 'builtin-only'
+        ? '仅内置 API'
+        : resolved.state === 'workflow-only'
+          ? '仅工作流助手桥接'
+          : resolved.state === 'both'
+            ? '内置 API + 工作流助手桥接'
+            : '未配置可用来源',
+    order: labels.length ? labels.join(' → ') : '无可用路由',
+  };
 });
 
 function emptyForm(): ApiForm {
@@ -417,18 +446,47 @@ function refreshBridge(): void {
         listApiPresetDetails?: () => {
           available?: boolean;
           activePresetName?: string;
-          presets?: Array<{ name?: string }>;
+          defaultConfig?: { model?: string; endpointConfigured?: boolean; keyConfigured?: boolean };
+          presets?: Array<{
+            name?: string;
+            model?: string;
+            endpointConfigured?: boolean;
+            keyConfigured?: boolean;
+          }>;
         };
       };
     };
     const info = host.AcuPostProcessAPI?.listApiPresetDetails?.();
+    const defaultConfig = {
+      model: info?.defaultConfig?.model ?? '',
+      endpointConfigured: info?.defaultConfig?.endpointConfigured === true,
+      keyConfigured: info?.defaultConfig?.keyConfigured === true,
+    };
+    const hasConfiguredPreset = (info?.presets ?? []).some(
+      item => typeof item.name === 'string' && item.endpointConfigured === true && Boolean(item.model?.trim()),
+    );
+    const hasConfiguredDefault = defaultConfig.endpointConfigured && Boolean(defaultConfig.model.trim());
     bridge.value = {
-      available: info?.available === true,
+      // listApiPresetDetails.available 代表桥接对象存在，不代表其中已经配置 API。
+      available: info?.available === true && (hasConfiguredPreset || hasConfiguredDefault),
       activePresetName: info?.activePresetName ?? '',
-      presets: (info?.presets ?? []).filter(item => typeof item.name === 'string').map(item => ({ name: item.name! })),
+      defaultConfig,
+      presets: (info?.presets ?? [])
+        .filter(item => typeof item.name === 'string')
+        .map(item => ({
+          name: item.name!,
+          model: item.model ?? '',
+          endpointConfigured: item.endpointConfigured === true,
+          keyConfigured: item.keyConfigured === true,
+        })),
     };
   } catch {
-    bridge.value = { available: false, activePresetName: '', presets: [] };
+    bridge.value = {
+      available: false,
+      activePresetName: '',
+      defaultConfig: { model: '', endpointConfigured: false, keyConfigured: false },
+      presets: [],
+    };
   }
 }
 
