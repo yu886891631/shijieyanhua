@@ -167,8 +167,10 @@
           </section>
 
           <section v-show="isDatabasePage" ref="databaseHost" class="we-page we-database-page" />
-          <section v-show="page === 'evolution'" class="we-page we-evolution-page">
+          <section v-show="page === 'api'" class="we-page we-api-settings-page">
             <ApiSettingsPanel />
+          </section>
+          <section v-show="page === 'evolution'" class="we-page we-evolution-page">
             <div ref="evolutionHost" class="we-evolution-runtime" />
           </section>
           <section v-show="page === 'prompts'" class="we-page">
@@ -263,7 +265,16 @@ const props = defineProps<{ onClose: () => void }>();
 const evolutionVersion = WORLD_EVOLUTION_VERSION;
 const databaseVersion = WORLD_EVOLUTION_DB_VERSION;
 
-type WorkspacePage = 'overview' | 'data' | 'history' | 'worldbook' | 'backup' | 'evolution' | 'prompts' | 'appearance';
+type WorkspacePage =
+  | 'overview'
+  | 'data'
+  | 'history'
+  | 'worldbook'
+  | 'backup'
+  | 'api'
+  | 'evolution'
+  | 'prompts'
+  | 'appearance';
 type ThemeId = 'light' | 'dark' | 'cream' | 'landmine';
 
 const page = ref<WorkspacePage>('overview');
@@ -306,6 +317,7 @@ const navigation: Array<{
   {
     label: '演变配置',
     items: [
+      { id: 'api', label: 'API 配置', icon: '⌘' },
       { id: 'evolution', label: '自动演变', icon: '↻' },
       { id: 'prompts', label: '填表提示词', icon: '✎' },
       { id: 'backup', label: '备份与迁移', icon: '⇅' },
@@ -319,6 +331,7 @@ const pageTitles: Record<WorkspacePage, { label: string; title: string }> = {
   history: { label: '工作台 / 楼层记录', title: '楼层与版本记录' },
   worldbook: { label: '工作台 / 世界书投影', title: '世界书投影' },
   backup: { label: '配置 / 备份与迁移', title: '备份与迁移' },
+  api: { label: '配置 / API 配置', title: 'API 配置' },
   evolution: { label: '配置 / 自动演变', title: '演变运行控制' },
   prompts: { label: '配置 / 填表提示词', title: '提示词工作台' },
   appearance: { label: '设置 / 外观', title: '外观与显示' },
