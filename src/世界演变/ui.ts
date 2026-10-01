@@ -3,6 +3,8 @@ import { createScriptIdDiv, teleportStyle } from '@util/script';
 import { getCurrentChatKey } from '../工作流助手/api/chat-key';
 import { runWorldEvolution, setWorldEvolutionStatusListener, type WorldEvolutionRunResult } from './engine';
 import { loadSettings, saveSettings } from './store';
+import { loadWorldEvolutionApiConfiguration } from './api-config';
+import { getWorldEvolutionApiRouteReadiness, getWorldEvolutionWorkflowAssistantBridge } from './api-routing';
 import {
   inspectWorldEvolutionWorldbook,
   rebuildWorldEvolutionWorldbook,
@@ -29,14 +31,7 @@ let app: ReturnType<typeof createApp> | null = null;
 let root: JQuery<HTMLDivElement> | null = null;
 let styleDestroy: (() => void) | null = null;
 let stopChatChangeListener: EventOnReturn | undefined;
-let refreshApiInfoForPanel: (() => void) | undefined;
-
-type WorkflowApiInfo = {
-  available: boolean;
-  activePresetName: string;
-  defaultConfig: { name?: string; model: string; endpointConfigured: boolean; keyConfigured: boolean };
-  presets: Array<{ name: string; model: string; endpointConfigured: boolean; keyConfigured: boolean }>;
-};
+let refreshApiStatusForPanel: (() => void) | undefined;
 
 const css = `
 .we-panel{position:fixed;right:16px;bottom:16px;z-index:10080;width:min(720px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;background:#111827;color:#e5e7eb;border:1px solid #374151;border-radius:12px;box-shadow:0 12px 36px #0008;font:13px/1.45 system-ui,sans-serif}
@@ -64,12 +59,10 @@ function mountPanel(target?: HTMLElement): void {
     projectionInspection: null as WorldEvolutionWorldbookInspection | null,
     projectionFilter: '',
     projectionBusy: false,
-    apiInfo: {
-      available: false,
-      activePresetName: '',
-      defaultConfig: { model: '', endpointConfigured: false, keyConfigured: false },
-      presets: [],
-    } as WorkflowApiInfo,
+    apiRouteStatus: {
+      ready: false,
+      message: '正在检查 API 路由…',
+    },
   });
 
   const refreshWorld = async (): Promise<void> => {
@@ -137,109 +130,32 @@ function mountPanel(target?: HTMLElement): void {
     setup() {
       const visible = ref(embedded);
       const error = ref('');
-      const refreshApiInfo = () => {
-        const hostWindow = (window.parent ?? window) as Window & {
-          AcuPostProcessAPI?: {
-            listApiPresetDetails?: () => WorkflowApiInfo;
-            getEffectiveApiPresetName?: () => string;
-          };
-        };
-        const api = hostWindow.AcuPostProcessAPI;
-        if (typeof api?.listApiPresetDetails !== 'function') {
-          state.apiInfo = {
-            available: false,
-            activePresetName: '',
-            defaultConfig: { model: '', endpointConfigured: false, keyConfigured: false },
-            presets: [],
-          };
-          return;
-        }
+      const refreshApiStatus = () => {
         try {
-          const info = api.listApiPresetDetails();
-          state.apiInfo = {
-            available: info.available,
-            activePresetName: info.activePresetName,
-            defaultConfig: info.defaultConfig,
-            presets: info.presets,
+          const config = loadWorldEvolutionApiConfiguration({
+            apiPresetName: state.settings.apiPresetName,
+            apiFallbackPresetNames: state.settings.apiFallbackPresetNames,
+          });
+          const bridge = getWorldEvolutionWorkflowAssistantBridge();
+          const routeReadiness = getWorldEvolutionApiRouteReadiness(config, bridge);
+          state.apiRouteStatus = {
+            ready: routeReadiness.ready,
+            message: routeReadiness.ready
+              ? `有效路由：${routeReadiness.usableRoutes.join(' → ')}`
+              : '未检测到可用 API 路由。请前往「演变配置 → API 配置」检查预设和路由。',
           };
-          if (typeof api.getEffectiveApiPresetName === 'function') {
-            state.apiInfo.activePresetName = api.getEffectiveApiPresetName();
-          }
         } catch (apiError) {
-          console.warn('[世界演变] 读取工作流助手 API 预设失败:', apiError);
-          state.apiInfo = {
-            available: false,
-            activePresetName: '',
-            defaultConfig: { model: '', endpointConfigured: false, keyConfigured: false },
-            presets: [],
+          console.warn('[世界演变] 检查 API 路由失败:', apiError);
+          state.apiRouteStatus = {
+            ready: false,
+            message: '读取 API 路由状态失败。请前往「演变配置 → API 配置」检查设置。',
           };
         }
       };
-      const effectiveApiPresetName = () => state.settings.apiPresetName || state.apiInfo.activePresetName;
-      const selectedApiPreset = () => {
-        const effectiveName = effectiveApiPresetName();
-        return (
-          state.apiInfo.presets.find(item => item.name === effectiveName) ??
-          (!effectiveName ? { name: '工作流助手默认配置', ...state.apiInfo.defaultConfig } : undefined)
-        );
-      };
-      const toggleFallbackPreset = (name: string, enabled: boolean) => {
-        const primary = effectiveApiPresetName().trim();
-        const names = state.settings.apiFallbackPresetNames.filter(item => item !== primary && item !== name);
-        if (enabled) names.push(name);
-        state.settings.apiFallbackPresetNames = names;
-      };
-      const normalizeFallbackRoutes = () => {
-        const primary = effectiveApiPresetName();
-        const availableNames = new Set(
-          state.apiInfo.presets
-            .filter(preset => preset.endpointConfigured && preset.model)
-            .map(preset => preset.name),
-        );
-        state.settings.apiFallbackPresetNames = [...new Set(state.settings.apiFallbackPresetNames)].filter(
-          name => name !== primary && availableNames.has(name),
-        );
-      };
-      const moveFallbackPreset = (name: string, delta: -1 | 1) => {
-        normalizeFallbackRoutes();
-        const routes = [...state.settings.apiFallbackPresetNames];
-        const index = routes.indexOf(name);
-        const nextIndex = index + delta;
-        if (index < 0 || nextIndex < 0 || nextIndex >= routes.length) return;
-        [routes[index], routes[nextIndex]] = [routes[nextIndex]!, routes[index]!];
-        state.settings.apiFallbackPresetNames = routes;
-      };
-      const availableFallbackPresets = () =>
-        state.apiInfo.presets
-          .filter(preset => preset.name !== effectiveApiPresetName())
-          .sort((left, right) => {
-            const leftIndex = state.settings.apiFallbackPresetNames.indexOf(left.name);
-            const rightIndex = state.settings.apiFallbackPresetNames.indexOf(right.name);
-            if (leftIndex < 0) return rightIndex < 0 ? 0 : 1;
-            if (rightIndex < 0) return -1;
-            return leftIndex - rightIndex;
-          });
-      const apiReady = () => {
-        const primary = selectedApiPreset();
-        return Boolean(state.apiInfo.available && primary?.endpointConfigured && primary.model);
-      };
-      const fallbackPresetIndex = (name: string) => state.settings.apiFallbackPresetNames.indexOf(name);
-      const refreshApiInfoAndNormalize = () => {
-        refreshApiInfo();
-        normalizeFallbackRoutes();
-      };
-      refreshApiInfoForPanel = refreshApiInfoAndNormalize;
-      const apiStatusText = () => {
-        if (!state.apiInfo.available)
-          return '未检测到工作流助手 API 桥接。请先启用工作流助手；世界演变不会改用酒馆当前 API。';
-        const primary = selectedApiPreset();
-        if (!primary) return '没有可用的主 API 预设。请先在工作流助手「API」页面配置并保存预设。';
-        const missing = [!primary.endpointConfigured && '端点', !primary.model && '模型名'].filter(Boolean);
-        return missing.length
-          ? `预设「${primary.name}」缺少：${missing.join('、')}`
-          : `主路由：${primary.name} · ${primary.model} · ${primary.keyConfigured ? '凭据已配置' : '未填写 API Key（仅限免密接口）'}`;
-      };
-      refreshApiInfoAndNormalize();
+      refreshApiStatusForPanel = refreshApiStatus;
+      refreshApiStatus();
+      const apiReady = () => state.apiRouteStatus.ready;
+      const apiStatusText = () => state.apiRouteStatus.message;
       const resultText = () => {
         const result = state.lastResult;
         if (!result) return '暂无运行记录';
@@ -271,9 +187,8 @@ function mountPanel(target?: HTMLElement): void {
           .reverse()
           .find(record => record.status === 'failed')?.messageId;
       const save = () => {
-        normalizeFallbackRoutes();
         saveSettings(toRaw(state.settings));
-        refreshApiInfoAndNormalize();
+        refreshApiStatus();
         state.statusMessage = '设置已保存';
       };
       const run = async () => {
@@ -484,92 +399,16 @@ function mountPanel(target?: HTMLElement): void {
               ]),
           visible.value
             ? h('div', { class: 'we-body' }, [
-                h('div', { class: 'we-section we-api-settings' }, [
-                  h('div', { class: 'we-section-title' }, 'API 配置与路由'),
+                h('div', { class: 'we-section we-api-status' }, [
+                  h('div', { class: 'we-section-title' }, 'API 路由状态'),
                   h(
                     'div',
-                    { class: state.apiInfo.available ? 'we-muted' : 'we-danger' },
-                    'API 凭据由工作流助手保存；世界演变只保存预设名称，并通过其路由代调用。',
+                    { class: apiReady() ? 'we-muted' : 'we-danger' },
+                    'API 预设与主备路由已统一到“演变配置 → API 配置”。此处仅显示状态；旧版工作流助手预设字段仍保留用于兼容读取。',
                   ),
-                  h('div', { class: 'we-row' }, [
-                    h('label', { class: 'we-label' }, '主 API 预设'),
-                    h(
-                      'select',
-                      {
-                        class: 'we-select',
-                        value: state.settings.apiPresetName,
-                        disabled: !state.apiInfo.available,
-                        onChange: (event: Event) => {
-                          state.settings.apiPresetName = (event.target as HTMLSelectElement).value;
-                          normalizeFallbackRoutes();
-                        },
-                      },
-                      [
-                        h(
-                          'option',
-                          { value: '' },
-                          `跟随当前聊天 API 预设${state.apiInfo.activePresetName ? `（${state.apiInfo.activePresetName}）` : state.apiInfo.defaultConfig.endpointConfigured ? '（工作流助手默认配置）' : ''}`,
-                        ),
-                        ...state.apiInfo.presets.map(preset => h('option', { value: preset.name }, preset.name)),
-                      ],
-                    ),
-                    h('button', { class: 'we-btn', onClick: refreshApiInfoAndNormalize }, '刷新预设列表'),
-                  ]),
                   h('div', { class: apiReady() ? 'we-ok' : 'we-danger' }, apiStatusText()),
                   h('div', { class: 'we-row' }, [
-                    h('span', { class: 'we-label' }, '失败备用路由（按顺序）'),
-                    ...(availableFallbackPresets().length
-                      ? availableFallbackPresets()
-                          .map(preset =>
-                            h('div', { class: 'we-row', style: 'gap:4px' }, [
-                              h('label', { class: 'we-muted', style: 'display:flex;align-items:center;gap:5px' }, [
-                                h('input', {
-                                  class: 'we-check',
-                                  type: 'checkbox',
-                                  checked: fallbackPresetIndex(preset.name) >= 0,
-                                  disabled: !preset.endpointConfigured || !preset.model,
-                                  onChange: (event: Event) =>
-                                    toggleFallbackPreset(preset.name, (event.target as HTMLInputElement).checked),
-                                }),
-                                `${fallbackPresetIndex(preset.name) >= 0 ? `备用 ${fallbackPresetIndex(preset.name) + 1} · ` : ''}${preset.name}${preset.model ? ` · ${preset.model}` : ''}`,
-                              ]),
-                              ...(fallbackPresetIndex(preset.name) >= 0
-                                ? [
-                                    h(
-                                      'button',
-                                      {
-                                        class: 'we-btn we-small',
-                                        disabled: fallbackPresetIndex(preset.name) === 0,
-                                        title: '提前尝试',
-                                        onClick: () => moveFallbackPreset(preset.name, -1),
-                                      },
-                                      '↑',
-                                    ),
-                                    h(
-                                      'button',
-                                      {
-                                        class: 'we-btn we-small',
-                                        disabled:
-                                          fallbackPresetIndex(preset.name) ===
-                                          state.settings.apiFallbackPresetNames.length - 1,
-                                        title: '延后尝试',
-                                        onClick: () => moveFallbackPreset(preset.name, 1),
-                                      },
-                                      '↓',
-                                    ),
-                                  ]
-                                : []),
-                            ]),
-                          )
-                      : [
-                          h(
-                            'span',
-                            { class: 'we-muted' },
-                            state.apiInfo.presets.length > 1
-                              ? '没有可用的备用预设（其余预设可能缺少端点或模型名）'
-                              : '至少需要配置两个可用预设，才能设置备用路由',
-                          ),
-                        ]),
+                    h('button', { class: 'we-btn', onClick: refreshApiStatus }, '刷新路由状态'),
                   ]),
                 ]),
                 h('div', { class: 'we-section we-run-settings' }, [
@@ -1005,14 +844,14 @@ function mountPanel(target?: HTMLElement): void {
   stopChatChangeListener = eventOn(tavern_events.CHAT_CHANGED, () => {
     state.chatKey = getCurrentChatKey();
     state.settings = loadSettings();
-    refreshApiInfoForPanel?.();
+    refreshApiStatusForPanel?.();
     state.currentWorldbookName = resolveCurrentCharacterWorldbookName() ?? '';
     void refreshWorld();
   });
   $(window).on('pagehide.world-evolution', () => {
     stopChatChangeListener?.stop();
     stopChatChangeListener = undefined;
-    refreshApiInfoForPanel = undefined;
+    refreshApiStatusForPanel = undefined;
     setWorldEvolutionStatusListener(undefined);
     app?.unmount();
     app = null;

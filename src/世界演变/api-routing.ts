@@ -53,6 +53,11 @@ export type WorldEvolutionApiRouteSummary = {
   effectiveRoutes: WorldEvolutionApiRouteDescriptor[];
 };
 
+export type WorldEvolutionApiRouteReadiness = {
+  ready: boolean;
+  usableRoutes: string[];
+};
+
 export type WorldEvolutionApiRouteAttempt = {
   source: WorldEvolutionApiRouteSource;
   presetId?: string;
@@ -187,6 +192,52 @@ export function resolveWorldEvolutionApiRouting(
     workflowAssistantPresetNames,
     effectiveRoutes,
   };
+}
+
+/**
+ * 返回旧运行面板可展示的安全路由状态，不发起请求。
+ * 内置来源只检查引擎实际首先尝试的启用预设；配置错误不会触发内置备用项，
+ * 但被禁用的预设会被跳过。工作流助手桥接同样只检查实际传给助手的主预设，
+ * 因为助手会在校验主预设失败时直接报错，不会尝试备用项。
+ */
+export function getWorldEvolutionApiRouteReadiness(
+  config: WorldEvolutionApiConfiguration,
+  bridge: WorldEvolutionWorkflowAssistantBridge | null | undefined,
+): WorldEvolutionApiRouteReadiness {
+  const summary = resolveWorldEvolutionApiRouting(config, { bridge });
+  const presetById = new Map(config.presets.map(preset => [preset.id, preset]));
+  const usableRoutes: string[] = [];
+
+  for (const source of summary.order) {
+    if (source === 'builtin') {
+      const firstEnabledPreset = presetById.get(summary.builtinPresetIds[0] ?? '');
+      if (
+        firstEnabledPreset?.enabled &&
+        firstEnabledPreset.endpoint.trim() &&
+        firstEnabledPreset.model.trim() &&
+        firstEnabledPreset.apiKey.trim()
+      ) {
+        usableRoutes.push(`内置 API：${firstEnabledPreset.name}`);
+      }
+      continue;
+    }
+
+    if (!bridge || !bridgeAvailable(bridge)) continue;
+    const primaryPresetName = normalizeName(config.routing.workflowAssistantPresetName) || normalizeName(bridge.activePresetName);
+    if (primaryPresetName) {
+      const preset = bridge.presets?.find(item => item.name === primaryPresetName);
+      if (preset?.endpointConfigured && normalizeName(preset.model)) {
+        usableRoutes.push(`工作流助手：${primaryPresetName}`);
+      }
+      continue;
+    }
+
+    if (bridge.defaultConfig?.endpointConfigured && normalizeName(bridge.defaultConfig.model)) {
+      usableRoutes.push('工作流助手：默认配置');
+    }
+  }
+
+  return { ready: usableRoutes.length > 0, usableRoutes };
 }
 
 function defaultBridge(): WorldEvolutionWorkflowAssistantBridge | null {

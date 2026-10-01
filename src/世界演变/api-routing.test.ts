@@ -8,6 +8,7 @@ import {
 import { type WorldEvolutionApiFetch } from './api-client';
 import {
   callWorldEvolutionApiWithRouting,
+  getWorldEvolutionApiRouteReadiness,
   resolveWorldEvolutionApiRouting,
   type WorldEvolutionWorkflowAssistantBridge,
 } from './api-routing';
@@ -65,6 +66,70 @@ test('routing summary exposes the four S5 source states', () => {
   const none = resolveWorldEvolutionApiRouting(createEmptyWorldEvolutionApiConfiguration(100));
   assert.equal(none.state, 'none');
   assert.deepEqual(none.order, []);
+});
+
+test('route readiness requires a usable primary bridge preset, not only a usable fallback', () => {
+  const config = createEmptyWorldEvolutionApiConfiguration(100);
+  config.routing.workflowAssistantPresetName = '坏掉的主预设';
+  config.routing.workflowAssistantFallbackPresetNames = ['可用备用预设'];
+  const workflow: WorldEvolutionWorkflowAssistantBridge = {
+    available: true,
+    activePresetName: '坏掉的主预设',
+    presets: [
+      { name: '坏掉的主预设', model: '', endpointConfigured: false, keyConfigured: false },
+      { name: '可用备用预设', model: 'model-b', endpointConfigured: true, keyConfigured: true },
+    ],
+    callApi: async () => ({ content: '模拟响应' }),
+  };
+
+  assert.deepEqual(getWorldEvolutionApiRouteReadiness(config, workflow), { ready: false, usableRoutes: [] });
+
+  const implicitConfig = createEmptyWorldEvolutionApiConfiguration(101);
+  implicitConfig.routing.workflowAssistantFallbackPresetNames = ['可用备用预设'];
+  const implicitWorkflow: WorldEvolutionWorkflowAssistantBridge = {
+    ...workflow,
+    activePresetName: '坏掉的主预设',
+  };
+  assert.deepEqual(getWorldEvolutionApiRouteReadiness(implicitConfig, implicitWorkflow), {
+    ready: false,
+    usableRoutes: [],
+  });
+});
+
+test('route readiness trims builtin API keys and accepts a keyless workflow primary', () => {
+  let builtin = configWithBuiltin();
+  builtin = upsertWorldEvolutionApiPreset(
+    builtin,
+    {
+      id: 'backup',
+      name: '内置备用 API',
+      endpoint: 'https://backup.test',
+      apiKey: 'backup-secret',
+      model: 'model-b',
+    },
+    102,
+  );
+  builtin.routing.fallbackPresetIds = ['backup'];
+  builtin.presets[0]!.apiKey = '   ';
+  assert.deepEqual(getWorldEvolutionApiRouteReadiness(builtin, null), { ready: false, usableRoutes: [] });
+  builtin.presets[0]!.enabled = false;
+  assert.deepEqual(getWorldEvolutionApiRouteReadiness(builtin, null), {
+    ready: true,
+    usableRoutes: ['内置 API：内置备用 API'],
+  });
+
+  const workflowOnly = createEmptyWorldEvolutionApiConfiguration(100);
+  workflowOnly.routing.workflowAssistantPresetName = '免密主预设';
+  const workflow: WorldEvolutionWorkflowAssistantBridge = {
+    available: true,
+    activePresetName: '免密主预设',
+    presets: [{ name: '免密主预设', model: 'model-a', endpointConfigured: true, keyConfigured: false }],
+    callApi: async () => ({ content: '模拟响应' }),
+  };
+  assert.deepEqual(getWorldEvolutionApiRouteReadiness(workflowOnly, workflow), {
+    ready: true,
+    usableRoutes: ['工作流助手：免密主预设'],
+  });
 });
 
 test('builtin source is preferred and does not call the workflow bridge on success', async () => {
