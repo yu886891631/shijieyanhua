@@ -1,9 +1,9 @@
 # 世界演变控制台 API 页面重排计划
 
-> 计划版本：A0.1.0-alpha.12-ui.1
+> 计划版本：A0.1.0-alpha.13
 > 计划日期：2026-09-30
 > 当前基线：A0.1.0-alpha.12 发布候选
-> 当前状态：UI-6 排版与响应式优化已完成，下一阶段为 UI-7 测试、构建与发布候选
+> 当前状态：UI-7 最终回归、发布候选与真机验收准备已完成，等待 SillyTavern 真机验收
 
 ## 1. 目标
 
@@ -227,13 +227,15 @@ UI-6 完成记录见 [`WORLD-EVOLUTION-API-UI6-RESPONSIVE.md`](WORLD-EVOLUTION-A
 - 自动演变页不再出现重复 API 表单；
 - 停用新版后可以回退 alpha.11。
 
-建议发布版本：
+发布候选版本：
 
 ```text
-A0.1.0-alpha.12-ui.1
+A0.1.0-alpha.13
 ```
 
-该版本只代表 UI 重排，不增加数据库版本，也不改变 API 配置 schema。若希望将页面重排作为独立大里程碑，再改用 alpha.13。
+该版本代表 UI 重排的独立发布候选，不增加数据库版本，也不改变 API 配置 schema。运行时数据库版本仍为 `A0.1.0-alpha.11`；A0.1.0-alpha.12 和 alpha.11 导入包继续保留作为回退版本。
+
+UI-7 自动化回归结果与真机验收清单见 [`WORLD-EVOLUTION-API-UI7-RELEASE-CANDIDATE.md`](WORLD-EVOLUTION-API-UI7-RELEASE-CANDIDATE.md)。
 
 ## 5. 测试矩阵
 
@@ -268,6 +270,6 @@ A0.1.0-alpha.12-ui.1
 - 新旧 API 配置兼容逻辑仍然有效；
 - API 配置、数据库和世界书数据均未丢失；
 - 页面在常用缩放和窄窗口下可用；
-- 模拟测试、ESLint 和生产构建通过；
+- 模拟测试、受影响目录 ESLint 和生产构建通过；全仓库既有 ESLint 错误不属于本阶段改动；
 - 新测试包默认关闭并带明确版本号；
 - alpha.11 仍可作为回退版本。
