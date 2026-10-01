@@ -44,9 +44,13 @@ const css = `
 .we-panel *{box-sizing:border-box}.we-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid #374151}.we-title{font-weight:700}.we-close,.we-btn{border:1px solid #4b5563;background:#1f2937;color:#e5e7eb;border-radius:7px;padding:6px 10px;cursor:pointer}.we-btn:hover,.we-close:hover{background:#374151}.we-body{padding:14px;display:grid;gap:14px}.we-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-width:0}.we-label{color:#9ca3af;min-width:130px}.we-input{flex:1;min-width:150px;background:#0b1220;color:#f3f4f6;border:1px solid #4b5563;border-radius:6px;padding:6px 8px}.we-status{white-space:pre-wrap;background:#0b1220;border:1px solid #374151;border-radius:7px;padding:8px;max-height:180px;overflow:auto}.we-danger{color:#fca5a5}.we-ok{color:#86efac}.we-muted{color:#9ca3af;font-size:12px}.we-check{accent-color:#38bdf8}
 .we-section{border:1px solid #374151;border-radius:8px;padding:12px;display:grid;gap:9px;min-width:0}.we-section-title{font-weight:600;color:#d1d5db}.we-list{display:grid;gap:6px;min-width:0}.we-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:start;min-width:0;background:#0b1220;border:1px solid #263244;border-radius:7px;padding:8px}.we-card-title{font-weight:600}.we-card-meta{color:#9ca3af;font-size:12px}.we-card-state{white-space:pre-wrap;color:#cbd5e1;font-size:12px;max-height:90px;overflow:auto}.we-card-actions{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}.we-small{padding:4px 7px;font-size:12px}.we-select{background:#0b1220;color:#f3f4f6;border:1px solid #4b5563;border-radius:6px;padding:6px 8px}
 .we-api-status{gap:12px}.we-api-status-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.we-api-status-heading .we-section-title{font-size:15px}.we-api-status-badge{flex:none;padding:4px 9px;border:1px solid var(--we-border,#64748b);border-radius:999px;font-size:11px}.we-api-status-badge.ready{border-color:var(--we-accent,#22c55e);color:var(--we-accent-strong,#16a34a)}.we-api-status-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.we-api-status-item{display:grid;gap:4px;min-width:0;padding:9px 10px;border:1px solid var(--we-border,#00000012);border-radius:8px;background:var(--we-surface-soft,#00000008);color:var(--we-text,#e5e7eb)}.we-api-status-label{color:var(--we-muted,#64748b);font-size:11px}.we-api-status-value{overflow:hidden;color:inherit;font-size:13px;text-overflow:ellipsis;white-space:nowrap}.we-api-status-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.we-api-status-actions .we-btn-primary{border-color:var(--we-accent,#16a34a);background:var(--we-accent,#16a34a);color:var(--we-accent-contrast,#fff)}.we-api-status-actions .we-btn-primary:hover:not(:disabled){background:var(--we-accent-strong,#15803d)}.we-api-status-actions .we-btn:disabled{cursor:not-allowed;opacity:.55}.we-run-settings{gap:10px}.we-run-settings .we-section-title{font-size:15px}
+.we-evolution-intro{margin-top:-5px;line-height:1.5}.we-readiness-card{display:grid;gap:7px;padding:10px 11px;border:1px solid var(--we-border,#64748b);border-radius:8px;background:var(--we-surface-soft,#00000008)}.we-readiness-card.ready{border-color:var(--we-accent,#22c55e)}.we-readiness-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}.we-readiness-title{font-size:15px;font-weight:700}.we-readiness-details{line-height:1.5}.we-readiness-next{font-size:12px}.we-settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.we-setting-group{display:grid;align-content:start;gap:8px;min-width:0;padding:10px;border:1px solid var(--we-border,#00000012);border-radius:8px;background:var(--we-surface-soft,#00000004)}.we-setting-group-title{font-size:13px;font-weight:650}.we-setting-group-help{margin-top:-4px;line-height:1.45}.we-setting-row{display:grid;grid-template-columns:minmax(110px,1fr) minmax(100px,1fr);gap:8px;align-items:center;min-width:0}.we-setting-row .we-label{min-width:0}.we-setting-row .we-input{width:100%;min-width:0}.we-setting-number{display:flex;align-items:center;gap:6px;min-width:0}.we-setting-number .we-input{flex:1}.we-setting-unit{flex:none;color:var(--we-muted,#64748b);font-size:11px}.we-setting-toggle{display:flex;align-items:center;gap:8px;min-height:32px}.we-setting-toggle .we-check{width:16px;height:16px}.we-setting-help{grid-column:1/-1;line-height:1.4}.we-setting-candidates{display:flex;gap:5px;flex-wrap:wrap;margin-top:2px}.we-setting-candidate{max-width:100%;padding:3px 7px;border:1px solid var(--we-border,#64748b);border-radius:999px;color:var(--we-text,#e5e7eb);font-size:11px;overflow-wrap:anywhere}.we-settings-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-top:2px}.we-settings-actions .we-muted{margin-right:auto}.we-run-controls{gap:8px}.we-run-control-buttons{display:flex;gap:8px;flex-wrap:wrap}.we-run-control-buttons .we-btn-primary{border-color:var(--we-accent,#16a34a);background:var(--we-accent,#16a34a);color:var(--we-accent-contrast,#fff)}.we-run-control-buttons .we-btn:disabled{cursor:not-allowed;opacity:.55}.we-run-warning{line-height:1.45}.we-run-result{display:grid;gap:9px}.we-run-result-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.we-run-result-badge{display:inline-flex;align-items:center;padding:3px 8px;border:1px solid var(--we-border,#64748b);border-radius:999px;font-size:11px;white-space:nowrap}.we-run-result-badge.success{color:var(--we-accent-strong,#16a34a);border-color:var(--we-accent,#22c55e)}.we-run-result-badge.failed{color:#dc2626;border-color:#ef4444}.we-run-result-badge.skipped{color:var(--we-muted,#64748b)}.we-run-result-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.we-run-result-item{display:grid;gap:3px;min-width:0;padding:8px;border:1px solid var(--we-border,#00000012);border-radius:7px;background:var(--we-surface-soft,#00000004)}.we-run-result-item strong{overflow-wrap:anywhere}.we-run-result-details{line-height:1.5;overflow-wrap:anywhere}.we-run-diagnostic{padding-top:8px;border-top:1px solid var(--we-border,#00000012)}.we-run-diagnostic summary{cursor:pointer;color:var(--we-accent-strong,#16a34a)}.we-run-diagnostic .we-status{margin-top:7px}.we-run-no-result{padding:12px;border:1px dashed var(--we-border,#64748b);border-radius:8px;line-height:1.5}.we-settings-save-state{font-size:12px}.we-settings-save-state.dirty{color:#b45309}.we-settings-save-state.saved{color:var(--we-accent-strong,#16a34a)}
 @media(max-width:760px){.we-api-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.we-api-status-actions .we-btn{flex:1 1 auto}}
 @media(max-width:760px){.we-run-settings .we-row{display:grid;grid-template-columns:minmax(0,1fr);align-items:start}.we-run-settings .we-label{min-width:0}.we-run-settings .we-input{width:100%;min-width:0}.we-api-status-heading{display:grid}.we-api-status-badge{justify-self:start}}
 @container (max-width:720px){.we-api-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.we-api-status-actions .we-btn{flex:1 1 auto}.we-run-settings .we-row{display:grid;grid-template-columns:minmax(0,1fr);align-items:start}.we-run-settings .we-label{min-width:0}.we-run-settings .we-input{width:100%;min-width:0}.we-api-status-heading{display:grid}.we-api-status-badge{justify-self:start}}
+.we-setting-group>.we-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(90px,1fr);gap:6px;align-items:center}.we-setting-group>.we-row .we-label{min-width:0}.we-setting-group>.we-row .we-input{width:100%;min-width:0}.we-setting-group>.we-row .we-check{justify-self:start}.we-setting-group>.we-row>small,.we-setting-group>.we-row>.we-setting-candidates{grid-column:1/-1}.we-setting-group-help{font-size:11px}.we-setting-group>.we-row .we-input[readonly]{overflow:hidden;text-overflow:ellipsis}.we-run-control-status{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.we-run-control-status .we-muted{margin-right:auto}
+@media(max-width:760px){.we-settings-grid{grid-template-columns:minmax(0,1fr)}.we-run-result-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.we-readiness-heading,.we-run-result-heading{align-items:flex-start;flex-direction:column}.we-setting-group>.we-row{grid-template-columns:minmax(0,1fr) minmax(90px,1fr)}}
+@container (max-width:720px){.we-settings-grid{grid-template-columns:minmax(0,1fr)}.we-run-result-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.we-readiness-heading,.we-run-result-heading{align-items:flex-start;flex-direction:column}.we-setting-group>.we-row{grid-template-columns:minmax(0,1fr) minmax(90px,1fr)}}
 `;
 
 export type WorldEvolutionPanelOptions = {
@@ -62,6 +66,9 @@ function mountPanel(target?: HTMLElement, options: WorldEvolutionPanelOptions = 
     statusMessage: '等待触发',
     running: false,
     lastResult: null as WorldEvolutionRunResult | null,
+    lastResultChatKey: getCurrentChatKey(),
+    settingsDirty: false,
+    settingsSaveMessage: '设置已加载',
     world: null as ReturnType<typeof dbSnapshotToWorld> | null,
     objectFilter: '',
     objectType: 'all' as 'all' | 'npc' | 'organization' | 'location' | 'environment' | 'social',
@@ -137,7 +144,6 @@ function mountPanel(target?: HTMLElement, options: WorldEvolutionPanelOptions = 
   setWorldEvolutionStatusListener(update => {
     state.status = update.status;
     state.statusMessage = update.message;
-    state.lastResult = update.result ?? state.lastResult;
     state.running = ['waiting', 'collecting', 'generating', 'committing', 'syncing'].includes(update.status);
     void refreshWorld();
   });
@@ -161,7 +167,7 @@ function mountPanel(target?: HTMLElement, options: WorldEvolutionPanelOptions = 
             fallbackCount: routeSummary.fallbackCount,
             keyConfigured: routeSummary.keyConfigured,
             message: routeSummary.ready
-              ? '当前主路由可用，可开始手动运行或等待自动触发。'
+              ? '本地路由配置检查通过；这不是连通性测试，首次真实运行仍可能失败。'
               : routeSummary.source
                 ? '检测到路由配置，但主路由尚不可用；请检查端点、模型和凭据。'
                 : '未检测到可用 API 路由，请先完成配置。',
@@ -181,9 +187,113 @@ function mountPanel(target?: HTMLElement, options: WorldEvolutionPanelOptions = 
       refreshApiStatusForPanel = refreshApiStatus;
       refreshApiStatus();
       const apiReady = () => state.apiRouteStatus.ready;
+      const markSettingsDirty = () => {
+        state.settingsDirty = true;
+        state.settingsSaveMessage = '有未保存的设置更改';
+      };
+      const persistSettings = () => {
+        saveSettings(toRaw(state.settings));
+        state.settingsDirty = false;
+        state.settingsSaveMessage = '设置已保存';
+        refreshApiStatus();
+      };
+      const readinessLabel = () => {
+        if (!apiReady()) return 'API 路由需检查';
+        if (!state.settings.enabled) return '插件已关闭';
+        return state.settings.autoRun ? '自动触发已开启' : '仅手动运行';
+      };
+      const readinessDescription = () => {
+        if (!apiReady()) return '本地路由配置未通过检查；请先到 API 配置页补全主路由。';
+        if (!state.settings.enabled) return '插件关闭时不会监听或执行世界演变。启用设置后请保存。';
+        if (state.settings.autoRun) {
+          return '保存后，将在工作流成功完成并通过楼层稳定检查时自动排队；这不会立即发起请求。';
+        }
+        return '自动触发关闭；保存后仍可在下方手动运行。';
+      };
+      const nextReadinessAction = () => {
+        if (state.settingsDirty) return '当前开关和参数尚未保存；自动触发仍使用上次保存的设置。';
+        if (!apiReady()) return '下一步：前往 API 配置检查主路由。';
+        if (!state.settings.enabled) return '下一步：启用插件并保存设置。';
+        if (state.settings.autoRun) return '运行提示：自动运行由工作流完成事件触发，并等待楼层稳定。';
+        return '下一步：可手动运行一轮，或开启自动触发并保存。';
+      };
+      const runDisabledReason = () => {
+        if (state.running) return '已有一轮演变正在处理。';
+        if (!state.settings.enabled) return '请先启用插件并保存设置。';
+        if (!apiReady()) return '请先在 API 配置页完成路由配置检查。';
+        return '';
+      };
+      const retryDisabledReason = () => {
+        if (state.running) return '已有一轮演变正在处理。';
+        if (!state.settings.enabled) return '请先启用插件并保存设置。';
+        if (!apiReady()) return '请先在 API 配置页完成路由配置检查。';
+        const messageId = failedMessageId();
+        if (messageId == null || messageId < 0) return '当前聊天没有可重试的失败楼层。';
+        return '';
+      };
+      const latestRunView = () => {
+        if (state.lastResult && state.lastResultChatKey === state.chatKey) return state.lastResult;
+        const record = state.world?.runRecords
+          .slice()
+          .sort(
+            (left, right) =>
+              (right.finishedAt ?? right.startedAt ?? right.enqueuedAt) -
+              (left.finishedAt ?? left.startedAt ?? left.enqueuedAt),
+          )[0];
+        return record
+          ? {
+              status: record.status,
+              messageId: record.messageId,
+              reason: record.status === 'skipped' ? record.error : undefined,
+              candidateNames: record.candidateNames,
+              changedEntityIds: record.changedEntityIds,
+              eventIds: record.eventIds,
+              error: record.error,
+            }
+          : null;
+      };
+      const runStatusLabel = (result: NonNullable<ReturnType<typeof latestRunView>>) => {
+        if (result.status === 'done') {
+          if (result.error?.startsWith('世界书同步失败：')) return '数据库已提交，世界书同步失败';
+          return result.changedEntityIds.length || result.eventIds.length ? '成功，有变更' : '成功，无变更';
+        }
+        return {
+          idle: '尚未开始',
+          waiting: '排队中',
+          collecting: '整理上下文中',
+          generating: '生成中',
+          committing: '提交数据中',
+          syncing: '同步世界书中',
+          queued: '排队中',
+          running: '演变处理中',
+          skipped: '已跳过',
+          failed: '运行失败',
+          cancelled: '已取消',
+        }[result.status];
+      };
+      const runResultTone = (result: NonNullable<ReturnType<typeof latestRunView>>) => {
+        if (result.status === 'done') {
+          return result.error?.startsWith('世界书同步失败：') ? 'failed' : 'success';
+        }
+        return result.status === 'failed' ? 'failed' : result.status === 'skipped' ? 'skipped' : '';
+      };
+      const runResultDescription = (result: NonNullable<ReturnType<typeof latestRunView>>) => {
+        if (result.status === 'done' && result.error?.startsWith('世界书同步失败：')) {
+          return '演变数据已经提交到数据库；只有世界书投影同步失败。可在「世界书投影」页检查并重试同步。';
+        }
+        if (result.status === 'done') {
+          return result.changedEntityIds.length || result.eventIds.length
+            ? '本轮演变已完成，变更已提交。'
+            : '本轮已完成，但没有产生需要提交的变更。';
+        }
+        if (result.status === 'skipped') return result.reason || result.error || '本轮未执行演变。';
+        if (result.status === 'failed') return result.error || result.reason || '本轮运行失败；可检查下方诊断信息。';
+        return `当前记录状态：${runStatusLabel(result)}。`;
+      };
       const resultText = () => {
-        const result = state.lastResult;
+        const result = latestRunView();
         if (!result) return '暂无运行记录';
+        const rawResponse = 'rawResponse' in result ? result.rawResponse : undefined;
         return JSON.stringify(
           {
             status: result.status,
@@ -193,7 +303,7 @@ function mountPanel(target?: HTMLElement, options: WorldEvolutionPanelOptions = 
             eventIds: result.eventIds,
             reason: result.reason,
             error: result.error,
-            rawResponse: result.rawResponse?.slice(0, 6000),
+            rawResponse: rawResponse?.slice(0, 6000),
           },
           null,
           2,
@@ -212,34 +322,58 @@ function mountPanel(target?: HTMLElement, options: WorldEvolutionPanelOptions = 
           .reverse()
           .find(record => record.status === 'failed')?.messageId;
       const save = () => {
-        saveSettings(toRaw(state.settings));
-        refreshApiStatus();
+        persistSettings();
         state.statusMessage = '设置已保存';
       };
       const run = async () => {
+        if (
+          !window.confirm(
+            '将保存当前设置并调用已配置的真实 API 处理当前楼层。请求可能产生费用；失败重试也可能增加请求次数。确定继续吗？',
+          )
+        )
+          return;
+        const runChatKey = state.chatKey;
         error.value = '';
-        saveSettings(toRaw(state.settings));
+        persistSettings();
+        state.lastResult = null;
+        state.lastResultChatKey = runChatKey;
         const result = await runWorldEvolution(undefined, { source: 'manual' });
-        state.lastResult = result;
+        if (runChatKey === state.chatKey && runChatKey === getCurrentChatKey()) {
+          state.lastResult = result;
+          state.lastResultChatKey = runChatKey;
+          if (result.error) error.value = result.error;
+        }
         await refreshWorld();
-        if (result.error) error.value = result.error;
       };
       const retryFailed = async () => {
         const messageId = failedMessageId();
         if (messageId == null || messageId < 0) return;
+        if (
+          !window.confirm(
+            `将保存当前设置并再次调用真实 API 重试第 ${messageId} 楼。请求可能产生费用；失败重试也可能增加请求次数。确定继续吗？`,
+          )
+        )
+          return;
+        const runChatKey = state.chatKey;
         error.value = '';
-        saveSettings(toRaw(state.settings));
+        persistSettings();
+        state.lastResult = null;
+        state.lastResultChatKey = runChatKey;
         const result = await runWorldEvolution(messageId, { source: 'manual' });
-        state.lastResult = result;
+        if (runChatKey === state.chatKey && runChatKey === getCurrentChatKey()) {
+          state.lastResult = result;
+          state.lastResultChatKey = runChatKey;
+          if (result.error) error.value = result.error;
+        }
         await refreshWorld();
-        if (result.error) error.value = result.error;
       };
       const runActionButtons = () => [
         h(
           'button',
           {
             class: 'we-btn we-btn-primary',
-            disabled: state.running || !state.settings.enabled || !apiReady(),
+            disabled: Boolean(runDisabledReason()),
+            title: runDisabledReason(),
             onClick: run,
           },
           state.running ? '运行中…' : '手动运行一轮',
@@ -248,12 +382,76 @@ function mountPanel(target?: HTMLElement, options: WorldEvolutionPanelOptions = 
           'button',
           {
             class: 'we-btn',
-            disabled: state.running || failedMessageId() == null || !state.settings.enabled || !apiReady(),
+            disabled: Boolean(retryDisabledReason()),
+            title: retryDisabledReason(),
             onClick: retryFailed,
           },
           '重试最近失败楼层',
         ),
       ];
+      const runActionStatus = () => {
+        const runReason = runDisabledReason();
+        if (runReason) return runReason;
+        const retryReason = retryDisabledReason();
+        return retryReason || '可手动运行；自动触发仍需等待工作流完成并通过楼层稳定检查。';
+      };
+      const renderRunResult = () => {
+        const result = latestRunView();
+        if (!result) {
+          return h(
+            'div',
+            { class: 'we-run-no-result we-muted' },
+            state.world ? '当前聊天还没有运行记录。' : '正在读取当前聊天的运行记录…',
+          );
+        }
+        const rawResponse = 'rawResponse' in result ? result.rawResponse : undefined;
+        const attempt = 'attempt' in result ? result.attempt : undefined;
+        const source = 'source' in result ? result.source : undefined;
+        const diagnosticText = resultText();
+        return h('div', { class: 'we-run-result' }, [
+          h('div', { class: 'we-run-result-heading' }, [
+            h('strong', { class: 'we-section-title' }, '最近运行结果'),
+            h('span', { class: ['we-run-result-badge', runResultTone(result)] }, runStatusLabel(result)),
+          ]),
+          h('div', { class: 'we-run-result-grid' }, [
+            h('div', { class: 'we-run-result-item' }, [
+              h('span', { class: 'we-muted' }, '处理楼层'),
+              h('strong', undefined, result.messageId >= 0 ? `第 ${result.messageId} 楼` : '未指定'),
+            ]),
+            h('div', { class: 'we-run-result-item' }, [
+              h('span', { class: 'we-muted' }, '候选角色'),
+              h('strong', undefined, result.candidateNames.length ? result.candidateNames.join('、') : '无'),
+            ]),
+            h('div', { class: 'we-run-result-item' }, [
+              h('span', { class: 'we-muted' }, '写入内容'),
+              h('strong', undefined, `${result.changedEntityIds.length} 个对象 · ${result.eventIds.length} 条事件`),
+            ]),
+          ]),
+          h('div', { class: 'we-run-result-details' }, runResultDescription(result)),
+          result.error || result.reason
+            ? h('div', { class: result.status === 'done' ? 'we-muted' : 'we-danger' }, result.error || result.reason)
+            : null,
+          source || attempt !== undefined
+            ? h(
+                'div',
+                { class: 'we-muted' },
+                [
+                  source
+                    ? `来源：${source === 'auto' ? '自动触发' : source === 'retry' ? '失败重试' : '手动运行'}`
+                    : '',
+                  attempt !== undefined ? `第 ${attempt} 次尝试` : '',
+                ]
+                  .filter(Boolean)
+                  .join(' · '),
+              )
+            : null,
+          h('details', { class: 'we-run-diagnostic' }, [
+            h('summary', undefined, '展开原始诊断信息'),
+            h('pre', { class: 'we-status' }, diagnosticText),
+            rawResponse ? h('div', { class: 'we-muted' }, 'AI 原始响应已包含在上方诊断 JSON 中。') : null,
+          ]),
+        ]);
+      };
       const routeSourceLabel = () =>
         state.apiRouteStatus.source === 'builtin'
           ? '内置 API'
@@ -461,20 +659,20 @@ function mountPanel(target?: HTMLElement, options: WorldEvolutionPanelOptions = 
               ]),
           visible.value
             ? h('div', { class: 'we-body' }, [
-                h('div', { class: ['we-section', 'we-api-status'] }, [
+                h('div', { class: ['we-section', 'we-api-status', 'we-before-run'] }, [
                   h('div', { class: 'we-api-status-heading' }, [
                     h('div', undefined, [
-                      h('div', { class: 'we-section-title' }, 'API 路由状态'),
+                      h('div', { class: 'we-section-title' }, '运行前检查'),
                       h(
                         'div',
-                        { class: 'we-muted' },
-                        'API 预设和主备路由统一在「演变配置 → API 配置」管理；此处只显示当前生效信息。',
+                        { class: 'we-muted we-evolution-intro' },
+                        '此处只读取本地路由配置，不发起测试请求；路由配置可用不代表网络连通或凭据已验证。',
                       ),
                     ]),
                     h(
                       'span',
                       { class: ['we-api-status-badge', apiReady() ? 'ready' : ''] },
-                      apiReady() ? '路由就绪' : '需要检查',
+                      apiReady() ? '配置检查通过' : '需要检查配置',
                     ),
                   ]),
                   h('div', { class: 'we-api-status-grid' }, [
@@ -484,148 +682,246 @@ function mountPanel(target?: HTMLElement, options: WorldEvolutionPanelOptions = 
                     routeMetric('API Key', routeKeyStatus()),
                   ]),
                   h('div', { class: apiReady() ? 'we-ok' : 'we-danger' }, state.apiRouteStatus.message),
+                  h('div', { class: ['we-readiness-card', state.settings.enabled && apiReady() ? 'ready' : ''] }, [
+                    h('div', { class: 'we-readiness-heading' }, [
+                      h('strong', { class: 'we-readiness-title' }, `运行状态：${readinessLabel()}`),
+                      h(
+                        'span',
+                        { class: state.settings.enabled && apiReady() ? 'we-ok' : 'we-muted' },
+                        state.settings.autoRun && state.settings.enabled && apiReady()
+                          ? '等待工作流触发'
+                          : '不会自动发起请求',
+                      ),
+                    ]),
+                    h('div', { class: 'we-muted we-readiness-details' }, readinessDescription()),
+                    h(
+                      'div',
+                      { class: ['we-readiness-next', state.settingsDirty ? 'we-danger' : 'we-muted'] },
+                      nextReadinessAction(),
+                    ),
+                  ]),
                   h('div', { class: 'we-api-status-actions' }, [
                     ...(embedded && options.onNavigateToApi
-                      ? [
-                          h(
-                            'button',
-                            { class: 'we-btn', onClick: options.onNavigateToApi },
-                            '前往 API 配置',
-                          ),
-                        ]
+                      ? [h('button', { class: 'we-btn', onClick: options.onNavigateToApi }, '前往 API 配置')]
                       : []),
-                    ...(embedded ? runActionButtons() : []),
                     h('button', { class: 'we-btn', onClick: refreshApiStatus }, '刷新状态'),
                   ]),
                 ]),
                 h('div', { class: 'we-section we-run-settings' }, [
-                  h('div', { class: 'we-section-title' }, '运行与触发设置'),
-                  h('div', { class: 'we-row' }, [
-                    h('label', { class: 'we-label' }, '插件启用'),
-                    h('input', {
-                      class: 'we-check',
-                      type: 'checkbox',
-                      checked: state.settings.enabled,
-                      disabled: !apiReady() && !state.settings.enabled,
-                      onChange: (event: Event) => (state.settings.enabled = (event.target as HTMLInputElement).checked),
-                    }),
-                    h('span', { class: 'we-muted' }, '关闭时不监听、不运行、不修改世界书'),
-                  ]),
-                  h('div', { class: 'we-row' }, [
-                    h('label', { class: 'we-label' }, '自动触发'),
-                    h('input', {
-                      class: 'we-check',
-                      type: 'checkbox',
-                      checked: state.settings.autoRun,
-                      disabled: !apiReady() && !state.settings.autoRun,
-                      onChange: (event: Event) => (state.settings.autoRun = (event.target as HTMLInputElement).checked),
-                    }),
-                    h('span', { class: 'we-muted' }, '需同时启用插件'),
-                  ]),
-                  h('div', { class: 'we-row' }, [
-                    h('label', { class: 'we-label' }, '每轮最多 NPC'),
-                    h('input', {
-                      class: 'we-input',
-                      type: 'number',
-                      min: 0,
-                      max: 50,
-                      value: state.settings.maxNpcPerRun,
-                      onInput: (event: Event) =>
-                        (state.settings.maxNpcPerRun = Number((event.target as HTMLInputElement).value)),
-                    }),
-                  ]),
-                  h('div', { class: 'we-row' }, [
-                    h('label', { class: 'we-label' }, '每轮最多其他对象'),
-                    h('input', {
-                      class: 'we-input',
-                      type: 'number',
-                      min: 0,
-                      max: 50,
-                      value: state.settings.maxOtherEntitiesPerRun,
-                      onInput: (event: Event) =>
-                        (state.settings.maxOtherEntitiesPerRun = Number((event.target as HTMLInputElement).value)),
-                    }),
-                  ]),
-                  h('div', { class: 'we-row' }, [
-                    h('label', { class: 'we-label' }, '失败重试次数'),
-                    h('input', {
-                      class: 'we-input',
-                      type: 'number',
-                      min: 0,
-                      max: 10,
-                      value: state.settings.maxRetries,
-                      onInput: (event: Event) =>
-                        (state.settings.maxRetries = Number((event.target as HTMLInputElement).value)),
-                    }),
-                    h('label', { class: 'we-label' }, '重试间隔 ms'),
-                    h('input', {
-                      class: 'we-input',
-                      type: 'number',
-                      min: 0,
-                      max: 60000,
-                      value: state.settings.retryDelayMs,
-                      onInput: (event: Event) =>
-                        (state.settings.retryDelayMs = Number((event.target as HTMLInputElement).value)),
-                    }),
-                  ]),
-                  h('div', { class: 'we-row' }, [
-                    h('label', { class: 'we-label' }, '楼层稳定轮询 ms'),
-                    h('input', {
-                      class: 'we-input',
-                      type: 'number',
-                      min: 0,
-                      max: 60000,
-                      value: state.settings.stablePollMs,
-                      onInput: (event: Event) =>
-                        (state.settings.stablePollMs = Number((event.target as HTMLInputElement).value)),
-                    }),
-                    h('label', { class: 'we-label' }, '连续稳定次数'),
-                    h('input', {
-                      class: 'we-input',
-                      type: 'number',
-                      min: 1,
-                      max: 10,
-                      value: state.settings.stableSamples,
-                      onInput: (event: Event) =>
-                        (state.settings.stableSamples = Number((event.target as HTMLInputElement).value)),
-                    }),
-                  ]),
-                  h('div', { class: 'we-row' }, [
-                    h('label', { class: 'we-label' }, '当前角色卡主世界书'),
-                    h('input', {
-                      class: 'we-input',
-                      value: state.currentWorldbookName || '当前角色卡未绑定主世界书',
-                      readOnly: true,
-                      title: '世界演变默认写入当前角色卡的 primary 世界书，不使用手动填写的书名',
-                    }),
-                  ]),
-                  h('div', { class: 'we-row' }, [
-                    h('label', { class: 'we-label' }, '手动候选 NPC'),
-                    h('input', {
-                      class: 'we-input',
-                      value: state.settings.manualCandidates.join('、'),
-                      placeholder: '角色甲、角色乙',
-                      onInput: (event: Event) =>
-                        (state.settings.manualCandidates = (event.target as HTMLInputElement).value
-                          .split(/[、,，]/)
-                          .map(value => value.trim())
-                          .filter(Boolean)),
-                    }),
-                  ]),
-                  h('div', { class: 'we-row' }, [
-                    h('label', { class: 'we-label' }, '自动同步世界书'),
-                    h('input', {
-                      class: 'we-check',
-                      type: 'checkbox',
-                      checked: state.settings.worldbookAutoSync,
-                      onChange: (event: Event) =>
-                        (state.settings.worldbookAutoSync = (event.target as HTMLInputElement).checked),
-                    }),
+                  h('div', { class: 'we-section-title' }, '运行设置'),
+                  h(
+                    'div',
+                    { class: 'we-muted we-evolution-intro' },
+                    '修改后点底部“保存设置”才会用于自动触发；手动运行会先保存当前值再调用 API。',
+                  ),
+                  h('div', { class: 'we-settings-grid' }, [
+                    h('div', { class: 'we-setting-group' }, [
+                      h('div', { class: 'we-setting-group-title' }, '运行开关'),
+                      h(
+                        'div',
+                        { class: 'we-muted we-setting-group-help' },
+                        '自动触发要求插件启用，并在工作流成功完成后等待楼层稳定。',
+                      ),
+                      h('div', { class: 'we-row' }, [
+                        h('label', { class: 'we-label' }, '插件启用'),
+                        h('input', {
+                          class: 'we-check',
+                          type: 'checkbox',
+                          checked: state.settings.enabled,
+                          disabled: !apiReady() && !state.settings.enabled,
+                          onChange: (event: Event) => {
+                            state.settings.enabled = (event.target as HTMLInputElement).checked;
+                            markSettingsDirty();
+                          },
+                        }),
+                        h('span', { class: 'we-muted' }, '关闭时不监听、不运行、不修改世界书'),
+                      ]),
+                      h('div', { class: 'we-row' }, [
+                        h('label', { class: 'we-label' }, '自动触发'),
+                        h('input', {
+                          class: 'we-check',
+                          type: 'checkbox',
+                          checked: state.settings.autoRun,
+                          disabled: !apiReady() && !state.settings.autoRun,
+                          onChange: (event: Event) => {
+                            state.settings.autoRun = (event.target as HTMLInputElement).checked;
+                            markSettingsDirty();
+                          },
+                        }),
+                        h('span', { class: 'we-muted' }, '自动触发需同时启用插件'),
+                      ]),
+                    ]),
+                    h('div', { class: 'we-setting-group' }, [
+                      h('div', { class: 'we-setting-group-title' }, '本轮处理规模'),
+                      h(
+                        'div',
+                        { class: 'we-muted we-setting-group-help' },
+                        '上限范围 0–50；设为 0 可关闭该类对象的本轮处理。',
+                      ),
+                      h('div', { class: 'we-row' }, [
+                        h('label', { class: 'we-label' }, '每轮最多 NPC'),
+                        h('input', {
+                          class: 'we-input',
+                          type: 'number',
+                          min: 0,
+                          max: 50,
+                          value: state.settings.maxNpcPerRun,
+                          onInput: (event: Event) => {
+                            state.settings.maxNpcPerRun = Number((event.target as HTMLInputElement).value);
+                            markSettingsDirty();
+                          },
+                        }),
+                      ]),
+                      h('div', { class: 'we-row' }, [
+                        h('label', { class: 'we-label' }, '每轮最多其他对象'),
+                        h('input', {
+                          class: 'we-input',
+                          type: 'number',
+                          min: 0,
+                          max: 50,
+                          value: state.settings.maxOtherEntitiesPerRun,
+                          onInput: (event: Event) => {
+                            state.settings.maxOtherEntitiesPerRun = Number((event.target as HTMLInputElement).value);
+                            markSettingsDirty();
+                          },
+                        }),
+                      ]),
+                      h('div', { class: 'we-row' }, [
+                        h('label', { class: 'we-label' }, '手动候选 NPC'),
+                        h('input', {
+                          class: 'we-input',
+                          value: state.settings.manualCandidates.join('、'),
+                          placeholder: '角色甲、角色乙',
+                          onInput: (event: Event) => {
+                            state.settings.manualCandidates = (event.target as HTMLInputElement).value
+                              .split(/[、,，]/)
+                              .map(value => value.trim())
+                              .filter(Boolean);
+                            markSettingsDirty();
+                          },
+                        }),
+                        state.settings.manualCandidates.length
+                          ? h(
+                              'div',
+                              { class: 'we-setting-candidates' },
+                              state.settings.manualCandidates.map((name, index) =>
+                                h('span', { class: 'we-setting-candidate', key: `${name}-${index}` }, name),
+                              ),
+                            )
+                          : h('small', { class: 'we-muted' }, '未指定手动候选 NPC。'),
+                        h(
+                          'small',
+                          { class: 'we-muted' },
+                          '填写角色全名，多个名称用顿号或逗号分隔；名称会被用于候选筛选，不保证每轮都入选。',
+                        ),
+                      ]),
+                    ]),
+                    h('div', { class: 'we-setting-group' }, [
+                      h('div', { class: 'we-setting-group-title' }, '楼层稳定与失败重试'),
+                      h(
+                        'div',
+                        { class: 'we-muted we-setting-group-help' },
+                        '稳定轮询用于等待楼层内容停止变化；每次自动失败重试都会再次请求 API，可能产生额外费用。',
+                      ),
+                      h('div', { class: 'we-row' }, [
+                        h('label', { class: 'we-label' }, '失败重试次数'),
+                        h('input', {
+                          class: 'we-input',
+                          type: 'number',
+                          min: 0,
+                          max: 10,
+                          value: state.settings.maxRetries,
+                          onInput: (event: Event) => {
+                            state.settings.maxRetries = Number((event.target as HTMLInputElement).value);
+                            markSettingsDirty();
+                          },
+                        }),
+                        h('label', { class: 'we-label' }, '重试间隔'),
+                        h('input', {
+                          class: 'we-input',
+                          type: 'number',
+                          min: 0,
+                          max: 60000,
+                          value: state.settings.retryDelayMs,
+                          onInput: (event: Event) => {
+                            state.settings.retryDelayMs = Number((event.target as HTMLInputElement).value);
+                            markSettingsDirty();
+                          },
+                          title: '单位：毫秒',
+                        }),
+                      ]),
+                      h('div', { class: 'we-row' }, [
+                        h('label', { class: 'we-label' }, '楼层稳定轮询 ms'),
+                        h('input', {
+                          class: 'we-input',
+                          type: 'number',
+                          min: 0,
+                          max: 60000,
+                          value: state.settings.stablePollMs,
+                          onInput: (event: Event) => {
+                            state.settings.stablePollMs = Number((event.target as HTMLInputElement).value);
+                            markSettingsDirty();
+                          },
+                        }),
+                        h('label', { class: 'we-label' }, '连续稳定次数'),
+                        h('input', {
+                          class: 'we-input',
+                          type: 'number',
+                          min: 1,
+                          max: 10,
+                          value: state.settings.stableSamples,
+                          onInput: (event: Event) => {
+                            state.settings.stableSamples = Number((event.target as HTMLInputElement).value);
+                            markSettingsDirty();
+                          },
+                        }),
+                      ]),
+                    ]),
+                    h('div', { class: 'we-setting-group' }, [
+                      h('div', { class: 'we-setting-group-title' }, '世界书同步'),
+                      h(
+                        'div',
+                        { class: 'we-muted we-setting-group-help' },
+                        '只将已提交的演变数据投影到当前角色卡 primary；同步失败不会撤销数据库提交。',
+                      ),
+                      h('div', { class: 'we-row' }, [
+                        h('label', { class: 'we-label' }, '当前角色卡主世界书'),
+                        h('input', {
+                          class: 'we-input',
+                          value: state.currentWorldbookName || '当前角色卡未绑定主世界书',
+                          readOnly: true,
+                          title: '目标由当前角色卡 primary 自动解析，不使用手动填写的书名',
+                        }),
+                      ]),
+                      h('div', { class: 'we-row' }, [
+                        h('label', { class: 'we-label' }, '自动同步世界书'),
+                        h('input', {
+                          class: 'we-check',
+                          type: 'checkbox',
+                          checked: state.settings.worldbookAutoSync,
+                          onChange: (event: Event) => {
+                            state.settings.worldbookAutoSync = (event.target as HTMLInputElement).checked;
+                            markSettingsDirty();
+                          },
+                        }),
+                      ]),
+                      !state.currentWorldbookName
+                        ? h(
+                            'small',
+                            { class: 'we-danger' },
+                            '当前角色卡未绑定 primary 世界书；即使开启自动同步也无法写入投影。',
+                          )
+                        : null,
+                    ]),
                   ]),
                 ]),
-                h('div', { class: 'we-row' }, [
+                h('div', { class: 'we-settings-actions' }, [
                   h('button', { class: 'we-btn', onClick: save }, '保存设置'),
-                  ...(!embedded ? runActionButtons() : []),
+                  h(
+                    'span',
+                    { class: ['we-settings-save-state', state.settingsDirty ? 'dirty' : 'saved'] },
+                    state.settingsSaveMessage,
+                  ),
                   ...(embedded
                     ? []
                     : [
@@ -643,15 +939,23 @@ function mountPanel(target?: HTMLElement, options: WorldEvolutionPanelOptions = 
                         h('button', { class: 'we-btn', onClick: restore }, '导入'),
                       ]),
                 ]),
-                h('div', { class: 'we-muted' }, `聊天：${state.chatKey}`),
-                h(
-                  'div',
-                  { class: state.currentWorldbookName ? 'we-muted' : 'we-danger' },
-                  state.currentWorldbookName
-                    ? `世界书投影目标：${state.currentWorldbookName}（角色卡 primary）`
-                    : '当前角色卡未绑定主世界书，世界书投影暂不可用',
-                ),
-                h('div', { class: 'we-muted' }, `状态：${state.status} · ${state.statusMessage}`),
+                h('div', { class: 'we-section we-run-controls' }, [
+                  h('div', { class: 'we-section-title' }, '运行控制'),
+                  h(
+                    'div',
+                    { class: 'we-muted we-run-warning' },
+                    '手动运行和失败重试会调用真实 API，可能产生费用；自动失败重试同样会额外调用 API。手动操作前会再次确认。',
+                  ),
+                  h('div', { class: 'we-run-control-buttons' }, runActionButtons()),
+                  h('div', { class: 'we-run-control-status' }, [
+                    h('span', { class: 'we-muted' }, `当前聊天：${state.chatKey}`),
+                    h(
+                      'span',
+                      { class: state.running ? 'we-ok' : 'we-muted' },
+                      state.running ? '世界演变任务处理中' : runActionStatus(),
+                    ),
+                  ]),
+                ]),
                 error.value ? h('div', { class: 'we-danger' }, error.value) : null,
                 embedded
                   ? null
@@ -895,10 +1199,7 @@ function mountPanel(target?: HTMLElement, options: WorldEvolutionPanelOptions = 
                           )
                         : '读取中…',
                     ),
-                h('div', { class: 'we-section' }, [
-                  h('div', { class: 'we-section-title' }, '本次运行结果'),
-                  h('pre', { class: 'we-status' }, resultText()),
-                ]),
+                h('div', { class: 'we-section we-run-result-section' }, [renderRunResult()]),
               ])
             : null,
         ]);
@@ -912,8 +1213,17 @@ function mountPanel(target?: HTMLElement, options: WorldEvolutionPanelOptions = 
   app = createApp(Panel);
   app.mount(root.find('#world-evolution-mount')[0]);
   stopChatChangeListener = eventOn(tavern_events.CHAT_CHANGED, () => {
+    const discardedUnsavedSettings = state.settingsDirty;
     state.chatKey = getCurrentChatKey();
     state.settings = loadSettings();
+    state.settingsDirty = false;
+    state.settingsSaveMessage = discardedUnsavedSettings ? '聊天已切换；上一聊天的未保存设置未应用' : '设置已加载';
+    state.lastResult = null;
+    state.lastResultChatKey = state.chatKey;
+    if (!state.running) {
+      state.status = 'idle';
+      state.statusMessage = '等待触发';
+    }
     refreshApiStatusForPanel?.();
     state.currentWorldbookName = resolveCurrentCharacterWorldbookName() ?? '';
     void refreshWorld();

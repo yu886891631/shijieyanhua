@@ -8,8 +8,8 @@
       aria-modal="true"
       aria-label="世界演变工作台"
     >
-      <aside class="we-sidebar">
-        <div class="we-brand">
+      <aside class="we-sidebar" aria-label="世界演变工作台导航">
+        <div class="we-brand" aria-label="世界演变">
           <div class="we-brand-mark">世</div>
           <div class="we-brand-copy">
             <strong>世界演变</strong>
@@ -17,14 +17,21 @@
           </div>
         </div>
 
-        <div class="we-chat-chip" :title="chatKey">
-          <span class="we-live-dot" />
-          <span>{{ chatKey || '当前聊天未就绪' }}</span>
+        <div
+          class="we-chat-chip"
+          :class="{ idle: !chatKey }"
+          :title="chatKey ? `当前聊天：${chatKey}` : '当前聊天未就绪'"
+          role="status"
+          aria-live="polite"
+        >
+          <span class="we-live-dot" aria-hidden="true" />
+          <span class="we-chat-caption">当前聊天</span>
+          <span class="we-chat-name">{{ chatKey || '未就绪' }}</span>
         </div>
 
         <nav class="we-navigation" aria-label="工作台页面">
           <div v-for="group in navigation" :key="group.label" class="we-nav-group">
-            <div class="we-nav-label">{{ group.label }}</div>
+            <div :id="`we-nav-group-${group.label}`" class="we-nav-label">{{ group.label }}</div>
             <button
               v-for="item in group.items"
               :key="item.id"
@@ -32,6 +39,7 @@
               class="we-nav-item"
               :class="{ active: page === item.id }"
               :aria-current="page === item.id ? 'page' : undefined"
+              :aria-label="item.label"
               @click="selectPage(item.id)"
             >
               <span class="we-nav-icon" aria-hidden="true">{{ item.icon }}</span>
@@ -42,30 +50,34 @@
         </nav>
 
         <div class="we-sidebar-foot">
-          <div class="we-foot-status">
-            <span class="we-status-dot" :class="{ failed: latestRun?.status === 'failed' }" />
+          <div class="we-foot-status" role="status" aria-live="polite">
+            <span
+              class="we-status-dot"
+              :class="{ failed: latestRun?.status === 'failed', idle: !latestRun }"
+              :title="latestRun ? runStatusLabel(latestRun.status) : '尚无运行记录'"
+            />
             <span>{{ latestRun ? runStatusLabel(latestRun.status) : '尚无运行记录' }}</span>
           </div>
           <button class="we-sidebar-settings" type="button" @click="selectPage('appearance')">
             <span aria-hidden="true">⚙</span>
             外观与显示
           </button>
-          <div class="we-version">
-            <span>演变 {{ evolutionVersion }}</span>
-            <span>数据库 {{ databaseVersion }}</span>
+          <div class="we-version" aria-label="版本信息">
+            <span title="世界演变插件版本">演变 {{ evolutionVersion }}</span>
+            <span title="数据库格式版本">数据库格式 {{ databaseVersion }}</span>
           </div>
         </div>
       </aside>
 
       <main class="we-main">
-        <header class="we-topbar">
+        <header class="we-topbar" aria-labelledby="we-page-title">
           <div class="we-topbar-title">
             <div class="we-breadcrumb">世界演变工作台 <span>/</span> {{ pageMeta.label }}</div>
-            <h1>{{ pageMeta.title }}</h1>
+            <h1 id="we-page-title">{{ pageMeta.title }}</h1>
           </div>
           <div class="we-topbar-actions">
-            <span v-if="page !== 'appearance'" class="we-revision-chip">
-              revision <strong>{{ snapshot?.meta.revision ?? 0 }}</strong>
+            <span v-if="page !== 'appearance'" class="we-revision-chip" title="当前聊天数据库的 revision 版本">
+              数据版本 <strong>r{{ snapshot?.meta.revision ?? 0 }}</strong>
             </span>
             <button class="we-close" type="button" aria-label="关闭工作台" title="关闭" @click="close">×</button>
           </div>
@@ -87,30 +99,94 @@
               </button>
             </div>
 
+            <section class="we-card we-readiness-card" aria-labelledby="we-readiness-title">
+              <div class="we-section-heading">
+                <div>
+                  <span class="we-eyebrow">RUNTIME READINESS</span>
+                  <h3 id="we-readiness-title">运行准备</h3>
+                </div>
+                <span class="we-readiness-note">只读状态 · {{ overviewStateLabel }}</span>
+              </div>
+              <div class="we-readiness-grid">
+                <button
+                  class="we-readiness-item"
+                  :class="{ ready: apiReadiness.ready, warning: !apiReadiness.ready }"
+                  type="button"
+                  @click="selectPage('api')"
+                >
+                  <span class="we-readiness-icon" aria-hidden="true">⌘</span>
+                  <span class="we-readiness-main">
+                    <strong>API 路由</strong>
+                    <small>{{ apiReadinessLabel }}</small>
+                    <span>{{ apiReadinessDetail }}</span>
+                  </span>
+                  <span class="we-readiness-arrow" aria-hidden="true">→</span>
+                </button>
+                <button
+                  class="we-readiness-item"
+                  :class="{ ready: evolutionOverview.enabled, warning: !evolutionOverview.enabled }"
+                  type="button"
+                  @click="selectPage('evolution')"
+                >
+                  <span class="we-readiness-icon" aria-hidden="true">↻</span>
+                  <span class="we-readiness-main">
+                    <strong>自动演变</strong>
+                    <small>{{ evolutionReadinessLabel }}</small>
+                    <span>{{ evolutionReadinessDetail }}</span>
+                  </span>
+                  <span class="we-readiness-arrow" aria-hidden="true">→</span>
+                </button>
+                <button
+                  class="we-readiness-item"
+                  :class="{ ready: projectionStatus === 'synced', warning: projectionStatus !== 'synced' }"
+                  type="button"
+                  @click="selectPage('worldbook')"
+                >
+                  <span class="we-readiness-icon" aria-hidden="true">▤</span>
+                  <span class="we-readiness-main">
+                    <strong>世界书投影</strong>
+                    <small>{{ projectionStatusLabel }}</small>
+                    <span>{{ projectionReadinessDetail }}</span>
+                  </span>
+                  <span class="we-readiness-arrow" aria-hidden="true">→</span>
+                </button>
+              </div>
+            </section>
+
+            <div v-if="overviewState === 'error'" class="we-overview-alert" role="alert">
+              <span>无法读取当前聊天数据库：{{ overviewError }}</span>
+              <button class="we-empty-action" type="button" @click="refreshOverview">重新读取</button>
+            </div>
+
             <div class="we-stat-grid">
-              <button class="we-stat-card" type="button" @click="selectPage('data')">
+              <button class="we-stat-card" type="button" aria-label="查看 NPC 记录" @click="selectPage('data')">
                 <span class="we-stat-icon">♙</span>
                 <span class="we-stat-label">NPC</span>
-                <strong>{{ snapshot?.rows.npc.length ?? 0 }}</strong>
+                <strong>{{ displayOverviewCount(snapshot?.rows.npc.length) }}</strong>
                 <span class="we-stat-foot">查看人物记录 <span>→</span></span>
               </button>
-              <button class="we-stat-card" type="button" @click="selectPage('data')">
+              <button class="we-stat-card" type="button" aria-label="查看组织与地点记录" @click="selectPage('data')">
                 <span class="we-stat-icon">⌘</span>
                 <span class="we-stat-label">组织与地点</span>
-                <strong>{{ organizationAndLocationCount }}</strong>
+                <strong>{{ displayOverviewCount(organizationAndLocationCount) }}</strong>
                 <span class="we-stat-foot">查看世界结构 <span>→</span></span>
               </button>
-              <button class="we-stat-card" type="button" @click="selectPage('history')">
+              <button class="we-stat-card" type="button" aria-label="查看楼层运行记录" @click="selectPage('history')">
                 <span class="we-stat-icon">◷</span>
                 <span class="we-stat-label">楼层处理</span>
-                <strong>{{ snapshot?.floorRuns.length ?? 0 }}</strong>
-                <span class="we-stat-foot">查看运行记录 <span>→</span></span>
+                <strong>{{ displayOverviewCount(snapshot?.floorRuns.length) }}</strong>
+                <span class="we-stat-foot">查看楼层运行记录 <span>→</span></span>
               </button>
-              <button class="we-stat-card" type="button" @click="selectPage('worldbook')">
+              <button
+                class="we-stat-card"
+                type="button"
+                aria-label="查看世界书投影记录"
+                @click="selectPage('worldbook')"
+              >
                 <span class="we-stat-icon">▤</span>
                 <span class="we-stat-label">世界书投影</span>
-                <strong>{{ projectionCount }}</strong>
-                <span class="we-stat-foot">{{ projectionStatusLabel }} <span>→</span></span>
+                <strong>{{ displayOverviewCount(projectionCount) }}</strong>
+                <span class="we-stat-foot">托管条目 · {{ projectionStatusLabel }} <span>→</span></span>
               </button>
             </div>
 
@@ -136,7 +212,8 @@
                 <div v-else class="we-empty-state">
                   <span>◌</span>
                   <strong>这里还没有楼层记录</strong>
-                  <small>剧情和前置工作流完成后，世界演变记录会显示在这里。</small>
+                  <small>完成一轮剧情和前置工作流后，楼层状态会显示在这里。</small>
+                  <button class="we-empty-action" type="button" @click="selectPage('evolution')">查看演变设置</button>
                 </div>
               </section>
 
@@ -245,6 +322,8 @@
 import { getCurrentChatKey } from '../../工作流助手/api/chat-key';
 import { mountWorldEvolutionPanel, refreshWorldEvolutionPanelApiStatus } from '../ui';
 import { loadSettings } from '../store';
+import { loadWorldEvolutionApiConfiguration } from '../api-config';
+import { getWorldEvolutionApiRouteCardSummary, getWorldEvolutionWorkflowAssistantBridge } from '../api-routing';
 import { WORLD_EVOLUTION_VERSION } from '../types';
 import {
   mountWorldEvolutionDbPanel,
@@ -282,6 +361,16 @@ const theme = ref<ThemeId>('cream');
 const scale = ref(100);
 const chatKey = ref(getCurrentChatKey());
 const snapshot = ref<WorldEvolutionDbSnapshot | null>(null);
+const overviewState = ref<'loading' | 'ready' | 'error'>('loading');
+const overviewError = ref('');
+const apiReadiness = ref({
+  checked: false,
+  ready: false,
+  source: null as 'builtin' | 'workflow-assistant' | null,
+  routeName: null as string | null,
+  model: null as string | null,
+});
+const evolutionOverview = ref({ enabled: false, autoRun: false });
 const databaseHost = ref<HTMLElement | null>(null);
 const evolutionHost = ref<HTMLElement | null>(null);
 let navigateDatabase: WorldEvolutionDbPanelController | undefined;
@@ -352,6 +441,38 @@ const projectionStatusLabel = computed(() => {
   if (status === 'failed') return '同步失败';
   return '尚未同步';
 });
+const projectionStatus = computed(() => snapshot.value?.meta.worldbookSync.status ?? 'never');
+const overviewStateLabel = computed(() => {
+  if (overviewState.value === 'loading') return '正在读取';
+  if (overviewState.value === 'error') return '读取失败';
+  return '已更新';
+});
+const apiReadinessLabel = computed(() => {
+  if (!apiReadiness.value.checked) return '正在检查';
+  return apiReadiness.value.ready ? '已就绪' : apiReadiness.value.source ? '配置待检查' : '未配置';
+});
+const apiReadinessDetail = computed(() => {
+  if (!apiReadiness.value.checked) return '正在读取本地路由状态';
+  if (!apiReadiness.value.ready) return '前往 API 配置检查端点、模型和凭据';
+  const source = apiReadiness.value.source === 'builtin' ? '内置 API' : '工作流助手桥接';
+  return `${source}${apiReadiness.value.model ? ` · ${apiReadiness.value.model}` : ''}`;
+});
+const evolutionReadinessLabel = computed(() => {
+  if (!evolutionOverview.value.enabled) return '插件已关闭';
+  return evolutionOverview.value.autoRun ? '自动触发已开启' : '仅手动运行';
+});
+const evolutionReadinessDetail = computed(() => {
+  if (!evolutionOverview.value.enabled) return '不会监听、运行或修改世界书';
+  return evolutionOverview.value.autoRun ? '完成前置工作流后自动排队' : '可在演变运行页手动开始';
+});
+const projectionReadinessDetail = computed(() => {
+  if (overviewState.value === 'loading') return '正在读取当前聊天状态';
+  if (overviewState.value === 'error') return '数据库读取失败，请先重新读取';
+  if (projectionStatus.value === 'synced') return '当前聊天的托管条目已同步';
+  if (projectionStatus.value === 'pending') return '有投影任务等待处理';
+  if (projectionStatus.value === 'failed') return '投影失败，请打开世界书投影页检查';
+  return '尚未执行世界书同步';
+});
 const recentRuns = computed(() =>
   [...(snapshot.value?.floorRuns ?? [])]
     .sort((left, right) => (right.updatedAt ?? right.createdAt) - (left.updatedAt ?? left.createdAt))
@@ -386,15 +507,53 @@ function dbPageFor(pageId: WorkspacePage): WorldEvolutionDbPanelPage | undefined
 function selectPage(next: WorkspacePage) {
   page.value = next;
   if (next === 'evolution') refreshWorldEvolutionPanelApiStatus();
+  if (next === 'overview') void refreshOverview();
   const databasePage = dbPageFor(next);
   if (databasePage) navigateDatabase?.(databasePage);
 }
 
+function displayOverviewCount(value: number | undefined): string {
+  if (overviewState.value === 'loading') return '…';
+  if (overviewState.value === 'error') return '—';
+  return String(value ?? 0);
+}
+
 async function refreshOverview() {
   chatKey.value = getCurrentChatKey();
+  overviewState.value = 'loading';
+  overviewError.value = '';
+  snapshot.value = null;
+  const settings = loadSettings();
+  evolutionOverview.value = { enabled: settings.enabled, autoRun: settings.autoRun };
+  try {
+    const config = loadWorldEvolutionApiConfiguration({
+      apiPresetName: settings.apiPresetName,
+      apiFallbackPresetNames: settings.apiFallbackPresetNames,
+    });
+    const routeSummary = getWorldEvolutionApiRouteCardSummary(config, getWorldEvolutionWorkflowAssistantBridge());
+    apiReadiness.value = {
+      checked: true,
+      ready: routeSummary.ready,
+      source: routeSummary.source,
+      routeName: routeSummary.routeName,
+      model: routeSummary.model,
+    };
+  } catch (error) {
+    apiReadiness.value = {
+      checked: true,
+      ready: false,
+      source: null,
+      routeName: null,
+      model: null,
+    };
+    console.warn('[世界演变] 总览读取 API 路由失败:', error);
+  }
   try {
     snapshot.value = await loadDbSnapshot(chatKey.value);
+    overviewState.value = 'ready';
   } catch (error) {
+    overviewState.value = 'error';
+    overviewError.value = error instanceof Error ? error.message : String(error);
     console.warn('[世界演变] 总览读取数据库失败:', error);
   }
 }
@@ -468,11 +627,22 @@ onUnmounted(() => {
 
 .we-workspace {
   --we-scale: 1;
+  --we-space-1: 4px;
+  --we-space-2: 8px;
+  --we-space-3: 12px;
+  --we-space-4: 16px;
+  --we-space-5: 20px;
+  --we-space-6: 24px;
+  --we-radius-sm: 8px;
+  --we-radius-md: 12px;
+  --we-radius-lg: 16px;
+  --we-control-height: 36px;
   --we-bg: #f7f5f0;
   --we-surface: #ffffff;
   --we-surface-soft: #f4f1e9;
   --we-text: #26312d;
-  --we-muted: #78827d;
+  --we-muted: #65716c;
+  --we-text-subtle: #7c8782;
   --we-border: #e4e4dc;
   --we-accent: #739b68;
   --we-accent-strong: #557c4e;
@@ -480,6 +650,10 @@ onUnmounted(() => {
   --we-tint: #edf3e9;
   --we-input: #fbfaf7;
   --we-danger: #bc5e65;
+  --we-danger-strong: #9d424a;
+  --we-warning: #9a6c24;
+  --we-success: #4e8654;
+  --we-focus-ring: 0 0 0 3px color-mix(in srgb, var(--we-accent) 30%, transparent);
   --we-shadow: 0 4px 16px rgba(31, 42, 35, 0.06);
   display: grid;
   grid-template-columns: 232px minmax(0, 1fr);
@@ -498,12 +672,35 @@ onUnmounted(() => {
   line-height: 1.5;
 }
 
+.we-workspace,
+.we-workspace * {
+  box-sizing: border-box;
+}
+
+.we-workspace button,
+.we-workspace input,
+.we-workspace select,
+.we-workspace textarea {
+  font: inherit;
+}
+
+.we-workspace :where(button, input, select, textarea):focus-visible {
+  outline: 0;
+  box-shadow: var(--we-focus-ring);
+}
+
+.we-workspace :where(button, input, select, textarea):disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
 .we-workspace[data-theme='light'] {
   --we-bg: #f5f7f6;
   --we-surface: #fff;
   --we-surface-soft: #f2f5f4;
   --we-text: #243137;
-  --we-muted: #78848a;
+  --we-muted: #5f6d72;
+  --we-text-subtle: #7a878b;
   --we-border: #dfe6e5;
   --we-accent: #4d8b8b;
   --we-accent-strong: #306f72;
@@ -511,6 +708,10 @@ onUnmounted(() => {
   --we-tint: #e6f2f0;
   --we-input: #fbfdfc;
   --we-danger: #be5360;
+  --we-danger-strong: #9d3b49;
+  --we-warning: #94671c;
+  --we-success: #3f7b4d;
+  --we-focus-ring: 0 0 0 3px color-mix(in srgb, var(--we-accent) 28%, transparent);
   --we-shadow: 0 4px 16px rgba(31, 52, 55, 0.07);
 }
 
@@ -520,6 +721,7 @@ onUnmounted(() => {
   --we-surface-soft: #202d3d;
   --we-text: #e8edf0;
   --we-muted: #9aa9b2;
+  --we-text-subtle: #82939d;
   --we-border: #334252;
   --we-accent: #8aac81;
   --we-accent-strong: #73986a;
@@ -527,6 +729,10 @@ onUnmounted(() => {
   --we-tint: #2c3c36;
   --we-input: #141e2b;
   --we-danger: #ee9095;
+  --we-danger-strong: #ffb3b7;
+  --we-warning: #e7bd72;
+  --we-success: #9fd49c;
+  --we-focus-ring: 0 0 0 3px color-mix(in srgb, var(--we-accent) 38%, transparent);
   --we-shadow: 0 4px 18px rgba(0, 0, 0, 0.16);
 }
 
@@ -535,7 +741,8 @@ onUnmounted(() => {
   --we-surface: #fffdf8;
   --we-surface-soft: #f2eadc;
   --we-text: #44392a;
-  --we-muted: #8b7e6b;
+  --we-muted: #756957;
+  --we-text-subtle: #918472;
   --we-border: #e7dbc7;
   --we-accent: #86a96c;
   --we-accent-strong: #688a53;
@@ -543,6 +750,10 @@ onUnmounted(() => {
   --we-tint: #edf3e7;
   --we-input: #fbf7ed;
   --we-danger: #c65f72;
+  --we-danger-strong: #a8475b;
+  --we-warning: #8d641d;
+  --we-success: #527e46;
+  --we-focus-ring: 0 0 0 3px color-mix(in srgb, var(--we-accent) 30%, transparent);
   --we-shadow: 0 4px 16px rgba(69, 51, 27, 0.06);
 }
 
@@ -551,7 +762,8 @@ onUnmounted(() => {
   --we-surface: #fffafd;
   --we-surface-soft: #f7e4ed;
   --we-text: #452b3b;
-  --we-muted: #98758a;
+  --we-muted: #885f77;
+  --we-text-subtle: #a47e96;
   --we-border: #efd4e2;
   --we-accent: #d473a2;
   --we-accent-strong: #a9507d;
@@ -559,6 +771,10 @@ onUnmounted(() => {
   --we-tint: #f9e2ee;
   --we-input: #fff7fb;
   --we-danger: #b54064;
+  --we-danger-strong: #96314f;
+  --we-warning: #96622a;
+  --we-success: #4f815d;
+  --we-focus-ring: 0 0 0 3px color-mix(in srgb, var(--we-accent) 30%, transparent);
   --we-shadow: 0 4px 16px rgba(89, 38, 69, 0.08);
 }
 
@@ -566,7 +782,7 @@ onUnmounted(() => {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  padding: 20px 14px 14px;
+  padding: var(--we-space-5) 14px 14px;
   border-right: 1px solid var(--we-border);
   background: var(--we-surface);
 }
@@ -575,7 +791,8 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 5px 20px;
+  min-width: 0;
+  padding: 0 5px var(--we-space-5);
 }
 
 .we-brand-mark {
@@ -594,12 +811,16 @@ onUnmounted(() => {
 
 .we-brand-copy {
   display: grid;
+  min-width: 0;
   line-height: 1.25;
 }
 
 .we-brand-copy strong {
+  overflow: hidden;
   font-size: 15px;
   letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .we-brand-copy span {
@@ -614,19 +835,36 @@ onUnmounted(() => {
   align-items: center;
   gap: 7px;
   min-width: 0;
-  margin-bottom: 18px;
+  margin-bottom: var(--we-space-5);
   padding: 8px 9px;
   border: 1px solid var(--we-border);
-  border-radius: 9px;
+  border-radius: var(--we-radius-sm);
   background: var(--we-bg);
   color: var(--we-muted);
   font-size: 11px;
 }
 
+.we-chat-chip.idle {
+  background: var(--we-surface-soft);
+}
+
 .we-chat-chip > span:last-child {
   overflow: hidden;
+  min-width: 0;
+  flex: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.we-chat-caption {
+  flex: none;
+  color: var(--we-text);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.we-chat-name {
+  color: var(--we-muted);
 }
 
 .we-live-dot,
@@ -645,13 +883,13 @@ onUnmounted(() => {
 
 .we-navigation {
   display: grid;
-  gap: 19px;
+  gap: var(--we-space-5);
   align-content: start;
 }
 
 .we-nav-group {
   display: grid;
-  gap: 3px;
+  gap: var(--we-space-1);
 }
 
 .we-nav-label {
@@ -668,7 +906,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 10px;
   min-width: 0;
-  min-height: 39px;
+  min-height: var(--we-control-height);
   border: 0;
   border-radius: 9px;
   background: transparent;
@@ -679,6 +917,11 @@ onUnmounted(() => {
   transition:
     background 0.16s ease,
     color 0.16s ease;
+}
+
+.we-nav-item:focus-visible,
+.we-sidebar-settings:focus-visible {
+  box-shadow: var(--we-focus-ring);
 }
 
 .we-nav-item {
@@ -717,7 +960,7 @@ onUnmounted(() => {
 
 .we-sidebar-foot {
   display: grid;
-  gap: 10px;
+  gap: var(--we-space-3);
   margin-top: auto;
   padding-top: 16px;
   border-top: 1px solid var(--we-border);
@@ -734,6 +977,11 @@ onUnmounted(() => {
 
 .we-status-dot.failed {
   background: var(--we-danger);
+}
+
+.we-status-dot.idle {
+  background: var(--we-muted);
+  box-shadow: none;
 }
 
 .we-sidebar-settings {
@@ -762,14 +1010,15 @@ onUnmounted(() => {
   flex: none;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: var(--we-space-4);
   min-height: 74px;
-  padding: 12px 23px;
+  padding: var(--we-space-3) var(--we-space-6);
   border-bottom: 1px solid var(--we-border);
   background: var(--we-surface);
 }
 
 .we-topbar-title {
+  overflow: hidden;
   min-width: 0;
 }
 
@@ -803,7 +1052,7 @@ onUnmounted(() => {
   display: flex;
   flex: none;
   align-items: center;
-  gap: 12px;
+  gap: var(--we-space-3);
 }
 
 .we-revision-chip {
@@ -813,6 +1062,7 @@ onUnmounted(() => {
   background: var(--we-bg);
   color: var(--we-muted);
   font-size: 10px;
+  line-height: 1.2;
 }
 
 .we-revision-chip strong {
@@ -826,7 +1076,7 @@ onUnmounted(() => {
   height: 31px;
   place-items: center;
   border: 1px solid var(--we-border);
-  border-radius: 9px;
+  border-radius: var(--we-radius-sm);
   background: var(--we-surface);
   color: var(--we-muted);
   cursor: pointer;
@@ -846,11 +1096,12 @@ onUnmounted(() => {
   min-height: 0;
   overflow: auto;
   overflow-x: hidden;
-  padding: 21px 24px 26px;
+  padding: var(--we-space-5) var(--we-space-6) 26px;
   background: var(--we-bg);
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
   scrollbar-color: var(--we-border) transparent;
+  scrollbar-width: thin;
 }
 
 .we-page {
@@ -915,6 +1166,104 @@ onUnmounted(() => {
 
 .we-primary-action:hover {
   background: var(--we-accent-strong);
+}
+
+.we-readiness-card {
+  margin-top: var(--we-space-4);
+  padding: 15px;
+}
+
+.we-readiness-note {
+  color: var(--we-muted);
+  font-size: 10px;
+}
+
+.we-readiness-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.we-readiness-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--we-border);
+  border-radius: var(--we-radius-sm);
+  background: var(--we-input);
+  color: var(--we-text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.we-readiness-item:hover {
+  border-color: var(--we-accent);
+  background: var(--we-tint);
+}
+
+.we-readiness-item.warning .we-readiness-icon {
+  color: var(--we-warning);
+}
+
+.we-readiness-item.ready .we-readiness-icon {
+  color: var(--we-success);
+}
+
+.we-readiness-icon {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--we-tint);
+  color: var(--we-accent-strong);
+  font-size: 15px;
+}
+
+.we-readiness-main {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.we-readiness-main strong {
+  font-size: 11px;
+}
+
+.we-readiness-main small,
+.we-readiness-main > span {
+  overflow: hidden;
+  color: var(--we-muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.we-readiness-main small {
+  color: var(--we-text);
+  font-weight: 700;
+}
+
+.we-readiness-arrow {
+  color: var(--we-muted);
+  font-size: 13px;
+}
+
+.we-overview-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: var(--we-space-4);
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--we-danger) 35%, var(--we-border));
+  border-radius: var(--we-radius-sm);
+  background: color-mix(in srgb, var(--we-danger) 8%, var(--we-surface));
+  color: var(--we-danger-strong);
+  font-size: 11px;
 }
 
 .we-stat-grid {
@@ -1109,6 +1458,22 @@ onUnmounted(() => {
 .we-empty-state small {
   max-width: 280px;
   font-size: 10px;
+}
+
+.we-empty-action {
+  padding: 4px 8px;
+  border: 1px solid var(--we-border);
+  border-radius: 7px;
+  background: var(--we-surface-soft);
+  color: var(--we-accent-strong);
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+}
+
+.we-empty-action:hover {
+  border-color: var(--we-accent);
+  background: var(--we-tint);
 }
 
 .we-shortcut {
@@ -1559,6 +1924,15 @@ onUnmounted(() => {
     grid-template-columns: 190px minmax(0, 1fr);
   }
 
+  .we-topbar {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+
+  .we-topbar-actions {
+    gap: var(--we-space-2);
+  }
+
   .we-stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1566,6 +1940,10 @@ onUnmounted(() => {
   .we-page-scroll {
     padding-right: 18px;
     padding-left: 18px;
+  }
+
+  .we-readiness-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -1641,12 +2019,32 @@ onUnmounted(() => {
   }
 
   .we-topbar {
-    min-height: 60px;
+    min-height: 64px;
     padding: 8px 12px;
   }
 
   .we-topbar-title h1 {
+    overflow: visible;
     font-size: 15px;
+    line-height: 1.25;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .we-topbar-actions {
+    align-self: center;
+    gap: 6px;
+  }
+
+  .we-revision-chip {
+    padding: 4px 7px;
+    font-size: 9px;
+    white-space: nowrap;
+  }
+
+  .we-close {
+    width: 29px;
+    height: 29px;
   }
 
   .we-page-scroll {
@@ -1661,6 +2059,15 @@ onUnmounted(() => {
   .we-welcome {
     display: grid;
     padding: 16px;
+  }
+
+  .we-readiness-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .we-overview-alert {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .we-primary-action {
