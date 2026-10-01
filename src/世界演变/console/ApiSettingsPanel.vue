@@ -642,6 +642,7 @@ if (config.value.presets[0]) editPreset(config.value.presets[0]);
   gap: 15px;
   min-width: 0;
   flex-wrap: wrap;
+  overflow-wrap: anywhere;
 }
 
 .we-api-intro > div:first-child,
@@ -663,7 +664,8 @@ if (config.value.presets[0]) editPreset(config.value.presets[0]);
 
 .we-api-badges {
   display: flex;
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
   gap: 6px;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -678,8 +680,9 @@ if (config.value.presets[0]) editPreset(config.value.presets[0]);
 }
 
 .we-api-badge.good {
-  border-color: color-mix(in srgb, var(--we-accent) 45%, var(--we-border));
-  color: var(--we-accent-strong);
+  border-color: var(--we-success-border);
+  background: var(--we-success-bg);
+  color: var(--we-success-text);
 }
 
 .we-api-section {
@@ -704,8 +707,15 @@ if (config.value.presets[0]) editPreset(config.value.presets[0]);
 }
 
 .we-api-key-warning {
-  color: var(--we-danger);
+  justify-self: start;
+  max-width: 100%;
+  padding: 4px 7px;
+  border: 1px solid var(--we-warning-border);
+  border-radius: 7px;
+  background: var(--we-warning-bg);
+  color: var(--we-warning-text);
   font-size: 10px;
+  overflow-wrap: anywhere;
 }
 
 .we-api-preset-list {
@@ -718,6 +728,7 @@ if (config.value.presets[0]) editPreset(config.value.presets[0]);
   align-items: center;
   gap: 9px;
   width: 100%;
+  min-width: 0;
   padding: 9px 10px;
   border: 1px solid var(--we-border);
   border-radius: 10px;
@@ -766,7 +777,7 @@ if (config.value.presets[0]) editPreset(config.value.presets[0]);
 
 .we-api-preset-meta {
   display: grid;
-  flex: none;
+  flex: 0 1 auto;
   justify-items: end;
   gap: 2px;
   min-width: 0;
@@ -774,13 +785,21 @@ if (config.value.presets[0]) editPreset(config.value.presets[0]);
 }
 
 .we-api-preset-meta > small {
-  color: var(--we-warning, var(--we-muted));
+  max-width: 100%;
+  padding: 2px 6px;
+  border: 1px solid var(--we-warning-border);
+  border-radius: 999px;
+  background: var(--we-warning-bg);
+  color: var(--we-warning-text);
   font-size: 10px;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 
 .we-api-preset-meta > small.ready {
-  color: var(--we-success, var(--we-accent-strong));
+  border-color: var(--we-success-border);
+  background: var(--we-success-bg);
+  color: var(--we-success-text);
 }
 
 .we-api-empty {
@@ -914,8 +933,13 @@ if (config.value.presets[0]) editPreset(config.value.presets[0]);
 }
 
 .we-api-save-state.dirty {
-  color: var(--we-warning, var(--we-muted));
+  padding: 3px 7px;
+  border: 1px solid var(--we-warning-border);
+  border-radius: 999px;
+  background: var(--we-warning-bg);
+  color: var(--we-warning-text);
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .we-api-actions .we-btn {
@@ -946,24 +970,45 @@ if (config.value.presets[0]) editPreset(config.value.presets[0]);
 }
 
 .we-btn-primary {
-  border-color: var(--we-accent);
-  background: var(--we-accent);
-  color: var(--we-accent-contrast);
+  border-color: var(--we-action-border);
+  background: var(--we-action-bg);
+  color: var(--we-action-text);
   font-weight: 700;
 }
 
+.we-btn-primary:hover:not(:disabled) {
+  border-color: var(--we-action-hover-bg);
+  background: var(--we-action-hover-bg);
+  color: var(--we-action-text);
+}
+
 .we-btn-danger {
-  color: var(--we-danger);
+  border-color: var(--we-danger-border);
+  background: var(--we-danger-bg);
+  color: var(--we-danger-text);
+}
+
+.we-btn-danger:hover:not(:disabled) {
+  border-color: var(--we-danger-action-border);
+  background: var(--we-danger-action-bg);
+  color: var(--we-danger-action-text);
 }
 
 .we-api-message {
   margin: 0;
-  color: var(--we-accent-strong);
+  padding: 8px 10px;
+  border: 1px solid var(--we-success-border);
+  border-radius: 8px;
+  background: var(--we-success-bg);
+  color: var(--we-success-text);
   font-size: 11px;
+  overflow-wrap: anywhere;
 }
 
 .we-api-message.error {
-  color: var(--we-danger);
+  border-color: var(--we-danger-border);
+  background: var(--we-danger-bg);
+  color: var(--we-danger-text);
 }
 
 .we-api-routing {
@@ -1087,8 +1132,8 @@ if (config.value.presets[0]) editPreset(config.value.presets[0]);
 }
 
 .we-api-bridge-status.ready {
-  border-color: color-mix(in srgb, var(--we-success, var(--we-accent)) 45%, var(--we-border));
-  background: color-mix(in srgb, var(--we-success, var(--we-accent)) 7%, var(--we-input));
+  border-color: var(--we-success-border);
+  background: var(--we-success-bg);
 }
 
 .we-api-bridge-status > div {
@@ -1116,11 +1161,11 @@ if (config.value.presets[0]) editPreset(config.value.presets[0]);
 }
 
 .we-api-bridge-status.ready .we-api-bridge-dot {
-  background: var(--we-success, var(--we-accent));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--we-success, var(--we-accent)) 18%, transparent);
+  background: var(--we-success-text);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--we-success-bg) 72%, transparent);
 }
 
-@media (max-width: 700px) {
+@container (max-width: 700px) {
   .we-api-intro,
   .we-api-section-head {
     display: grid;
@@ -1154,7 +1199,7 @@ if (config.value.presets[0]) editPreset(config.value.presets[0]);
   }
 }
 
-@media (max-width: 420px) {
+@container (max-width: 420px) {
   .we-api-actions .we-btn {
     flex-basis: 100%;
     min-width: 0;
