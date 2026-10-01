@@ -4,7 +4,11 @@ import { getCurrentChatKey } from '../工作流助手/api/chat-key';
 import { runWorldEvolution, setWorldEvolutionStatusListener, type WorldEvolutionRunResult } from './engine';
 import { loadSettings, saveSettings } from './store';
 import { loadWorldEvolutionApiConfiguration } from './api-config';
-import { getWorldEvolutionApiRouteReadiness, getWorldEvolutionWorkflowAssistantBridge } from './api-routing';
+import {
+  getWorldEvolutionApiRouteCardSummary,
+  getWorldEvolutionWorkflowAssistantBridge,
+  type WorldEvolutionApiRouteSource,
+} from './api-routing';
 import {
   inspectWorldEvolutionWorldbook,
   rebuildWorldEvolutionWorldbook,
@@ -39,9 +43,15 @@ const css = `
 .we-panel-embedded .we-head{display:none}.we-panel-embedded .we-body{padding:0}
 .we-panel *{box-sizing:border-box}.we-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid #374151}.we-title{font-weight:700}.we-close,.we-btn{border:1px solid #4b5563;background:#1f2937;color:#e5e7eb;border-radius:7px;padding:6px 10px;cursor:pointer}.we-btn:hover,.we-close:hover{background:#374151}.we-body{padding:14px;display:grid;gap:10px}.we-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.we-label{color:#9ca3af;min-width:130px}.we-input{flex:1;min-width:150px;background:#0b1220;color:#f3f4f6;border:1px solid #4b5563;border-radius:6px;padding:6px 8px}.we-status{white-space:pre-wrap;background:#0b1220;border:1px solid #374151;border-radius:7px;padding:8px;max-height:180px;overflow:auto}.we-danger{color:#fca5a5}.we-ok{color:#86efac}.we-muted{color:#9ca3af;font-size:12px}.we-check{accent-color:#38bdf8}
 .we-section{border:1px solid #374151;border-radius:8px;padding:10px;display:grid;gap:8px}.we-section-title{font-weight:600;color:#d1d5db}.we-list{display:grid;gap:6px}.we-card{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;background:#0b1220;border:1px solid #263244;border-radius:7px;padding:8px}.we-card-title{font-weight:600}.we-card-meta{color:#9ca3af;font-size:12px}.we-card-state{white-space:pre-wrap;color:#cbd5e1;font-size:12px;max-height:90px;overflow:auto}.we-card-actions{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}.we-small{padding:4px 7px;font-size:12px}.we-select{background:#0b1220;color:#f3f4f6;border:1px solid #4b5563;border-radius:6px;padding:6px 8px}
+.we-api-status{gap:12px}.we-api-status-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.we-api-status-heading .we-section-title{font-size:15px}.we-api-status-badge{flex:none;padding:4px 9px;border:1px solid #64748b;border-radius:999px;font-size:11px}.we-api-status-badge.ready{border-color:#22c55e;color:#16a34a}.we-api-status-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.we-api-status-item{display:grid;gap:4px;min-width:0;padding:9px 10px;border:1px solid #00000012;border-radius:8px;background:#00000008}.we-api-status-label{color:#64748b;font-size:11px}.we-api-status-value{overflow:hidden;color:inherit;font-size:13px;text-overflow:ellipsis;white-space:nowrap}.we-api-status-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.we-api-status-actions .we-btn-primary{border-color:#16a34a;background:#16a34a;color:#fff}.we-api-status-actions .we-btn-primary:hover:not(:disabled){background:#15803d}.we-api-status-actions .we-btn:disabled{cursor:not-allowed;opacity:.55}.we-run-settings{gap:10px}.we-run-settings .we-section-title{font-size:15px}
+@media(max-width:760px){.we-api-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.we-api-status-actions .we-btn{flex:1 1 auto}}
 `;
 
-function mountPanel(target?: HTMLElement): void {
+export type WorldEvolutionPanelOptions = {
+  onNavigateToApi?: () => void;
+};
+
+function mountPanel(target?: HTMLElement, options: WorldEvolutionPanelOptions = {}): void {
   if (root?.length) return;
   const embedded = target !== undefined;
   const state = reactive({
@@ -61,6 +71,10 @@ function mountPanel(target?: HTMLElement): void {
     projectionBusy: false,
     apiRouteStatus: {
       ready: false,
+      source: null as WorldEvolutionApiRouteSource | null,
+      model: null as string | null,
+      fallbackCount: 0,
+      keyConfigured: null as boolean | null,
       message: '正在检查 API 路由…',
     },
   });
@@ -137,17 +151,27 @@ function mountPanel(target?: HTMLElement): void {
             apiFallbackPresetNames: state.settings.apiFallbackPresetNames,
           });
           const bridge = getWorldEvolutionWorkflowAssistantBridge();
-          const routeReadiness = getWorldEvolutionApiRouteReadiness(config, bridge);
+          const routeSummary = getWorldEvolutionApiRouteCardSummary(config, bridge);
           state.apiRouteStatus = {
-            ready: routeReadiness.ready,
-            message: routeReadiness.ready
-              ? `有效路由：${routeReadiness.usableRoutes.join(' → ')}`
-              : '未检测到可用 API 路由。请前往「演变配置 → API 配置」检查预设和路由。',
+            ready: routeSummary.ready,
+            source: routeSummary.source,
+            model: routeSummary.model,
+            fallbackCount: routeSummary.fallbackCount,
+            keyConfigured: routeSummary.keyConfigured,
+            message: routeSummary.ready
+              ? '当前主路由可用，可开始手动运行或等待自动触发。'
+              : routeSummary.source
+                ? '检测到路由配置，但主路由尚不可用；请检查端点、模型和凭据。'
+                : '未检测到可用 API 路由，请先完成配置。',
           };
         } catch (apiError) {
           console.warn('[世界演变] 检查 API 路由失败:', apiError);
           state.apiRouteStatus = {
             ready: false,
+            source: null,
+            model: null,
+            fallbackCount: 0,
+            keyConfigured: null,
             message: '读取 API 路由状态失败。请前往「演变配置 → API 配置」检查设置。',
           };
         }
@@ -155,7 +179,6 @@ function mountPanel(target?: HTMLElement): void {
       refreshApiStatusForPanel = refreshApiStatus;
       refreshApiStatus();
       const apiReady = () => state.apiRouteStatus.ready;
-      const apiStatusText = () => state.apiRouteStatus.message;
       const resultText = () => {
         const result = state.lastResult;
         if (!result) return '暂无运行记录';
@@ -209,6 +232,43 @@ function mountPanel(target?: HTMLElement): void {
         await refreshWorld();
         if (result.error) error.value = result.error;
       };
+      const runActionButtons = () => [
+        h(
+          'button',
+          {
+            class: 'we-btn we-btn-primary',
+            disabled: state.running || !state.settings.enabled || !apiReady(),
+            onClick: run,
+          },
+          state.running ? '运行中…' : '手动运行一轮',
+        ),
+        h(
+          'button',
+          {
+            class: 'we-btn',
+            disabled: state.running || failedMessageId() == null || !state.settings.enabled || !apiReady(),
+            onClick: retryFailed,
+          },
+          '重试最近失败楼层',
+        ),
+      ];
+      const routeSourceLabel = () =>
+        state.apiRouteStatus.source === 'builtin'
+          ? '内置 API'
+          : state.apiRouteStatus.source === 'workflow-assistant'
+            ? '工作流助手桥接'
+            : '未配置';
+      const routeKeyStatus = () =>
+        state.apiRouteStatus.keyConfigured == null
+          ? '状态不可用'
+          : state.apiRouteStatus.keyConfigured
+            ? '已配置'
+            : '未配置';
+      const routeMetric = (label: string, value: string) =>
+        h('div', { class: 'we-api-status-item' }, [
+          h('span', { class: 'we-api-status-label' }, label),
+          h('strong', { class: 'we-api-status-value', title: value }, value),
+        ]);
       const projectionCounts = () => {
         const inspection = state.projectionInspection;
         return {
@@ -399,16 +459,41 @@ function mountPanel(target?: HTMLElement): void {
               ]),
           visible.value
             ? h('div', { class: 'we-body' }, [
-                h('div', { class: 'we-section we-api-status' }, [
-                  h('div', { class: 'we-section-title' }, 'API 路由状态'),
-                  h(
-                    'div',
-                    { class: apiReady() ? 'we-muted' : 'we-danger' },
-                    'API 预设与主备路由已统一到“演变配置 → API 配置”。此处仅显示状态；旧版工作流助手预设字段仍保留用于兼容读取。',
-                  ),
-                  h('div', { class: apiReady() ? 'we-ok' : 'we-danger' }, apiStatusText()),
-                  h('div', { class: 'we-row' }, [
-                    h('button', { class: 'we-btn', onClick: refreshApiStatus }, '刷新路由状态'),
+                h('div', { class: ['we-section', 'we-api-status'] }, [
+                  h('div', { class: 'we-api-status-heading' }, [
+                    h('div', undefined, [
+                      h('div', { class: 'we-section-title' }, 'API 路由状态'),
+                      h(
+                        'div',
+                        { class: 'we-muted' },
+                        'API 预设和主备路由统一在「演变配置 → API 配置」管理；此处只显示当前生效信息。',
+                      ),
+                    ]),
+                    h(
+                      'span',
+                      { class: ['we-api-status-badge', apiReady() ? 'ready' : ''] },
+                      apiReady() ? '路由就绪' : '需要检查',
+                    ),
+                  ]),
+                  h('div', { class: 'we-api-status-grid' }, [
+                    routeMetric('当前来源', routeSourceLabel()),
+                    routeMetric('主模型', state.apiRouteStatus.model || '未配置'),
+                    routeMetric('备用路由', `${state.apiRouteStatus.fallbackCount} 个`),
+                    routeMetric('API Key', routeKeyStatus()),
+                  ]),
+                  h('div', { class: apiReady() ? 'we-ok' : 'we-danger' }, state.apiRouteStatus.message),
+                  h('div', { class: 'we-api-status-actions' }, [
+                    ...(embedded && options.onNavigateToApi
+                      ? [
+                          h(
+                            'button',
+                            { class: 'we-btn', onClick: options.onNavigateToApi },
+                            '前往 API 配置',
+                          ),
+                        ]
+                      : []),
+                    ...(embedded ? runActionButtons() : []),
+                    h('button', { class: 'we-btn', onClick: refreshApiStatus }, '刷新状态'),
                   ]),
                 ]),
                 h('div', { class: 'we-section we-run-settings' }, [
@@ -538,24 +623,7 @@ function mountPanel(target?: HTMLElement): void {
                 ]),
                 h('div', { class: 'we-row' }, [
                   h('button', { class: 'we-btn', onClick: save }, '保存设置'),
-                  h(
-                    'button',
-                    {
-                      class: 'we-btn',
-                      disabled: state.running || !state.settings.enabled || !apiReady(),
-                      onClick: run,
-                    },
-                    state.running ? '运行中…' : '手动运行一轮',
-                  ),
-                  h(
-                    'button',
-                    {
-                      class: 'we-btn',
-                      disabled: state.running || failedMessageId() == null || !state.settings.enabled || !apiReady(),
-                      onClick: retryFailed,
-                    },
-                    '重试最近失败楼层',
-                  ),
+                  ...(!embedded ? runActionButtons() : []),
                   ...(embedded
                     ? []
                     : [
@@ -867,6 +935,10 @@ export function openWorldEvolutionPanel(): void {
   mountPanel();
 }
 
-export function mountWorldEvolutionPanel(target: HTMLElement): void {
-  mountPanel(target);
+export function mountWorldEvolutionPanel(target: HTMLElement, options: WorldEvolutionPanelOptions = {}): void {
+  mountPanel(target, options);
+}
+
+export function refreshWorldEvolutionPanelApiStatus(): void {
+  refreshApiStatusForPanel?.();
 }

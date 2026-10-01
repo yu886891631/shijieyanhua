@@ -8,6 +8,7 @@ import {
 import { type WorldEvolutionApiFetch } from './api-client';
 import {
   callWorldEvolutionApiWithRouting,
+  getWorldEvolutionApiRouteCardSummary,
   getWorldEvolutionApiRouteReadiness,
   resolveWorldEvolutionApiRouting,
   type WorldEvolutionWorkflowAssistantBridge,
@@ -130,6 +131,67 @@ test('route readiness trims builtin API keys and accepts a keyless workflow prim
     ready: true,
     usableRoutes: ['工作流助手：免密主预设'],
   });
+});
+
+test('route card summarizes the effective source, model, fallback count and key state', () => {
+  assert.deepEqual(getWorldEvolutionApiRouteCardSummary(createEmptyWorldEvolutionApiConfiguration(99), null), {
+    ready: false,
+    source: null,
+    routeName: null,
+    model: null,
+    fallbackCount: 0,
+    keyConfigured: null,
+  });
+
+  let config = configWithBuiltin();
+  config = upsertWorldEvolutionApiPreset(
+    config,
+    {
+      id: 'backup',
+      name: '内置备用 API',
+      endpoint: 'https://backup.test',
+      apiKey: 'backup-secret',
+      model: 'model-b',
+    },
+    102,
+  );
+  config.routing.fallbackPresetIds = ['backup'];
+  assert.deepEqual(getWorldEvolutionApiRouteCardSummary(config, null), {
+    ready: true,
+    source: 'builtin',
+    routeName: '内置主 API',
+    model: 'model-a',
+    fallbackCount: 1,
+    keyConfigured: true,
+  });
+
+  config.routing.workflowAssistantPresetName = '工作流主预设';
+  config.routing.workflowAssistantFallbackPresetNames = ['工作流备用预设'];
+  config.routing.preferBuiltin = false;
+  const workflow: WorldEvolutionWorkflowAssistantBridge = {
+    available: true,
+    activePresetName: '工作流主预设',
+    presets: [
+      { name: '工作流主预设', model: 'bridge-model', endpointConfigured: true, keyConfigured: false },
+      { name: '工作流备用预设', model: 'bridge-backup', endpointConfigured: true, keyConfigured: true },
+    ],
+    callApi: async () => ({ content: '模拟响应' }),
+  };
+  assert.deepEqual(getWorldEvolutionApiRouteCardSummary(config, workflow), {
+    ready: true,
+    source: 'workflow-assistant',
+    routeName: '工作流主预设',
+    model: 'bridge-model',
+    fallbackCount: 1,
+    keyConfigured: false,
+  });
+
+  const fallbackConfig = configWithBuiltin();
+  fallbackConfig.presets[0]!.apiKey = '';
+  fallbackConfig.routing.workflowAssistantPresetName = '工作流主预设';
+  const fallbackStatus = getWorldEvolutionApiRouteCardSummary(fallbackConfig, workflow);
+  assert.equal(fallbackStatus.source, 'workflow-assistant');
+  assert.equal(fallbackStatus.ready, true);
 });
 
 test('builtin source is preferred and does not call the workflow bridge on success', async () => {

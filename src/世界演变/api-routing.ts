@@ -58,6 +58,15 @@ export type WorldEvolutionApiRouteReadiness = {
   usableRoutes: string[];
 };
 
+export type WorldEvolutionApiRouteCardSummary = {
+  ready: boolean;
+  source: WorldEvolutionApiRouteSource | null;
+  routeName: string | null;
+  model: string | null;
+  fallbackCount: number;
+  keyConfigured: boolean | null;
+};
+
 export type WorldEvolutionApiRouteAttempt = {
   source: WorldEvolutionApiRouteSource;
   presetId?: string;
@@ -194,50 +203,89 @@ export function resolveWorldEvolutionApiRouting(
   };
 }
 
-/**
- * 返回旧运行面板可展示的安全路由状态，不发起请求。
- * 内置来源只检查引擎实际首先尝试的启用预设；配置错误不会触发内置备用项，
- * 但被禁用的预设会被跳过。工作流助手桥接同样只检查实际传给助手的主预设，
- * 因为助手会在校验主预设失败时直接报错，不会尝试备用项。
- */
-export function getWorldEvolutionApiRouteReadiness(
+/** 返回运行页可展示的安全路由摘要；只读取状态，不发起请求或暴露 Key。 */
+export function getWorldEvolutionApiRouteCardSummary(
   config: WorldEvolutionApiConfiguration,
   bridge: WorldEvolutionWorkflowAssistantBridge | null | undefined,
-): WorldEvolutionApiRouteReadiness {
+): WorldEvolutionApiRouteCardSummary {
   const summary = resolveWorldEvolutionApiRouting(config, { bridge });
   const presetById = new Map(config.presets.map(preset => [preset.id, preset]));
-  const usableRoutes: string[] = [];
+  const candidates: WorldEvolutionApiRouteCardSummary[] = [];
 
   for (const source of summary.order) {
     if (source === 'builtin') {
       const firstEnabledPreset = presetById.get(summary.builtinPresetIds[0] ?? '');
-      if (
-        firstEnabledPreset?.enabled &&
-        firstEnabledPreset.endpoint.trim() &&
-        firstEnabledPreset.model.trim() &&
-        firstEnabledPreset.apiKey.trim()
-      ) {
-        usableRoutes.push(`内置 API：${firstEnabledPreset.name}`);
-      }
+      if (!firstEnabledPreset?.enabled) continue;
+      candidates.push({
+        ready: Boolean(
+          firstEnabledPreset.endpoint.trim() && firstEnabledPreset.model.trim() && firstEnabledPreset.apiKey.trim(),
+        ),
+        source,
+        routeName: firstEnabledPreset.name,
+        model: firstEnabledPreset.model.trim() || null,
+        fallbackCount: Math.max(0, summary.builtinPresetIds.length - 1),
+        keyConfigured: Boolean(firstEnabledPreset.apiKey.trim()),
+      });
       continue;
     }
 
     if (!bridge || !bridgeAvailable(bridge)) continue;
     const primaryPresetName = normalizeName(config.routing.workflowAssistantPresetName) || normalizeName(bridge.activePresetName);
+    const fallbackNames = uniqueStrings(config.routing.workflowAssistantFallbackPresetNames).filter(
+      name => name !== primaryPresetName,
+    );
+    const fallbackCount = fallbackNames.filter(name => {
+      const preset = bridge.presets?.find(item => item.name === name);
+      return Boolean(preset?.endpointConfigured && normalizeName(preset.model));
+    }).length;
     if (primaryPresetName) {
       const preset = bridge.presets?.find(item => item.name === primaryPresetName);
-      if (preset?.endpointConfigured && normalizeName(preset.model)) {
-        usableRoutes.push(`工作流助手：${primaryPresetName}`);
-      }
+      candidates.push({
+        ready: Boolean(preset?.endpointConfigured && normalizeName(preset.model)),
+        source,
+        routeName: primaryPresetName,
+        model: normalizeName(preset?.model) || null,
+        fallbackCount,
+        keyConfigured: preset ? Boolean(preset.keyConfigured) : null,
+      });
       continue;
     }
 
-    if (bridge.defaultConfig?.endpointConfigured && normalizeName(bridge.defaultConfig.model)) {
-      usableRoutes.push('工作流助手：默认配置');
-    }
+    const defaultConfig = bridge.defaultConfig;
+    candidates.push({
+      ready: Boolean(defaultConfig?.endpointConfigured && normalizeName(defaultConfig.model)),
+      source,
+      routeName: null,
+      model: normalizeName(defaultConfig?.model) || null,
+      fallbackCount,
+      keyConfigured: defaultConfig ? Boolean(defaultConfig.keyConfigured) : null,
+    });
   }
 
-  return { ready: usableRoutes.length > 0, usableRoutes };
+  return candidates.find(candidate => candidate.ready) ?? candidates[0] ?? {
+    ready: false,
+    source: null,
+    routeName: null,
+    model: null,
+    fallbackCount: 0,
+    keyConfigured: null,
+  };
+}
+
+/** 返回测试和启用状态判断所需的路由就绪结论，不发起请求。 */
+export function getWorldEvolutionApiRouteReadiness(
+  config: WorldEvolutionApiConfiguration,
+  bridge: WorldEvolutionWorkflowAssistantBridge | null | undefined,
+): WorldEvolutionApiRouteReadiness {
+  const summary = getWorldEvolutionApiRouteCardSummary(config, bridge);
+  const usableRoutes = summary.ready
+    ? [
+        summary.source === 'builtin'
+          ? `内置 API：${summary.routeName ?? '默认预设'}`
+          : `工作流助手：${summary.routeName ?? '默认配置'}`,
+      ]
+    : [];
+  return { ready: summary.ready, usableRoutes };
 }
 
 function defaultBridge(): WorldEvolutionWorkflowAssistantBridge | null {

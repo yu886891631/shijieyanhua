@@ -243,7 +243,7 @@
 
 <script setup lang="ts">
 import { getCurrentChatKey } from '../../工作流助手/api/chat-key';
-import { mountWorldEvolutionPanel } from '../ui';
+import { mountWorldEvolutionPanel, refreshWorldEvolutionPanelApiStatus } from '../ui';
 import { loadSettings } from '../store';
 import { WORLD_EVOLUTION_VERSION } from '../types';
 import {
@@ -385,6 +385,7 @@ function dbPageFor(pageId: WorkspacePage): WorldEvolutionDbPanelPage | undefined
 
 function selectPage(next: WorkspacePage) {
   page.value = next;
+  if (next === 'evolution') refreshWorldEvolutionPanelApiStatus();
   const databasePage = dbPageFor(next);
   if (databasePage) navigateDatabase?.(databasePage);
 }
@@ -436,7 +437,9 @@ onMounted(() => {
       hideNavigation: true,
     });
   }
-  if (evolutionHost.value) mountWorldEvolutionPanel(evolutionHost.value);
+  if (evolutionHost.value) {
+    mountWorldEvolutionPanel(evolutionHost.value, { onNavigateToApi: () => selectPage('api') });
+  }
   void refreshOverview();
   stopChatChanged = eventOn(tavern_events.CHAT_CHANGED, () => {
     void refreshOverview();
