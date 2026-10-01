@@ -3,7 +3,7 @@
     <div class="we-api-intro">
       <div>
         <p class="we-eyebrow">BUILT-IN API · ALPHA.12</p>
-        <h2>内置 API 配置</h2>
+        <h2>预设、路由与桥接</h2>
         <p>API 配置保存在世界演变脚本自己的设置中。工作流助手仍可作为兼容来源，但不再是必需依赖。</p>
       </div>
       <div class="we-api-badges">
@@ -11,7 +11,7 @@
           {{ config.presets.length }} 个内置预设
         </span>
         <span class="we-api-badge" :class="{ good: bridge.available }">
-          工作流助手：{{ bridge.available ? '已配置' : '未配置' }}
+          工作流助手：{{ bridge.available ? '已检测到路由' : '未检测到路由' }}
         </span>
       </div>
     </div>
@@ -85,7 +85,17 @@
             type="password"
             autocomplete="new-password"
             :placeholder="form.id && selectedPreset?.apiKey ? '已配置，留空表示保持原 Key' : '填写 API Key'"
+            @input="clearExistingKey = false"
           />
+          <button
+            v-if="form.id && selectedPreset?.apiKey"
+            class="we-btn we-api-key-clear"
+            type="button"
+            @click="clearSavedApiKey"
+          >
+            清除已保存 Key
+          </button>
+          <small v-if="clearExistingKey" class="we-api-key-warning">保存时会清除已保存的 Key。</small>
         </label>
         <label>
           <span>模型</span>
@@ -201,10 +211,11 @@
         <button class="we-btn" type="button" @click="refreshBridge">刷新状态</button>
       </div>
       <p v-if="bridge.available" class="we-api-muted">
-        已连接。当前工作流助手预设：{{ bridge.activePresetName || '跟随当前聊天' }}；可用预设 {{ bridge.presets.length }} 个。
+        已检测到兼容桥接路由。当前工作流助手预设：{{ bridge.activePresetName || '跟随当前聊天' }}；可用预设
+        {{ bridge.presets.length }} 个。此状态仅表示已检测到配置，不代表凭据验证成功。
       </p>
       <p v-else class="we-api-muted">
-        未检测到工作流助手桥接。内置 API 配置不依赖它，后续运行流程接入后可以直接使用内置路由。
+        未检测到已配置的工作流助手桥接路由。内置 API 配置不依赖它，后续运行流程接入后可以直接使用内置路由。
       </p>
     </section>
   </section>
@@ -254,6 +265,7 @@ const config = ref<WorldEvolutionApiConfiguration>(
 );
 const form = reactive<ApiForm>(emptyForm());
 const busy = ref(false);
+const clearExistingKey = ref(false);
 const message = ref('');
 const messageType = ref<'ok' | 'error'>('ok');
 const bridge = ref<BridgeInfo>({
@@ -317,6 +329,7 @@ function setMessage(text: string, type: 'ok' | 'error' = 'ok'): void {
 }
 
 function editPreset(preset: WorldEvolutionApiPreset): void {
+  clearExistingKey.value = false;
   Object.assign(form, {
     id: preset.id,
     name: preset.name,
@@ -332,8 +345,15 @@ function editPreset(preset: WorldEvolutionApiPreset): void {
 }
 
 function startNew(): void {
+  clearExistingKey.value = false;
   Object.assign(form, emptyForm());
   setMessage('正在新建内置 API 预设。');
+}
+
+function clearSavedApiKey(): void {
+  form.apiKey = '';
+  clearExistingKey.value = true;
+  setMessage('保存预设时将清除已保存的 API Key。');
 }
 
 function persist(next: WorldEvolutionApiConfiguration, successMessage: string): void {
@@ -350,7 +370,7 @@ function savePreset(): void {
   const next = upsertWorldEvolutionApiPreset(config.value, {
     ...form,
     id: form.id || undefined,
-    apiKey: form.apiKey || existing?.apiKey || '',
+    apiKey: clearExistingKey.value ? '' : form.apiKey || existing?.apiKey || '',
   });
   const saved = next.presets.find(preset => preset.name === form.name.trim());
   persist(next, `已保存“${saved?.name ?? form.name.trim()}”。`);
@@ -360,6 +380,7 @@ function savePreset(): void {
 function copyPreset(): void {
   const existing = selectedPreset.value;
   if (!existing) return;
+  clearExistingKey.value = false;
   Object.assign(form, {
     ...emptyForm(),
     name: `${existing.name} 副本`,
@@ -377,6 +398,7 @@ function removePreset(): void {
   const name = selectedPreset.value.name;
   const next = removeWorldEvolutionApiPreset(config.value, form.id);
   persist(next, `已删除“${name}”。`);
+  clearExistingKey.value = false;
   Object.assign(form, emptyForm());
 }
 
@@ -391,7 +413,7 @@ async function simulatePreset(): Promise<void> {
     const temp = upsertWorldEvolutionApiPreset(config.value, {
       ...form,
       id: form.id || undefined,
-      apiKey: form.apiKey || existing?.apiKey || '',
+      apiKey: clearExistingKey.value ? '' : form.apiKey || existing?.apiKey || '',
     });
     const preset = temp.presets.find(item => item.name === form.name.trim());
     if (!preset) throw new Error('无法构造模拟 API 预设');
@@ -497,6 +519,8 @@ if (config.value.presets[0]) editPreset(config.value.presets[0]);
 <style scoped lang="scss">
 .we-api-page {
   display: grid;
+  width: 100%;
+  margin: 0 auto;
   align-content: start;
   gap: 13px;
   max-width: 1100px;
@@ -557,6 +581,15 @@ if (config.value.presets[0]) editPreset(config.value.presets[0]);
 .we-api-muted {
   color: var(--we-muted);
   font-size: 11px;
+}
+
+.we-api-key-clear {
+  justify-self: start;
+}
+
+.we-api-key-warning {
+  color: var(--we-danger);
+  font-size: 10px;
 }
 
 .we-api-preset-list {

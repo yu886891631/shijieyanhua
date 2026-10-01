@@ -88,6 +88,20 @@ test('upsert and remove keep route references consistent', () => {
   assert.equal(config.presets.length, 1);
 });
 
+test('upserting an existing preset with an empty key clears its stored credential', () => {
+  let config = createEmptyWorldEvolutionApiConfiguration(100);
+  config = upsertWorldEvolutionApiPreset(
+    config,
+    { id: 'primary', name: '主 API', apiKey: 'secret', endpoint: 'https://example.test/v1', model: 'model-a' },
+    101,
+  );
+  config = upsertWorldEvolutionApiPreset(config, { id: 'primary', name: '主 API', apiKey: '' }, 102);
+
+  assert.equal(config.presets[0]?.apiKey, '');
+  assert.match(exportWorldEvolutionApiConfiguration(config), /"keyConfigured": false/);
+  assert.doesNotMatch(exportWorldEvolutionApiConfiguration(config), /secret/);
+});
+
 test('API configuration persistence uses a separate script variable and round-trips', () => {
   const globals = globalThis as typeof globalThis & {
     getScriptId?: () => string;
