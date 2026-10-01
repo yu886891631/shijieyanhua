@@ -522,8 +522,15 @@ if (config.value.presets[0]) editPreset(config.value.presets[0]);
   width: 100%;
   margin: 0 auto;
   align-content: start;
-  gap: 13px;
-  max-width: 1100px;
+  gap: clamp(11px, 1.4vw, 17px);
+  max-width: 1180px;
+  min-width: 0;
+  container-type: inline-size;
+}
+
+.we-api-page,
+.we-api-page * {
+  box-sizing: border-box;
 }
 
 .we-api-intro,
@@ -532,6 +539,13 @@ if (config.value.presets[0]) editPreset(config.value.presets[0]);
   align-items: flex-start;
   justify-content: space-between;
   gap: 15px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.we-api-intro > div:first-child,
+.we-api-section-head > div:first-child {
+  min-width: 0;
 }
 
 .we-api-intro h2,
@@ -569,8 +583,9 @@ if (config.value.presets[0]) editPreset(config.value.presets[0]);
 
 .we-api-section {
   display: grid;
-  gap: 13px;
-  padding: 15px;
+  gap: clamp(11px, 1.3vw, 15px);
+  min-width: 0;
+  padding: clamp(13px, 1.5vw, 18px);
 }
 
 .we-api-section-head h3 {
@@ -661,11 +676,13 @@ if (config.value.presets[0]) editPreset(config.value.presets[0]);
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+  min-width: 0;
 }
 
 .we-api-form label,
 .we-api-routing > label {
   display: grid;
+  min-width: 0;
   gap: 5px;
   color: var(--we-muted);
   font-size: 11px;
@@ -687,6 +704,12 @@ if (config.value.presets[0]) editPreset(config.value.presets[0]);
   font: inherit;
 }
 
+.we-api-form input,
+.we-api-form select,
+.we-api-routing select {
+  min-width: 0;
+}
+
 .we-api-checkbox,
 .we-api-option {
   display: flex !important;
@@ -698,8 +721,14 @@ if (config.value.presets[0]) editPreset(config.value.presets[0]);
 
 .we-api-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.we-api-actions .we-btn {
+  flex: 0 1 auto;
+  min-width: 108px;
 }
 
 .we-btn {
@@ -747,12 +776,14 @@ if (config.value.presets[0]) editPreset(config.value.presets[0]);
 
 .we-api-routing {
   display: grid;
-  grid-template-columns: minmax(220px, 0.7fr) minmax(300px, 1.3fr);
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
   gap: 12px 18px;
+  min-width: 0;
 }
 
 .we-api-fallbacks {
   display: grid;
+  min-width: 0;
   gap: 6px;
   color: var(--we-muted);
   font-size: 11px;
@@ -767,6 +798,7 @@ if (config.value.presets[0]) editPreset(config.value.presets[0]);
   display: flex;
   align-items: center;
   gap: 7px;
+  min-width: 0;
   min-height: 31px;
   padding: 3px 7px;
   border: 1px solid var(--we-border);
@@ -775,8 +807,12 @@ if (config.value.presets[0]) editPreset(config.value.presets[0]);
 }
 
 .we-api-route-row span {
+  min-width: 0;
+  overflow: hidden;
   flex: 1;
   color: var(--we-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .we-route-move {
@@ -800,6 +836,9 @@ if (config.value.presets[0]) editPreset(config.value.presets[0]);
 }
 
 .we-api-route-summary {
+  display: grid;
+  gap: 4px;
+  overflow-wrap: anywhere;
   padding: 9px 11px;
   border-radius: 8px;
   background: var(--we-tint);
@@ -808,7 +847,9 @@ if (config.value.presets[0]) editPreset(config.value.presets[0]);
 }
 
 .we-api-route-summary strong {
+  overflow-wrap: anywhere;
   color: var(--we-text);
+  word-break: break-word;
 }
 
 .we-api-bridge {
@@ -825,6 +866,47 @@ if (config.value.presets[0]) editPreset(config.value.presets[0]);
     justify-content: flex-start;
   }
 
+  .we-api-form,
+  .we-api-routing {
+    grid-template-columns: 1fr;
+  }
+
+  .we-api-form label.wide,
+  .we-api-option {
+    grid-column: auto;
+  }
+
+  .we-api-section-head {
+    gap: 9px;
+  }
+
+  .we-api-section-head .we-btn {
+    width: 100%;
+  }
+
+  .we-api-actions .we-btn {
+    flex: 1 1 calc(50% - 8px);
+  }
+}
+
+@media (max-width: 420px) {
+  .we-api-actions .we-btn {
+    flex-basis: 100%;
+    min-width: 0;
+  }
+}
+
+@container (max-width: 980px) {
+  .we-api-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .we-api-routing {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  }
+}
+
+@container (max-width: 720px) {
   .we-api-form,
   .we-api-routing {
     grid-template-columns: 1fr;

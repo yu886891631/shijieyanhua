@@ -3,7 +3,7 @@
 > 计划版本：A0.1.0-alpha.12-ui.1
 > 计划日期：2026-09-30
 > 当前基线：A0.1.0-alpha.12 发布候选
-> 当前状态：UI-5 自动演变页面重排已完成，下一阶段为 UI-6 排版与响应式优化
+> 当前状态：UI-6 排版与响应式优化已完成，下一阶段为 UI-7 测试、构建与发布候选
 
 ## 1. 目标
 
@@ -203,6 +203,8 @@ UI-5 完成记录见 [`WORLD-EVOLUTION-API-UI5-AUTO-RUN.md`](WORLD-EVOLUTION-API
 - API 页和自动演变页均可完整滚动；
 - 不同缩放下没有横向溢出；
 - 数据库、世界书投影和楼层记录页面没有样式回归。
+
+UI-6 完成记录见 [`WORLD-EVOLUTION-API-UI6-RESPONSIVE.md`](WORLD-EVOLUTION-API-UI6-RESPONSIVE.md)。
 
 ### UI-7：测试、构建与发布候选
 
