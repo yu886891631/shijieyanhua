@@ -1,0 +1,32 @@
+{
+  "type": "script",
+  "enabled": false,
+  "name": "世界演变控制台（A0.1.0-alpha.14 U11-D 视觉回归测试版）",
+  "id": "4a1c4e26-9fe2-46c0-9b2d-32baf94f59a1",
+  "content": "import 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@340c5267a105c179bb0e1b2619ff8c8363f0129e/dist/世界演变/index.js?v=A0.1.0-alpha.14-u11d';\nimport 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@340c5267a105c179bb0e1b2619ff8c8363f0129e/dist/世界演变数据库/index.js?v=A0.1.0-alpha.14-u11d'",
+  "info": "A0.1.0-alpha.14 U11-D 视觉回归测试包。固定加载 U11-C 最新源码与 125% 布局修复后的 bundle；使用新脚本 ID，默认关闭。插件自动运行关闭、世界书自动同步关闭，不会因启用而自动调用 AI 或重建世界书。数据库格式保持 A0.1.0-alpha.11，与其他世界演变版本共用同聊天 IndexedDB，并非数据沙盒。页面验收期间不要执行导入确认、迁移确认、清空或手动运行；先停用 alpha.13 与旧 alpha.14 测试包，不要删除旧包、聊天数据、数据库或世界书。源码及构建产物固定于 commit 340c5267a105c179bb0e1b2619ff8c8363f0129e。",
+  "button": {
+    "enabled": true,
+    "buttons": []
+  },
+  "data": {
+    "world_evolution_version": "A0.1.0-alpha.14",
+    "world_evolution_db_version": "A0.1.0-alpha.11",
+    "world_evolution_milestone": "UI-UNIFICATION-U11-D",
+    "world_evolution_release_commit": "340c5267a105c179bb0e1b2619ff8c8363f0129e",
+    "world_evolution_api_test_mode": "local-simulation-only",
+    "world_evolution_settings_v1": {
+      "enabled": false,
+      "autoRun": false,
+      "worldbookAutoSync": false,
+      "worldbookName": "",
+      "manualCandidates": [],
+      "apiPresetName": "",
+      "apiFallbackPresetNames": []
+    }
+  },
+  "export_with": {
+    "data": true,
+    "button": true
+  }
+}
