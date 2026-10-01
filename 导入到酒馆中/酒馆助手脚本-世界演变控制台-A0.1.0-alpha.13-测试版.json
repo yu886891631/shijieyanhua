@@ -1,0 +1,23 @@
+{
+  "type": "script",
+  "enabled": false,
+  "name": "世界演变控制台（A0.1.0-alpha.13 UI-7 测试版）",
+  "id": "8500a15b-44aa-4cde-8a36-3fb4b5f575e6",
+  "content": "import 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@2bc9ba6f77270e54628ceba6e5ccdeba093871d5/dist/世界演变/index.js?v=A0.1.0-alpha.13';\nimport 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@2bc9ba6f77270e54628ceba6e5ccdeba093871d5/dist/世界演变数据库/index.js?v=A0.1.0-alpha.13'",
+  "info": "A0.1.0-alpha.13 UI-7 发布候选：API 配置已从自动演变页收口到独立的演变配置页面，并完成最终模拟回归、生产构建与响应式布局检查。数据库、revision、世界书投影、工作流助手兼容路由保持不变。默认关闭，不自动运行，不调用真实 API；控制台内置模拟连接测试仅使用本地模拟响应。导入后请先停用 alpha.12 和 alpha.11，再启用本包进行页面、配置保存、模拟连接和回退验收；不要删除 alpha.12、alpha.11、聊天、数据库或世界书。源码固定于 commit 2bc9ba6f77270e54628ceba6e5ccdeba093871d5。",
+  "button": {
+    "enabled": true,
+    "buttons": []
+  },
+  "data": {
+    "world_evolution_version": "A0.1.0-alpha.13",
+    "world_evolution_db_version": "A0.1.0-alpha.11",
+    "world_evolution_milestone": "UI-REARRANGEMENT-UI7",
+    "world_evolution_release_commit": "2bc9ba6f77270e54628ceba6e5ccdeba093871d5",
+    "world_evolution_api_test_mode": "local-simulation-only"
+  },
+  "export_with": {
+    "data": true,
+    "button": true
+  }
+}
