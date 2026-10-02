@@ -128,6 +128,43 @@ test('overview actions and narrow embedded layouts use accessible semantic style
   assert.match(objectTab[1], /color:\s*var\(--wedb-info-text\)/);
 });
 
+test('workspace overview cards are isolated from legacy injected styles', () => {
+  assert.match(workspaceSource, /class="we-console-card we-console-readiness-card"/);
+  assert.match(workspaceSource, /class="we-section-heading we-console-readiness-heading"/);
+  assert.match(workspaceSource, /\.we-console-card\s*\{[^}]*display:\s*block;[^}]*min-width:\s*0;/);
+  assert.match(workspaceSource, /\.we-console-readiness-card\s*\{[^}]*padding:/);
+
+  // The older evolution panel injects global `.we-card` and
+  // `.we-readiness-card` rules into the same document. Keep those names out of
+  // the workspace so the legacy grid/padding rules cannot reshape its cards.
+  assert.doesNotMatch(workspaceSource, /class="[^"]*\bwe-card\b/);
+  assert.doesNotMatch(workspaceSource, /\.we-card\s*\{/);
+  assert.doesNotMatch(workspaceSource, /\.we-readiness-card\s*\{/);
+
+  assert.match(workspaceSource, /@container\s*\(max-width:\s*820px\)\s*\{[\s\S]*?\.we-console-readiness-heading\s*\{/);
+  assert.match(workspaceSource, /\.we-console-readiness-heading\s*>\s*div\s*\{[^}]*min-width:\s*0;/);
+  assert.doesNotMatch(workspaceSource, /\.we-readiness-heading\s*\{/);
+});
+
+test('125% workspace layout can shrink and scroll instead of clipping content', () => {
+  const workspace = getRuleBody(workspaceSource, '.we-workspace {');
+  assert.match(workspace, /grid-template-rows:\s*minmax\(0,\s*1fr\)/);
+  assert.match(workspace, /overflow:\s*hidden/);
+
+  const sidebar = getRuleBody(workspaceSource, '.we-sidebar {');
+  assert.match(sidebar, /min-height:\s*0/);
+  assert.match(sidebar, /overflow-y:\s*auto/);
+
+  const main = getRuleBody(workspaceSource, '.we-main {');
+  assert.match(main, /min-height:\s*0/);
+
+  const pageScroll = getRuleBody(workspaceSource, '.we-page-scroll {');
+  assert.match(pageScroll, /min-height:\s*0/);
+  assert.match(pageScroll, /overflow:\s*auto/);
+
+  assert.match(workspaceSource, /\.we-workspace\[data-scale='125'\]\s+\.we-page-scroll\s*\{[^}]*padding-bottom:\s*48px/);
+});
+
 test('light theme cascade preserves readable danger text and danger button hover', () => {
   assert.match(
     workspaceSource,

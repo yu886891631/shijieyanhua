@@ -100,8 +100,8 @@
               </button>
             </div>
 
-            <section class="we-card we-readiness-card" aria-labelledby="we-readiness-title">
-              <div class="we-section-heading">
+            <section class="we-console-card we-console-readiness-card" aria-labelledby="we-readiness-title">
+              <div class="we-section-heading we-console-readiness-heading">
                 <div>
                   <span class="we-eyebrow">RUNTIME READINESS</span>
                   <h3 id="we-readiness-title">运行准备</h3>
@@ -192,7 +192,7 @@
             </div>
 
             <div class="we-overview-columns">
-              <section class="we-card we-recent-card">
+              <section class="we-console-card we-recent-card">
                 <div class="we-section-heading">
                   <div>
                     <span class="we-eyebrow">RECENT ACTIVITY</span>
@@ -218,7 +218,7 @@
                 </div>
               </section>
 
-              <section class="we-card we-shortcuts-card">
+              <section class="we-console-card we-shortcuts-card">
                 <div class="we-section-heading">
                   <div>
                     <span class="we-eyebrow">QUICK ACCESS</span>
@@ -263,7 +263,7 @@
                 <p>主题和界面缩放只影响这个控制台，不会改动世界数据或酒馆预设。</p>
               </div>
             </div>
-            <section class="we-card we-appearance-card">
+            <section class="we-console-card we-appearance-card">
               <div class="we-appearance-heading">
                 <div>
                   <h3>主题</h3>
@@ -287,7 +287,7 @@
                 </button>
               </div>
             </section>
-            <section class="we-card we-appearance-card">
+            <section class="we-console-card we-appearance-card">
               <div class="we-appearance-heading">
                 <div>
                   <h3>界面缩放</h3>
@@ -679,6 +679,7 @@ onUnmounted(() => {
   --we-shadow: 0 4px 16px rgba(31, 42, 35, 0.06);
   display: grid;
   grid-template-columns: 232px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   width: min(calc(94vw / var(--we-scale)), calc(1480px / var(--we-scale)));
   height: min(calc(92vh / var(--we-scale)), calc(940px / var(--we-scale)));
   overflow: hidden;
@@ -887,7 +888,9 @@ onUnmounted(() => {
 .we-sidebar {
   display: flex;
   min-width: 0;
+  min-height: 0;
   flex-direction: column;
+  overflow-y: auto;
   padding: var(--we-space-5) 14px 14px;
   border-right: 1px solid var(--we-border);
   background: var(--we-surface);
@@ -1285,7 +1288,16 @@ onUnmounted(() => {
   background: var(--we-action-hover-bg);
 }
 
-.we-readiness-card {
+.we-console-card {
+  display: block;
+  min-width: 0;
+  border: 1px solid var(--we-border);
+  border-radius: 14px;
+  background: var(--we-surface);
+  box-shadow: var(--we-shadow);
+}
+
+.we-console-readiness-card {
   margin-top: var(--we-space-4);
   padding: 15px;
 }
@@ -1293,6 +1305,8 @@ onUnmounted(() => {
 .we-readiness-note {
   color: var(--we-muted);
   font-size: 11px;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .we-readiness-grid {
@@ -1462,13 +1476,6 @@ onUnmounted(() => {
   grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
   gap: 14px;
   margin-top: 15px;
-}
-
-.we-card {
-  border: 1px solid var(--we-border);
-  border-radius: 14px;
-  background: var(--we-surface);
-  box-shadow: var(--we-shadow);
 }
 
 .we-recent-card,
@@ -1868,9 +1875,9 @@ onUnmounted(() => {
 :global(.we-workspace[data-theme='light'] .we-section),
 :global(.we-workspace[data-theme='cream'] .we-section),
 :global(.we-workspace[data-theme='landmine'] .we-section),
-:global(.we-workspace[data-theme='light'] .we-card),
-:global(.we-workspace[data-theme='cream'] .we-card),
-:global(.we-workspace[data-theme='landmine'] .we-card) {
+:global(.we-workspace[data-theme='light'] .we-console-card),
+:global(.we-workspace[data-theme='cream'] .we-console-card),
+:global(.we-workspace[data-theme='landmine'] .we-console-card) {
   border-color: var(--we-border) !important;
   background: var(--we-surface) !important;
   color: var(--we-text) !important;
@@ -2156,10 +2163,19 @@ onUnmounted(() => {
     justify-self: start;
   }
 
-  .we-readiness-heading {
+  .we-console-readiness-heading {
     align-items: flex-start;
     flex-direction: column;
     gap: 5px;
+  }
+
+  .we-console-readiness-heading > div {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .we-readiness-note {
+    max-width: 100%;
   }
 
   .we-readiness-grid,
@@ -2182,7 +2198,7 @@ onUnmounted(() => {
   }
 
   .we-welcome > div > .we-eyebrow,
-  .we-readiness-heading > div > .we-eyebrow {
+  .we-console-readiness-heading > div > .we-eyebrow {
     display: none;
   }
 
@@ -2213,6 +2229,6 @@ onUnmounted(() => {
 }
 
 .we-workspace[data-scale='125'] .we-page-scroll {
-  padding-bottom: 38px;
+  padding-bottom: 48px;
 }
 </style>
