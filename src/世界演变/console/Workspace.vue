@@ -616,7 +616,8 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .we-backdrop {
-  position: fixed;
+  /* In ST's narrow layout, body is the viewport-sized positioned ancestor; avoid rebasing this overlay through html's transform. */
+  position: absolute;
   inset: 0;
   z-index: 10100;
   display: grid;

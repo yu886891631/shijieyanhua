@@ -165,6 +165,13 @@ test('125% workspace layout can shrink and scroll instead of clipping content', 
   assert.match(workspaceSource, /\.we-workspace\[data-scale='125'\]\s+\.we-page-scroll\s*\{[^}]*padding-bottom:\s*48px/);
 });
 
+test('workspace backdrop uses the host positioned body instead of fixed-to-transform-root positioning', () => {
+  const backdrop = getRuleBody(workspaceSource, '.we-backdrop {');
+  assert.match(backdrop, /position:\s*absolute;/);
+  assert.doesNotMatch(backdrop, /position:\s*fixed;/);
+  assert.match(backdrop, /inset:\s*0;/);
+});
+
 test('light theme cascade preserves readable danger text and danger button hover', () => {
   assert.match(
     workspaceSource,
