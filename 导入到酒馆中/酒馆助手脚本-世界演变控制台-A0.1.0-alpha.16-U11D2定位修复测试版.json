@@ -1,0 +1,32 @@
+{
+  "type": "script",
+  "enabled": false,
+  "name": "世界演变控制台（A0.1.0-alpha.16 U11-D2 定位修复测试版）",
+  "id": "cb6ae7ee-42f5-4168-b09c-35a3e7fd7c6f",
+  "content": "import 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@c79a07118276dbf6c6a0150b69c5ef7520ee9fae/dist/世界演变/index.js?v=A0.1.0-alpha.16-u11d2';\nimport 'https://testingcf.jsdelivr.net/gh/yu886891631/shijieyanhua@c79a07118276dbf6c6a0150b69c5ef7520ee9fae/dist/世界演变数据库/index.js?v=A0.1.0-alpha.16-u11d2'",
+  "info": "A0.1.0-alpha.16 U11-D2 定位修复测试包。固定加载提交 c79a07118276dbf6c6a0150b69c5ef7520ee9fae，使用独立脚本 ID，默认关闭。插件自动演变、世界书自动同步均关闭；API 测试模式为本地模拟，不会因启用而自动调用真实 API。数据库格式保持 A0.1.0-alpha.11；本包与 alpha.13、alpha.14、alpha.15 共用当前聊天 IndexedDB，不是数据沙盒。导入前请先停用其他世界演变测试脚本（不要删除旧包）；验收时仅检查工作台在 100%/110%/125% 的布局、顶部品牌区和内容滚动，不要执行手动运行、导入确认、迁移确认、清空、同步或重建。源码及构建产物固定于 commit c79a07118276dbf6c6a0150b69c5ef7520ee9fae。",
+  "button": {
+    "enabled": true,
+    "buttons": []
+  },
+  "data": {
+    "world_evolution_version": "A0.1.0-alpha.16",
+    "world_evolution_db_version": "A0.1.0-alpha.11",
+    "world_evolution_milestone": "UI-UNIFICATION-U11-D2-PATCH",
+    "world_evolution_release_commit": "c79a07118276dbf6c6a0150b69c5ef7520ee9fae",
+    "world_evolution_api_test_mode": "local-simulation-only",
+    "world_evolution_settings_v1": {
+      "enabled": false,
+      "autoRun": false,
+      "worldbookAutoSync": false,
+      "worldbookName": "",
+      "manualCandidates": [],
+      "apiPresetName": "",
+      "apiFallbackPresetNames": []
+    }
+  },
+  "export_with": {
+    "data": true,
+    "button": true
+  }
+}
