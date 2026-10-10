@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onBeforeUnmount } from 'vue';
+import { ref, onBeforeUnmount, watch } from 'vue';
 import T14Workspace from './T14Workspace.vue';
 import T6WorldWorkbench from './T6WorldWorkbench.vue';
 import T7PromptWorkbench from './T7PromptWorkbench.vue';
@@ -10,9 +10,20 @@ import ApiSettingsPanel from '../console/ApiSettingsPanel.vue';
 import type { T15HostWorkspace } from './t15-host-workspace';
 import type { T15Automatic } from './t15-automatic';
 import type { T1PageId } from './t1-ui-contract';
-const props = defineProps<{ session: T15HostWorkspace & { automatic?: T15Automatic }; version: string }>();
-const emit = defineEmits<{ close: []; apiDirty: [value: boolean] }>();
-const page = ref<T1PageId>('overview'),
+import type { T14Appearance } from './t14-appearance';
+const props = defineProps<{
+  session: T15HostWorkspace & { automatic?: T15Automatic };
+  version: string;
+  initialPage?: T1PageId;
+  dailyEntry?: boolean;
+}>();
+const emit = defineEmits<{
+  close: [];
+  apiDirty: [value: boolean];
+  page: [value: T1PageId];
+  appearance: [value: T14Appearance];
+}>();
+const page = ref<T1PageId>(props.initialPage ?? 'overview'),
   consent = ref(false),
   routeConsent = ref(false),
   busy = ref(false),
@@ -30,6 +41,15 @@ const offs = [
   props.session.round,
   ...(props.session.automatic ? [props.session.automatic] : []),
 ].map(c => c.subscribe(() => tick.value++));
+watch(
+  () => props.initialPage,
+  value => {
+    if (value) select(value);
+  },
+  { immediate: true },
+);
+const selectDaily = (value: 'overview' | 'automatic' | 'history') =>
+  select(value === 'automatic' ? 'evolution' : value);
 async function action(fn: () => Promise<unknown>) {
   if (busy.value) return;
   busy.value = true;
@@ -45,6 +65,7 @@ async function action(fn: () => Promise<unknown>) {
 }
 function select(value: T1PageId) {
   page.value = value;
+  emit('page', value);
   props.session.daily.selectPage(value === 'history' ? 'history' : value === 'evolution' ? 'automatic' : 'overview');
 }
 function download(text: string, filename: string) {
@@ -62,7 +83,7 @@ onBeforeUnmount(() => {
 </script>
 <template>
   <T14Workspace
-    mode="compatibility"
+    :mode="dailyEntry ? 'daily' : 'compatibility'"
     :page="page"
     :version="version"
     :inert="busy"
@@ -76,14 +97,25 @@ onBeforeUnmount(() => {
         apiDirty && 'API 表单',
       ].filter((v): v is string => !!v)
     "
-    activity="单活动页面兼容接线 · 不是已验收正式版"
+    :activity="dailyEntry ? '修改会保存到当前聊天；调用 AI 前需另行确认' : '单活动页面兼容接线 · 不是已验收正式版'"
     @update:page="select"
-    @appearance="session.setAppearance"
+    @appearance="
+      session.setAppearance($event);
+      emit('appearance', $event);
+    "
     @close="emit('close')"
   >
-    <template #overview><T11DailyWorkbench :controller="session.daily" embedded /></template>
-    <template #data><T6WorldWorkbench :data="session.data" :structure="session.structure" /></template>
-    <template #history><T11DailyWorkbench :controller="session.daily" embedded /></template>
+    <template #overview
+      ><slot name="entry-status" /><T11DailyWorkbench
+        :controller="session.daily"
+        embedded
+        host-mode
+        @page="selectDaily"
+    /></template>
+    <template #data><T6WorldWorkbench :data="session.data" :structure="session.structure" host-mode /></template>
+    <template #history
+      ><T11DailyWorkbench :controller="session.daily" embedded host-mode @page="selectDaily"
+    /></template>
     <template #worldbook>
       <p role="note">目标仅为角色卡主世界书。同步会真实写入，仅管理有归属标记的条目；同步期间不要生成剧情。</p>
       <T12ProjectionWorkbench :controller="session.projection" />
@@ -99,6 +131,7 @@ onBeforeUnmount(() => {
         "
     /></template>
     <template #evolution>
+      <slot name="evolution-controls" />
       <section class="host-controls" :data-revision="tick">
         <p>先等剧情、MVU 与数据库完成并保存，再检查本轮前置。普通更新通知不代表整轮完成。</p>
         <button :disabled="busy" @click="action(session.refresh)">检查当前回复与前置保存状态（不调用模型）</button>
@@ -137,7 +170,7 @@ onBeforeUnmount(() => {
         <p>自动来源接线：{{ session.automatic?.view().reason ?? '本会话未接自动来源调度；开关本身不请求模型' }}</p>
         <p v-if="error" role="alert">{{ error }}</p>
       </section>
-      <T11DailyWorkbench :controller="session.daily" embedded />
+      <T11DailyWorkbench :controller="session.daily" embedded host-mode @page="selectDaily" />
     </template>
     <template #prompts
       ><p>这里的单批“模拟”仍是本地假响应；真实生成使用自动演变页的整轮入口。</p>

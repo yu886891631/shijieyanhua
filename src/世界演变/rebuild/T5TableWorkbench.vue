@@ -3,7 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, shallowRef, ref } from 
 import type { T5Workbench, T5FieldView, T5View } from './t5-workbench';
 import type { T5Input } from './t5-form';
 
-const props = defineProps<{ workbench: T5Workbench }>();
+const props = defineProps<{ workbench: T5Workbench; hostMode?: boolean }>();
 const model = shallowRef<T5View>(props.workbench.view());
 const localError = ref('');
 const dangerRow = ref<string | null>(null);
@@ -84,13 +84,19 @@ function selectImport(index: number, checked: boolean) {
     <header class="we-t5__header">
       <div>
         <h2>表格工作台</h2>
-        <p>先建立宏观条件，再填写微观对象。这里是可编辑的独立沙盒。</p>
+        <p>
+          先建立宏观条件，再填写微观对象。{{ hostMode ? '这里编辑当前聊天的世界资料。' : '这里是可编辑的独立沙盒。' }}
+        </p>
       </div>
       <span class="we-t5__badge">{{ model.history ? '历史只读' : `当前世界 · 版本 ${model.revision}` }}</span>
     </header>
-    <p class="we-t5__notice">{{ model.notice }}</p>
+    <p class="we-t5__notice">
+      {{ hostMode ? '当前聊天资料：查看和暂存不保存；确认保存才会写入聊天。不调用模型，不写世界书。' : model.notice }}
+    </p>
     <p class="we-t5__muted">
-      跨表切换会保留填写和暂存草稿；关闭或刷新不会自动保存。模拟存档需由测试宿主持有或导出后才能跨刷新恢复。
+      跨表切换会保留填写和暂存草稿；关闭或刷新不会自动保存。{{
+        hostMode ? '已确认保存的资料会随当前聊天恢复。' : '模拟存档需由测试宿主持有或导出后才能跨刷新恢复。'
+      }}
     </p>
     <p v-if="model.busy" role="status">正在校验或读回存档，搜索和浏览仍可使用；暂时不能编辑。</p>
     <p v-if="localError || model.error" class="we-t5__danger" role="alert">{{ localError || model.error }}</p>
@@ -513,9 +519,15 @@ function selectImport(index: number, checked: boolean) {
             >
           </details>
         </section>
-        <section class="we-t5__card" aria-label="模拟提交与差异预览">
+        <section class="we-t5__card" :aria-label="hostMode ? '当前聊天提交与差异预览' : '模拟提交与差异预览'">
           <h3>暂存修改与保存</h3>
-          <p>所有改动先暂存、整批校验，再保存到同一套模拟账本。不会直接改酒馆聊天。</p>
+          <p>
+            {{
+              hostMode
+                ? '所有改动先暂存、整批校验，确认后保存到当前聊天的世界演变资料；不改剧情正文。'
+                : '所有改动先暂存、整批校验，再保存到同一套模拟账本。不会直接改酒馆聊天。'
+            }}
+          </p>
           <ul v-if="model.staged.length">
             <li v-for="item in model.staged" :key="item.index">
               {{ item.label }}
@@ -530,11 +542,11 @@ function selectImport(index: number, checked: boolean) {
               {{ model.preview.badge }} · {{ model.preview.explanation }}
             </p>
             <p v-if="model.preview.scope">
-              保存范围：模拟聊天 {{ model.preview.scope.chatId }} · 世界 {{ model.preview.scope.worldId }} · 分支
-              {{ model.preview.scope.branchId }} ·
+              保存范围：{{ hostMode ? '当前聊天' : '模拟聊天' }} {{ model.preview.scope.chatId }} · 世界
+              {{ model.preview.scope.worldId }} · 分支 {{ model.preview.scope.branchId }} ·
               {{
                 model.preview.anchor
-                  ? `模拟消息 ${model.preview.anchor.messageId} / ${model.preview.anchor.swipeId}`
+                  ? `${hostMode ? '消息' : '模拟消息'} ${model.preview.anchor.messageId} / ${model.preview.anchor.swipeId}`
                   : '无有效消息锚点，只能保留草稿'
               }}
             </p>
@@ -557,7 +569,9 @@ function selectImport(index: number, checked: boolean) {
                 :checked="model.consent"
                 :disabled="readonly || !model.preview.confirmationAllowed"
                 @change="workbench.consent(checkedValue($event))"
-              />我已检查这些修改，只保存到独立模拟存档</label
+              />{{
+                hostMode ? '我已检查这些修改，保存到当前聊天的世界资料' : '我已检查这些修改，只保存到独立模拟存档'
+              }}</label
             ></template
           >
           <div class="we-t5__save-actions">
@@ -567,7 +581,7 @@ function selectImport(index: number, checked: boolean) {
               :disabled="!model.canSave"
               @click="act(() => workbench.save())"
             >
-              保存模拟存档</button
+              {{ hostMode ? '保存到当前聊天' : '保存模拟存档' }}</button
             ><button type="button" :disabled="model.busy" @click="act(() => workbench.reconcile())">
               核对保存结果
             </button>

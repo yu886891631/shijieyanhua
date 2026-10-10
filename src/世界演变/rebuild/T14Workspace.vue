@@ -6,7 +6,7 @@ const props = withDefaults(
   defineProps<{
     page?: T1PageId;
     version?: string;
-    mode?: 'local' | 'host' | 'compatibility';
+    mode?: 'local' | 'host' | 'compatibility' | 'readonly' | 'daily';
     dirtyLabels?: readonly string[];
     activity?: string;
     initialAppearance?: T14Appearance;
@@ -86,7 +86,11 @@ async function stayHere() {
             ? '本地隔离预览'
             : mode === 'compatibility'
               ? '单活动页面兼容 · 非原子保存'
-              : '宿主模式 · 按已验证权限操作'
+              : mode === 'readonly'
+                ? '当前聊天 · 只读查看'
+                : mode === 'daily'
+                  ? '当前聊天 · 资料工作台'
+                  : '宿主模式 · 按已验证权限操作'
         }}</span
         ><button ref="closeButton" type="button" @click="requestClose">关闭工作台</button>
       </div>
@@ -217,6 +221,7 @@ async function stayHere() {
 
 <style scoped>
 .we-t14 {
+  box-sizing: border-box;
   color-scheme: light;
   font:
     var(--we14-font-size)/1.65 system-ui,

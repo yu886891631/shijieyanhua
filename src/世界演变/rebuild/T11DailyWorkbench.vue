@@ -13,12 +13,18 @@
         :key="tab.id"
         type="button"
         :aria-current="model.page === tab.id ? 'page' : undefined"
-        @click="controller.selectPage(tab.id)"
+        @click="selectPage(tab.id)"
       >
         {{ tab.name }}
       </button>
     </nav>
-    <p class="notice">本地开发版：假模型请求不联网、不收费。运行会保存模拟存档，不是只做预览；本页不写世界书。</p>
+    <p v-if="hostMode" class="notice">
+      当前聊天模式：查看不会调用模型。手动或自动演变需确认真实
+      API，可能产生费用；保存会更新当前聊天的世界资料。世界书同步是另外的操作。
+    </p>
+    <p v-else class="notice">
+      本地开发版：假模型请求不联网、不收费。运行会保存模拟存档，不是只做预览；本页不写世界书。
+    </p>
     <div class="actions">
       <button type="button" :disabled="model.busy" @click="controller.refresh()">
         检查准备情况 / 刷新记录（只读）
@@ -76,8 +82,8 @@
         <button type="button" :disabled="!controller.hasNavigation" @click="controller.navigate('api')">
           配置 API
         </button>
-        <button type="button" @click="controller.selectPage('automatic')">查看本轮准备 / 运行</button>
-        <button type="button" @click="controller.selectPage('history')">查看错误与楼层记录</button>
+        <button type="button" @click="selectPage('automatic')">查看本轮准备 / 运行</button>
+        <button type="button" @click="selectPage('history')">查看错误与楼层记录</button>
       </div>
       <p v-if="!controller.hasNavigation" class="muted">
         此隔离组件未接外部页面导航；不会提供无效跳转。已有表格/API 页应由宿主统一挂载。
@@ -110,7 +116,7 @@
 
     <template v-else-if="model.page === 'automatic'">
       <h3>自动与手动运行</h3>
-      <label class="toggle"
+      <label v-if="!hostMode" class="toggle"
         ><input
           type="checkbox"
           :checked="model.autoEnabled"
@@ -127,7 +133,7 @@
       </p>
       <div class="actions">
         <button type="button" :disabled="!model.canStart" @click="controller.start()">
-          手动运行整轮并保存模拟存档
+          {{ hostMode ? '手动运行整轮并保存到当前聊天' : '手动运行整轮并保存模拟存档' }}
         </button>
         <button type="button" class="danger" :disabled="!model.canCancel" @click="controller.cancel()">取消本轮</button>
         <button type="button" :disabled="!model.canResume" @click="controller.resume()">同轮续跑 / 仅重试保存</button>
@@ -395,11 +401,16 @@
 import { onUnmounted, ref, shallowRef } from 'vue';
 import type { T11Controller, T11Page, T11View } from './t11-controller';
 const props = withDefaults(
-  defineProps<{ controller: T11Controller; embedded?: boolean; eventsAvailable?: boolean }>(),
+  defineProps<{ controller: T11Controller; embedded?: boolean; eventsAvailable?: boolean; hostMode?: boolean }>(),
   {
     eventsAvailable: true,
   },
 );
+const emit = defineEmits<{ page: [value: T11Page] }>();
+function selectPage(value: T11Page) {
+  controller.selectPage(value);
+  emit('page', value);
+}
 const controller = props.controller,
   model = shallowRef(controller.view()),
   consent = ref(false);

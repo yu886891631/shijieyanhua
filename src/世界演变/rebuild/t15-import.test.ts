@@ -331,7 +331,17 @@ test('H3 entry startup only installs menu; bridge is explicit, dynamic and scope
 });
 test('H3 existing host and new import Vue templates/styles compile; strict virtual TS', () => {
   const virtuals = new Map<string, string>();
-  for (const name of ['T15ImportWorkspace.vue', 'T15HostWorkspace.vue']) {
+  for (const name of [
+    'T15ImportWorkspace.vue',
+    'T15HostWorkspace.vue',
+    'T15DailyWorkspace.vue',
+    'T15ReadOnlyTables.vue',
+    'T14Workspace.vue',
+    'T11DailyWorkbench.vue',
+    'T6WorldWorkbench.vue',
+    'T6TemplateWorkbench.vue',
+    'T5TableWorkbench.vue',
+  ]) {
     const file = resolve('src/世界演变/rebuild', name),
       { descriptor, errors } = parse(readFileSync(file, 'utf8'), { filename: file });
     assert.deepEqual(errors, []);

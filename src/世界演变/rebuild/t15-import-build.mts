@@ -6,6 +6,10 @@ import { resolve, dirname, relative } from 'node:path';
 import { parse, compileScript, compileStyleAsync } from 'vue/compiler-sfc';
 import { T15_HOST_VERSION } from './t15-import-runtime';
 import { createT15HostImportPackage } from './t15-import-package';
+import { T15_DAILY_VERSION } from './t15-daily-runtime';
+import { createT15DailyImportPackage } from './t15-daily-package';
+const daily = process.argv.includes('--daily'),
+  version = daily ? T15_DAILY_VERSION : T15_HOST_VERSION;
 const require = createRequire(import.meta.url),
   { build } = createRequire(require.resolve('tsx'))('esbuild');
 const sha = (v: string | Uint8Array) => createHash('sha256').update(v).digest('hex');
@@ -42,7 +46,7 @@ const worker = await build({
 });
 const app = await build({
   ...base,
-  entryPoints: [resolve(root, 't15-import-browser.ts')],
+  entryPoints: [resolve(root, daily ? 't15-daily-browser.ts' : 't15-import-browser.ts')],
   define: { ...base.define, __T15_HOST_WORKER_SOURCE__: JSON.stringify(worker.outputFiles[0].text) },
   plugins: [
     {
@@ -76,7 +80,7 @@ const app = await build({
 const appCode = app.outputFiles[0].text;
 const entry = await build({
   ...base,
-  entryPoints: [resolve(root, 't15-import-entry.ts')],
+  entryPoints: [resolve(root, daily ? 't15-daily-entry.ts' : 't15-import-entry.ts')],
   define: {
     ...base.define,
     __T15_HOST_APP_SOURCE__: JSON.stringify(appCode),
@@ -84,8 +88,8 @@ const entry = await build({
   },
 });
 const bundle = entry.outputFiles[0].text,
-  pack = createT15HostImportPackage(bundle);
-const name = `酒馆助手脚本-世界演变-${T15_HOST_VERSION}-真实接线候选版.json`;
+  pack = daily ? createT15DailyImportPackage(bundle) : createT15HostImportPackage(bundle);
+const name = `酒馆助手脚本-世界演变-${version}-${daily ? '直接打开工作台测试版' : '真实接线候选版'}.json`;
 const paths = [
   ...new Set([
     ...Object.keys(worker.metafile.inputs),
@@ -108,8 +112,9 @@ const inputs = await Promise.all(
   paths.map(async path => ({ path, sha256: sha(await readFile(path.replace('wasm-inline:', ''))) })),
 );
 const manifest = {
-  candidate: T15_HOST_VERSION,
-  mode: 'controlled-native-candidate',
+  candidate: version,
+  mode: daily ? 'read-first-native-candidate' : 'controlled-native-candidate',
+  opening: daily ? 'read-current-chat-no-writes' : 'connection-page-only',
   bundle: { bytes: Buffer.byteLength(bundle), sha256: sha(bundle) },
   app: { bytes: Buffer.byteLength(appCode), sha256: sha(appCode) },
   worker: { bytes: worker.outputFiles[0].contents.length, sha256: sha(worker.outputFiles[0].contents) },
@@ -120,7 +125,7 @@ const manifest = {
   trueHostAcceptance: 'not-performed',
   inputs,
 };
-const output = resolve('dist/世界演变候选版', T15_HOST_VERSION);
+const output = resolve('dist/世界演变候选版', version);
 if (process.argv.includes('--write')) {
   await mkdir(output, { recursive: true });
   await writeFile(resolve(output, 'index.js'), bundle, 'utf8');
@@ -130,7 +135,7 @@ if (process.argv.includes('--write')) {
 console.log(
   JSON.stringify({
     write: process.argv.includes('--write'),
-    candidate: T15_HOST_VERSION,
+    candidate: version,
     output,
     importPackage: name,
     bundleBytes: manifest.bundle.bytes,

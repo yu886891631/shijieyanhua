@@ -2,7 +2,13 @@
   <section class="we-t6-workbench">
     <header>
       <h2>结构与参数</h2>
-      <p>{{ model.notice }}</p>
+      <p>
+        {{
+          hostMode
+            ? '当前聊天的结构与参数：先调整草稿，再校验迁移差异；确认保存后更新当前聊天的模板与资料。'
+            : model.notice
+        }}
+      </p>
       <p>
         当前资料版本 {{ model.revision }} · 模板版本 {{ model.version }} ·
         {{ model.dirty ? '有未保存结构草稿' : '没有结构草稿' }}
@@ -575,14 +581,14 @@
             :checked="model.consent"
             :disabled="!model.report?.valid || model.busy"
             @change="workbench.consent(checked($event))"
-          />确认当前模拟世界范围与差异</label
+          />{{ hostMode ? '确认当前聊天的结构变更范围与差异' : '确认当前模拟世界范围与差异' }}</label
         ><button
           type="button"
           class="primary"
           :disabled="!model.canSave || invalidCells"
           @click="act(() => workbench.save())"
         >
-          保存当前模拟世界</button
+          {{ hostMode ? '保存当前聊天的结构与资料' : '保存当前模拟世界' }}</button
         ><button type="button" :disabled="model.busy || model.pending" @click="act(() => workbench.discard())">
           取消结构草稿 / 载入当前</button
         ><button type="button" :disabled="model.busy || !model.pending" @click="act(() => workbench.reconcile())">
@@ -620,7 +626,10 @@ import type { T6Conversion, T6Mapping } from './t6-migration';
 import type { T6View, T6Workbench } from './t6-workbench';
 import T6ParameterForm from './T6ParameterForm.vue';
 import T6CellSetting from './T6CellSetting.vue';
-const props: { workbench: T6Workbench } = defineProps<{ workbench: T6Workbench }>();
+const props: { workbench: T6Workbench; hostMode?: boolean } = defineProps<{
+  workbench: T6Workbench;
+  hostMode?: boolean;
+}>();
 const workbench: T6Workbench = props.workbench;
 const model = shallowRef<T6View>(props.workbench.view());
 const unsubscribe = props.workbench.subscribe(() => {

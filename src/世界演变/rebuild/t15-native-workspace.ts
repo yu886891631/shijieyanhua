@@ -25,6 +25,10 @@ export async function openT15NativeWorkspace(options: {
   sources: { id: 'mvu' | 'database'; required: boolean; selections: T15SourceSelection[] }[];
   /** Start observation before the source plugins run, not after their events were lost. */
   signals: ReturnType<typeof createT15SourceSignals>;
+  /** Daily entry may open an already stamped archive without any startup write. */
+  registerOnOpen?: boolean;
+  /** Ambiguous/missing source selection blocks sending, not browsing/editing. */
+  assertSourceConfiguration?: () => void;
   navigate?: (destination: T11Destination) => void;
   /** Captured automatic lifecycle authorization; also checked at every real send. */
   assertTriggerCurrent?: () => void;
@@ -77,7 +81,11 @@ export async function openT15NativeWorkspace(options: {
       if (recovery.status !== 'ready' || !recovery.writable || !recovery.scope)
         throw new Error('当前存档有未确认/失效记录；仅查询恢复，不能直接重开真实请求');
       scope = recovery.scope;
-      await gateway.registerMessages(scope, kind => `${kind}-${crypto.randomUUID().replaceAll('-', '').slice(0, 20)}`);
+      if (options.registerOnOpen !== false)
+        await gateway.registerMessages(
+          scope,
+          kind => `${kind}-${crypto.randomUUID().replaceAll('-', '').slice(0, 20)}`,
+        );
     }
     const port = { read: () => host.driver.readDurable(host.driver.currentBinding()), epoch: () => epoch },
       input = await captureT15Input(port, scope, Math.max(1, (recovery.evolution?.eligibleRound ?? 0) + 1));
@@ -100,6 +108,7 @@ export async function openT15NativeWorkspace(options: {
       bookDriver: book.driver,
       api: { read: () => loadWorldEvolutionApiConfiguration(), save: saveWorldEvolutionApiConfiguration },
       transport: createT15NativeApiTransport(() => {
+        options.assertSourceConfiguration?.();
         options.assertTriggerCurrent?.();
         owner.assertClaim(scope, gate!.readInput().anchor);
         if (sources.some(s => s.id === 'mvu' && s.required) && !options.signals.status().mvu) {
