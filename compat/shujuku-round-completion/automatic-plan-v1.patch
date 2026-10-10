@@ -1,0 +1,1140 @@
+# WorldEvolution database completion compatibility patch
+# Reference: 599e3580c3106fa234ead38fdfe8625080419143
+# Automatic plan only; no API/save/UI changes, no durable-success claim.
+diff --git a/src/presentation/bootstrap/api-registry.ts b/src/presentation/bootstrap/api-registry.ts
+--- a/src/presentation/bootstrap/api-registry.ts
++++ b/src/presentation/bootstrap/api-registry.ts
+@@ -1,61 +1,63 @@
+-/**
+- * presentation/bootstrap/api-registry.ts — AutoCardUpdaterAPI 对外 API 注册
+- *
+- * 从 src/core/03_runtime_api.js 整体迁移，按领域拆分为 9 个分组文件。
+- * 本文件负责：import 所有分组 → 合并方法 → 挂载到全局对象。
+- */
+-
+-import { topLevelWindow_ACU } from '../../shared/env';
+-import { createCallbackApi, type ApiGroupContext } from './api-groups/callback-api';
+-import { createCoreDataApi } from './api-groups/core-data-api';
+-import { createTableCrudApi } from './api-groups/table-crud-api';
+-import { createTableLockApi } from './api-groups/table-lock-api';
+-import { createTemplatePresetApi } from './api-groups/template-preset-api';
+-import { createPlotPresetApi } from './api-groups/plot-preset-api';
+-import { createDataAdminApi } from './api-groups/data-admin-api';
+-import { createSettingsConfigApi } from './api-groups/settings-config-api';
+-import { createWorldbookAiApi } from './api-groups/worldbook-ai-api';
+-import { createAgentWorldbookApi } from './api-groups/agent-worldbook-api';
+-import { createSqlApi, installRuntimeGatedSqlReadApi_ACU } from './api-groups/sql-api';
+-import { createPerformanceDiagnosticsApi } from './api-groups/performance-diagnostics-api';
+-
+-// --- 共享状态（回调数组） ---
+-const tableUpdateCallbacks: Function[] = [];
+-const tableFillStartCallbacks: Function[] = [];
+-
+-// --- 共享上下文（延迟引用，解决 this 互调） ---
+-let apiRef: any = null;
+-const ctx: ApiGroupContext = {
+-    tableUpdateCallbacks,
+-    tableFillStartCallbacks,
+-    getApi: () => apiRef,
+-};
+-
+-const sqlApi = createSqlApi(ctx);
+-
+-// --- 组装所有领域 API ---
+-const api = Object.assign(
+-    {},
+-    createCallbackApi(ctx),
+-    createCoreDataApi(ctx),
+-    createTableCrudApi(ctx),
+-    createTableLockApi(ctx),
+-    createTemplatePresetApi(ctx),
+-    createPlotPresetApi(ctx),
+-    createDataAdminApi(ctx),
+-    createSettingsConfigApi(ctx),
+-    createWorldbookAiApi(ctx),
+-    createAgentWorldbookApi(ctx),
+-    createPerformanceDiagnosticsApi(),
+-    sqlApi,
+-);
+-
+-// SQL 同步读取只能在 SQLite runtime 完整发布后对外可见。
+-// getter 会在聊天切换/重载窗口自动隐藏，避免第三方脚本把“函数存在”误判为“运行时可查询”。
+-installRuntimeGatedSqlReadApi_ACU(api, sqlApi);
+-
+-// 将最终组装的 api 赋给 apiRef，使 ctx.getApi() 返回完整对象
+-apiRef = api;
+-
+-// --- 挂载到全局 ---
+-(topLevelWindow_ACU as any).AutoCardUpdaterAPI = api;
++/**
++ * presentation/bootstrap/api-registry.ts — AutoCardUpdaterAPI 对外 API 注册
++ *
++ * 从 src/core/03_runtime_api.js 整体迁移，按领域拆分为 9 个分组文件。
++ * 本文件负责：import 所有分组 → 合并方法 → 挂载到全局对象。
++ */
++
++import { topLevelWindow_ACU } from '../../shared/env';
++import { getWorldEvolutionCompletion_ACU } from '../../service/runtime/world-evolution-completion';
++import { createCallbackApi, type ApiGroupContext } from './api-groups/callback-api';
++import { createCoreDataApi } from './api-groups/core-data-api';
++import { createTableCrudApi } from './api-groups/table-crud-api';
++import { createTableLockApi } from './api-groups/table-lock-api';
++import { createTemplatePresetApi } from './api-groups/template-preset-api';
++import { createPlotPresetApi } from './api-groups/plot-preset-api';
++import { createDataAdminApi } from './api-groups/data-admin-api';
++import { createSettingsConfigApi } from './api-groups/settings-config-api';
++import { createWorldbookAiApi } from './api-groups/worldbook-ai-api';
++import { createAgentWorldbookApi } from './api-groups/agent-worldbook-api';
++import { createSqlApi, installRuntimeGatedSqlReadApi_ACU } from './api-groups/sql-api';
++import { createPerformanceDiagnosticsApi } from './api-groups/performance-diagnostics-api';
++
++// --- 共享状态（回调数组） ---
++const tableUpdateCallbacks: Function[] = [];
++const tableFillStartCallbacks: Function[] = [];
++
++// --- 共享上下文（延迟引用，解决 this 互调） ---
++let apiRef: any = null;
++const ctx: ApiGroupContext = {
++    tableUpdateCallbacks,
++    tableFillStartCallbacks,
++    getApi: () => apiRef,
++};
++
++const sqlApi = createSqlApi(ctx);
++
++// --- 组装所有领域 API ---
++const api = Object.assign(
++    {},
++    createCallbackApi(ctx),
++    { getWorldEvolutionCompletion: getWorldEvolutionCompletion_ACU },
++    createCoreDataApi(ctx),
++    createTableCrudApi(ctx),
++    createTableLockApi(ctx),
++    createTemplatePresetApi(ctx),
++    createPlotPresetApi(ctx),
++    createDataAdminApi(ctx),
++    createSettingsConfigApi(ctx),
++    createWorldbookAiApi(ctx),
++    createAgentWorldbookApi(ctx),
++    createPerformanceDiagnosticsApi(),
++    sqlApi,
++);
++
++// SQL 同步读取只能在 SQLite runtime 完整发布后对外可见。
++// getter 会在聊天切换/重载窗口自动隐藏，避免第三方脚本把“函数存在”误判为“运行时可查询”。
++installRuntimeGatedSqlReadApi_ACU(api, sqlApi);
++
++// 将最终组装的 api 赋给 apiRef，使 ctx.getApi() 返回完整对象
++apiRef = api;
++
++// --- 挂载到全局 ---
++(topLevelWindow_ACU as any).AutoCardUpdaterAPI = api;
+diff --git a/src/presentation/triggers/settings-ui-sync/settings-ui-trigger.ts b/src/presentation/triggers/settings-ui-sync/settings-ui-trigger.ts
+--- a/src/presentation/triggers/settings-ui-sync/settings-ui-trigger.ts
++++ b/src/presentation/triggers/settings-ui-sync/settings-ui-trigger.ts
+@@ -1,337 +1,364 @@
+-/**
+- * presentation/triggers/settings-ui-sync/settings-ui-trigger.ts
+- */
+-import { DEFAULT_CHAR_CARD_PROMPT_ACU } from '../../../shared/defaults-json.js';
+-import { AUTO_UPDATE_FLOOR_INCREASE_DELAY_ACU } from '../../../shared/defaults';
+-import { bindTableFillStopButton_ACU } from '../../components/status-display';
+-import { updateCardUpdateStatusDisplay_ACU } from '../../components/update-status-display';
+-import { getCharCardPromptFromUI_ACU, isAutoUpdatingCard_ACU, renderPromptSegments_ACU, wasStoppedByUser_ACU, _set_isAutoUpdatingCard_ACU } from '../../components/plot-editors';
+-import { showToastr_ACU } from '../../theme/toast';
+-import { ACU_TOAST_CATEGORY_ACU } from '../../../shared/constants';
+-import { SillyTavern_API_ACU, TavernHelper_API_ACU, toastr_API_ACU, _set_SillyTavern_API_ACU, _set_TavernHelper_API_ACU, _set_jQuery_API_ACU, _set_toastr_API_ACU } from '../../../shared/host-api';
+-import { jQuery_API_ACU } from '../../dom-utils';
+-import { getChatArray_ACU, saveChatToHost_ACU } from '../../../service/chat/chat-service';
+-import { getConnectionManagerProfiles_ACU } from '../../../service/ai/ai-service';
+-import { getCurrentCharacterFallback_ACU } from '../../../service/host/host-state-service';
+-import { NEW_MESSAGE_DEBOUNCE_DELAY_ACU, abortAllActiveRequests_ACU, allChatMessages_ACU, coreApisAreReady_ACU, currentJsonTableData_ACU, getCurrentIsolationKey_ACU, lastTotalAiMessages_ACU, settings_ACU , _set_coreApisAreReady_ACU, _set_lastTotalAiMessages_ACU, _set_manualExtraHint_ACU, _set_wasStoppedByUser_ACU} from '../../../service/runtime/state-manager';
+-import { $popupInstance_ACU, $customApiUrlInput_ACU, $customApiKeyInput_ACU, $customApiModelInput_ACU, $customApiModelSelect_ACU, $maxTokensInput_ACU, $temperatureInput_ACU, $apiStatusDisplay_ACU, $charCardPromptSegmentsContainer_ACU, $autoUpdateThresholdInput_ACU, $autoUpdateTokenThresholdInput_ACU, $autoUpdateFrequencyInput_ACU, $updateBatchSizeInput_ACU, $maxConcurrentGroupsInput_ACU, $skipUpdateFloorsInput_ACU, $retainRecentLayersInput_ACU, $tableMaxRetriesInput_ACU, $manualExtraHintCheckbox_ACU } from '../../state/ui-refs';
+-import { processUpdates_ACU } from '../update-process';
+-import { getSortedSheetKeys_ACU } from '../../../service/template/chat-scope';
+-import { loadAllChatMessages_ACU, updateReadableLorebookEntry_ACU } from '../../../service/worldbook/pipeline';
+-import { getStorageProvider } from '../../../service/table/table-storage-strategy';
+-import { SCRIPT_ID_PREFIX_ACU } from '../../../shared/constants';
+-import { escapeHtml_ACU, renderStopButton_ACU } from '../../../shared/html-helpers';
+-import { topLevelWindow_ACU } from '../../../shared/env';
+-import { isSummaryOrOutlineTable_ACU, logDebug_ACU, logError_ACU, logWarn_ACU } from '../../../shared/utils';
+-import { executeContentOptimization_ACU } from '../../components/optimization-ui';
+-import { maybeLiftWorldbookSuppression_ACU } from '../../../service/runtime/helpers-remaining';
+-import { purgeOldLayerData_ACU } from './settings-ui-config';
+-import { buildAutoUpdatePlan_ACU, checkAutoUpdatePreConditions_ACU, executeAutoUpdatePlan_ACU, handleFloorIncreaseDelay_ACU } from '../../../service/table/update-scheduler';
+-import { executeAutoFillStagingGroups_ACU, processGroupedRuntimeChunk_ACU, type CardUpdateProgressEvent } from '../../../service/table/update-orchestrator';
+-import { isSqliteMode } from '../../../service/table/storage-mode';
+-import { startRuntimePerformanceSpan_ACU } from '../../../shared/runtime-performance';
+-import { logAutoFillSkip_ACU } from '../../../shared/trigger-diagnostics';
+-
+-function buildAutoUpdateProgressLabel_ACU(event: Partial<CardUpdateProgressEvent>): string {
+-    if (Number.isFinite(event.currentBatch) && Number.isFinite(event.totalBatches)) {
+-        return `第 ${event.currentBatch}/${event.totalBatches} 批`;
+-    }
+-    return '当前批次';
+-}
+-
+-function buildAutoUpdateProgressMessage_ACU(event: CardUpdateProgressEvent): string {
+-    const batchLabel = buildAutoUpdateProgressLabel_ACU(event);
+-    switch (event.phase) {
+-        case 'preparing':
+-            return `${batchLabel}：准备AI输入...`;
+-        case 'calling_ai':
+-            return `${batchLabel}：第 ${event.attempt || 1}/${event.maxRetries || 1} 次调用AI进行增量更新...`;
+-        case 'parsing':
+-            return `${batchLabel}：解析并应用AI返回的更新...`;
+-        case 'saving':
+-            return `${batchLabel}：正在将更新后的数据库保存到聊天记录...`;
+-        case 'chunk_done':
+-            return `${batchLabel}：分块处理成功...`;
+-        case 'complete':
+-            return `${batchLabel}：数据库增量更新成功！`;
+-        case 'retry':
+-            return `${batchLabel}：第 ${event.attempt || 1}/${event.maxRetries || 1} 次尝试失败，5秒后重试...${event.message ? ` (${event.message})` : ''}`;
+-        case 'error':
+-            return `${batchLabel}：错误：更新失败。`;
+-        default:
+-            return `${batchLabel}：正在处理...`;
+-    }
+-}
+-
+-function updateAutoUpdateToastMessage_ACU(loadingToast: any, message: string) {
+-    if (!loadingToast || !toastr_API_ACU) return;
+-    loadingToast.find('.acu-toast-progress-message').text(message);
+-}
+-
+-function clearAutoUpdateToast_ACU(loadingToast: any) {
+-    if (loadingToast && toastr_API_ACU) {
+-        toastr_API_ACU.clear(loadingToast);
+-    }
+-}
+-
+-async function refreshRuntimeDataAndNotifyAfterAutoUpdate_ACU(): Promise<void> {
+-    const data = getStorageProvider().getCurrentData() || currentJsonTableData_ACU;
+-    if (data) {
+-        await updateReadableLorebookEntry_ACU(true, false, null, data);
+-    }
+-    try {
+-        (topLevelWindow_ACU as any).AutoCardUpdaterAPI?._notifyTableUpdate?.();
+-    } catch (_) {}
+-}
+-
+-function handleAutoGroupedProgressEvent_ACU(event: CardUpdateProgressEvent, loadingToast?: any) {
+-    const message = buildAutoUpdateProgressMessage_ACU(event);
+-    updateAutoUpdateToastMessage_ACU(loadingToast, message);
+-
+-    switch (event.phase) {
+-        case 'complete':
+-            if (typeof updateCardUpdateStatusDisplay_ACU === 'function') updateCardUpdateStatusDisplay_ACU();
+-            break;
+-        case 'retry':
+-            showToastr_ACU('warning', message, { timeOut: 5000 });
+-            break;
+-        default:
+-            break;
+-    }
+-}
+-
+-let autoUpdateTriggerInFlight_ACU = false;
+-let pendingAutoUpdateTrigger_ACU = false;
+-let pendingAutoUpdatePerformanceContext_ACU: { runId?: string; parentSpanId?: string } | undefined;
+-
+-  export async function triggerAutomaticUpdateIfNeeded_ACU(
+-    performanceContext?: { runId?: string; parentSpanId?: string },
+-  ) {
+-    logDebug_ACU('ACU Auto-Trigger: Starting independent check...');
+-    if (autoUpdateTriggerInFlight_ACU) {
+-      pendingAutoUpdateTrigger_ACU = true;
+-      pendingAutoUpdatePerformanceContext_ACU = performanceContext;
+-      logDebug_ACU('ACU Auto-Trigger: trigger already in flight. Coalescing a follow-up run.');
+-      logAutoFillSkip_ACU('auto_update_coalesced', {
+-        inFlight: true,
+-      });
+-      return;
+-    }
+-    autoUpdateTriggerInFlight_ACU = true;
+-    // 新一轮自动填表开跑前清掉上一轮「终止」残留，避免 isStopped() 立刻把新任务掐死。
+-    _set_wasStoppedByUser_ACU(false);
+-    const performanceSpan = startRuntimePerformanceSpan_ACU('auto-update-trigger', {
+-      ...performanceContext,
+-      settings: settings_ACU,
+-    });
+-
+-    try {
+-    // [重构] 调用 service 层前置检查
+-    const preCheck = checkAutoUpdatePreConditions_ACU(
+-        settings_ACU,
+-        coreApisAreReady_ACU,
+-        isAutoUpdatingCard_ACU,
+-        currentJsonTableData_ACU,
+-        allChatMessages_ACU.length
+-    );
+-    if (!preCheck.canProceed) {
+-      logDebug_ACU(`ACU Auto-Trigger: ${preCheck.reason} Skipping.`);
+-      logAutoFillSkip_ACU('preconditions_failed', {
+-        aiFloorCount: allChatMessages_ACU.filter((message: any) => !message.is_user).length,
+-        inFlight: isAutoUpdatingCard_ACU,
+-        preconditionReason: preCheck.code,
+-      });
+-      return;
+-    }
+-
+-    let liveChat = getChatArray_ACU();
+-    if (!liveChat || liveChat.length === 0) {
+-      logAutoFillSkip_ACU('empty_chat');
+-      return;
+-    }
+-
+-    let totalAiMessages = liveChat.filter(m => !m.is_user).length;
+-
+-    // [重构] 调用 service 层楼层增加延迟逻辑
+-    const delayResult = await handleFloorIncreaseDelay_ACU(
+-        totalAiMessages,
+-        lastTotalAiMessages_ACU,
+-        AUTO_UPDATE_FLOOR_INCREASE_DELAY_ACU,
+-        getChatArray_ACU,
+-        _set_lastTotalAiMessages_ACU
+-    );
+-    if (delayResult === null) {
+-      logAutoFillSkip_ACU('empty_chat');
+-      return;
+-    }
+-    if (delayResult) {
+-        liveChat = delayResult.liveChat;
+-        totalAiMessages = delayResult.totalAiMessages;
+-    }
+-
+-    // [重构] 调用 service 层构建更新计划
+-    const triggerIsolationKey = getCurrentIsolationKey_ACU();
+-    const plan = buildAutoUpdatePlan_ACU(
+-      liveChat,
+-      currentJsonTableData_ACU,
+-      settings_ACU,
+-      triggerIsolationKey,
+-      { runId: performanceContext?.runId || performanceSpan.id, parentSpanId: performanceSpan.id },
+-    );
+-    if (plan.tablesToUpdate.length === 0) {
+-      logAutoFillSkip_ACU('no_tables_due', { aiFloorCount: totalAiMessages });
+-      return;
+-    }
+-
+-    // UI：显示开始 toast
+-    const totalGroups = Object.keys(plan.updateGroups).length;
+-    const maxConcurrentGroups = Math.max(1, settings_ACU.maxConcurrentGroups || 1);
+-    const useGroupedAutoUpdates = !isSqliteMode();
+-    if (totalGroups > maxConcurrentGroups) {
+-        showToastr_ACU('info', `检测到 ${plan.tablesToUpdate.length} 个表格需要更新，将分批并发处理 ${totalGroups} 组（每批最多 ${maxConcurrentGroups} 组）。`);
+-    } else {
+-        showToastr_ACU('info', `检测到 ${plan.tablesToUpdate.length} 个表格需要更新，将并发处理 ${totalGroups} 组。`);
+-    }
+-
+-    const autoGroupedAbortController = new AbortController();
+-    let autoProgressToast: any = null;
+-    if (useGroupedAutoUpdates && !settings_ACU.toastMuteEnabled) {
+-        const stopButtonId = `acu-stop-auto-update-btn-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+-        const stopButtonHtml = renderStopButton_ACU(stopButtonId, '终止');
+-        const initialMessage = '自动填表正在准备，请稍候...';
+-        const toastMessage = `<div><span class="acu-toast-progress-message">${initialMessage}</span>${stopButtonHtml}</div>`;
+-        autoProgressToast = showToastr_ACU('info', toastMessage, {
+-            timeOut: 0,
+-            extendedTimeOut: 0,
+-            tapToDismiss: false,
+-            acuToastCategory: ACU_TOAST_CATEGORY_ACU.MANUAL_TABLE,
+-            onShown: function () {
+-                if (typeof bindTableFillStopButton_ACU === 'function') {
+-                    bindTableFillStopButton_ACU(stopButtonId, () => {
+-                        _set_wasStoppedByUser_ACU(true);
+-                        autoGroupedAbortController.abort();
+-                        abortAllActiveRequests_ACU();
+-                        _set_isAutoUpdatingCard_ACU(false);
+-                        updateAutoUpdateToastMessage_ACU(autoProgressToast, '填表任务已终止，正在停止当前任务与后续批次...');
+-                        showToastr_ACU('warning', '填表任务已由用户终止，当前任务与后续批次将立即停止。');
+-                    });
+-                }
+-            }
+-        });
+-    }
+-
+-    // 调用 service 层执行更新计划，传入纯业务操作委托（不含 UI 操作）
+-    let result: Awaited<ReturnType<typeof executeAutoUpdatePlan_ACU>>;
+-    try {
+-        result = await executeAutoUpdatePlan_ACU(
+-            plan,
+-            settings_ACU,
+-            _set_isAutoUpdatingCard_ACU,
+-            {
+-                processUpdates: (indices, mode, options) => processUpdates_ACU(indices, mode, options),
+-                ...(useGroupedAutoUpdates
+-                    ? {
+-                        processGroupedUpdates: (groups, mode, options) => {
+-                            const upstreamProgress = options?.onProgress;
+-                            return processGroupedRuntimeChunk_ACU(groups, mode, {
+-                                ...options,
+-                                abortController: autoGroupedAbortController,
+-                                onProgress: event => {
+-                                    upstreamProgress?.(event);
+-                                    handleAutoGroupedProgressEvent_ACU(event, autoProgressToast);
+-                                },
+-                            });
+-                        },
+-                    }
+-                    : {}),
+-                // spv8.9：跨 replay 根（requiresBoundaryStaging）的组必须走 staging runner，
+-                // 与 SQLite/non-SQLite 的 normal 组选择无关。SQLite 下 normal 组继续走
+-                // legacy processUpdates_ACU，但跨根 staging 组必须有可用的 staging runner，
+-                // 否则 scheduler 会以 staging_runner_unavailable 稳定失败（不再降级到
+-                // processUpdates —— 那会让写目标早于 full checkpoint 的 bucket 在 AI 消耗
+-                // token 后才被 persist 层 fail-fast）。
+-                processStagingGroupedUpdates: (groups, mode, options) => {
+-                    // 跨 full checkpoint 边界组：共享 staging runner（pre 段 stage_only、
+-                    // 边界原子汇合、post 段普通持久化）。boundary 元数据来自计划构建层。
+-                    const upstreamProgress = options?.onProgress;
+-                    return executeAutoFillStagingGroups_ACU(groups, mode, {
+-                        ...options,
+-                        boundary: {
+-                            fullCheckpointIndices: plan.boundary?.fullCheckpointIndices || [],
+-                            requiresBoundaryStaging: plan.boundary?.requiresBoundaryStaging || false,
+-                        },
+-                        abortController: autoGroupedAbortController,
+-                        onProgress: event => {
+-                            upstreamProgress?.(event);
+-                            handleAutoGroupedProgressEvent_ACU(event, autoProgressToast);
+-                        },
+-                    });
+-                },
+-                refreshData: () => refreshRuntimeDataAndNotifyAfterAutoUpdate_ACU(),
+-                loadAllChatMessages: () => loadAllChatMessages_ACU(),
+-                purgeOldLayerData: () => purgeOldLayerData_ACU(),
+-            },
+-            { runId: performanceContext?.runId || performanceSpan.id, parentSpanId: performanceSpan.id },
+-        );
+-    } finally {
+-        clearAutoUpdateToast_ACU(autoProgressToast);
+-    }
+-
+-    // UI：根据返回值显示结果
+-    if (result.failedGroups > 0) {
+-        const firstError = Array.isArray(result.errors) && result.errors.length > 0 ? result.errors[0] : '';
+-        showToastr_ACU('warning', firstError
+-            ? `并发分组更新有 ${result.failedGroups} 组失败：${firstError}`
+-            : `并发分组更新有 ${result.failedGroups} 组失败，请查看日志。`);
+-    }
+-    if (result.autoMergeTriggered && result.autoMergeSuccess) {
+-        showToastr_ACU('success', '自动合并纪要完成！');
+-        try { (topLevelWindow_ACU as any).AutoCardUpdaterAPI._notifyTableUpdate(); } catch (_) {}
+-    }
+-    if (typeof updateCardUpdateStatusDisplay_ACU === 'function') updateCardUpdateStatusDisplay_ACU();
+-    } finally {
+-      performanceSpan.end({
+-        messageCount: getChatArray_ACU()?.length || 0,
+-        sheetCount: currentJsonTableData_ACU ? getSortedSheetKeys_ACU(currentJsonTableData_ACU).length : 0,
+-        sqlite: isSqliteMode(),
+-      });
+-      autoUpdateTriggerInFlight_ACU = false;
+-      if (!pendingAutoUpdateTrigger_ACU || wasStoppedByUser_ACU) {
+-        pendingAutoUpdateTrigger_ACU = false;
+-        pendingAutoUpdatePerformanceContext_ACU = undefined;
+-        return;
+-      }
+-      const followUpContext = pendingAutoUpdatePerformanceContext_ACU;
+-      pendingAutoUpdateTrigger_ACU = false;
+-      pendingAutoUpdatePerformanceContext_ACU = undefined;
+-      queueMicrotask(() => { void triggerAutomaticUpdateIfNeeded_ACU(followUpContext); });
+-    }
+-  }
+-
+-  export function collectManualExtraHint_ACU() {
+-      _set_manualExtraHint_ACU('');
+-      if (!$manualExtraHintCheckbox_ACU || !$manualExtraHintCheckbox_ACU.length) return;
+-      if (!$manualExtraHintCheckbox_ACU.is(':checked')) return;
+-
+-      const userInput = prompt('请输入本次手动填表的额外提示词（可留空）：', '');
+-      const trimmed = (userInput || '').trim();
+-      if (!trimmed) return;
+-
+-      _set_manualExtraHint_ACU(`以下为用户的额外填表要求，请严格遵守：${trimmed}`);
+-  }
+-
+-  // [新增] 获取当前选中的手动更新表格列表（无效或为空则回退为全部表）
+-  export function getSelectedManualSheetKeys_ACU() {
+-      if (!currentJsonTableData_ACU) return [];
+-      const availableKeys = getSortedSheetKeys_ACU(currentJsonTableData_ACU);
+-      const saved = Array.isArray(settings_ACU.manualSelectedTables) ? settings_ACU.manualSelectedTables : [];
+-
+-      // 未曾手动选择过：默认全选
+-      if (!settings_ACU.hasManualSelection) return availableKeys;
+-
+-      const validSaved = saved.filter((k: string) => availableKeys.includes(k));
+-
+-      // 已手动选择过：严格按保存的交集，不再自动补全新表，防止回退全选
+-      return validSaved;
+-  }
+-
++/**
++ * presentation/triggers/settings-ui-sync/settings-ui-trigger.ts
++ */
++import { beginWorldEvolutionCompletion_ACU, recordWorldEvolutionGroups_ACU, finishWorldEvolutionCompletion_ACU } from '../../../service/runtime/world-evolution-completion';
++import type { T15DbOutcome } from '../../../shared/world-evolution-completion-protocol';
++import { DEFAULT_CHAR_CARD_PROMPT_ACU } from '../../../shared/defaults-json.js';
++import { AUTO_UPDATE_FLOOR_INCREASE_DELAY_ACU } from '../../../shared/defaults';
++import { bindTableFillStopButton_ACU } from '../../components/status-display';
++import { updateCardUpdateStatusDisplay_ACU } from '../../components/update-status-display';
++import { getCharCardPromptFromUI_ACU, isAutoUpdatingCard_ACU, renderPromptSegments_ACU, wasStoppedByUser_ACU, _set_isAutoUpdatingCard_ACU } from '../../components/plot-editors';
++import { showToastr_ACU } from '../../theme/toast';
++import { ACU_TOAST_CATEGORY_ACU } from '../../../shared/constants';
++import { SillyTavern_API_ACU, TavernHelper_API_ACU, toastr_API_ACU, _set_SillyTavern_API_ACU, _set_TavernHelper_API_ACU, _set_jQuery_API_ACU, _set_toastr_API_ACU } from '../../../shared/host-api';
++import { jQuery_API_ACU } from '../../dom-utils';
++import { getChatArray_ACU, saveChatToHost_ACU } from '../../../service/chat/chat-service';
++import { getConnectionManagerProfiles_ACU } from '../../../service/ai/ai-service';
++import { getCurrentCharacterFallback_ACU } from '../../../service/host/host-state-service';
++import { NEW_MESSAGE_DEBOUNCE_DELAY_ACU, abortAllActiveRequests_ACU, allChatMessages_ACU, coreApisAreReady_ACU, currentJsonTableData_ACU, getCurrentIsolationKey_ACU, lastTotalAiMessages_ACU, settings_ACU , _set_coreApisAreReady_ACU, _set_lastTotalAiMessages_ACU, _set_manualExtraHint_ACU, _set_wasStoppedByUser_ACU} from '../../../service/runtime/state-manager';
++import { $popupInstance_ACU, $customApiUrlInput_ACU, $customApiKeyInput_ACU, $customApiModelInput_ACU, $customApiModelSelect_ACU, $maxTokensInput_ACU, $temperatureInput_ACU, $apiStatusDisplay_ACU, $charCardPromptSegmentsContainer_ACU, $autoUpdateThresholdInput_ACU, $autoUpdateTokenThresholdInput_ACU, $autoUpdateFrequencyInput_ACU, $updateBatchSizeInput_ACU, $maxConcurrentGroupsInput_ACU, $skipUpdateFloorsInput_ACU, $retainRecentLayersInput_ACU, $tableMaxRetriesInput_ACU, $manualExtraHintCheckbox_ACU } from '../../state/ui-refs';
++import { processUpdates_ACU } from '../update-process';
++import { getSortedSheetKeys_ACU } from '../../../service/template/chat-scope';
++import { loadAllChatMessages_ACU, updateReadableLorebookEntry_ACU } from '../../../service/worldbook/pipeline';
++import { getStorageProvider } from '../../../service/table/table-storage-strategy';
++import { SCRIPT_ID_PREFIX_ACU } from '../../../shared/constants';
++import { escapeHtml_ACU, renderStopButton_ACU } from '../../../shared/html-helpers';
++import { topLevelWindow_ACU } from '../../../shared/env';
++import { isSummaryOrOutlineTable_ACU, logDebug_ACU, logError_ACU, logWarn_ACU } from '../../../shared/utils';
++import { executeContentOptimization_ACU } from '../../components/optimization-ui';
++import { maybeLiftWorldbookSuppression_ACU } from '../../../service/runtime/helpers-remaining';
++import { purgeOldLayerData_ACU } from './settings-ui-config';
++import { buildAutoUpdatePlan_ACU, checkAutoUpdatePreConditions_ACU, executeAutoUpdatePlan_ACU, handleFloorIncreaseDelay_ACU } from '../../../service/table/update-scheduler';
++import { executeAutoFillStagingGroups_ACU, processGroupedRuntimeChunk_ACU, type CardUpdateProgressEvent } from '../../../service/table/update-orchestrator';
++import { isSqliteMode } from '../../../service/table/storage-mode';
++import { startRuntimePerformanceSpan_ACU } from '../../../shared/runtime-performance';
++import { logAutoFillSkip_ACU } from '../../../shared/trigger-diagnostics';
++
++function buildAutoUpdateProgressLabel_ACU(event: Partial<CardUpdateProgressEvent>): string {
++    if (Number.isFinite(event.currentBatch) && Number.isFinite(event.totalBatches)) {
++        return `第 ${event.currentBatch}/${event.totalBatches} 批`;
++    }
++    return '当前批次';
++}
++
++function buildAutoUpdateProgressMessage_ACU(event: CardUpdateProgressEvent): string {
++    const batchLabel = buildAutoUpdateProgressLabel_ACU(event);
++    switch (event.phase) {
++        case 'preparing':
++            return `${batchLabel}：准备AI输入...`;
++        case 'calling_ai':
++            return `${batchLabel}：第 ${event.attempt || 1}/${event.maxRetries || 1} 次调用AI进行增量更新...`;
++        case 'parsing':
++            return `${batchLabel}：解析并应用AI返回的更新...`;
++        case 'saving':
++            return `${batchLabel}：正在将更新后的数据库保存到聊天记录...`;
++        case 'chunk_done':
++            return `${batchLabel}：分块处理成功...`;
++        case 'complete':
++            return `${batchLabel}：数据库增量更新成功！`;
++        case 'retry':
++            return `${batchLabel}：第 ${event.attempt || 1}/${event.maxRetries || 1} 次尝试失败，5秒后重试...${event.message ? ` (${event.message})` : ''}`;
++        case 'error':
++            return `${batchLabel}：错误：更新失败。`;
++        default:
++            return `${batchLabel}：正在处理...`;
++    }
++}
++
++function updateAutoUpdateToastMessage_ACU(loadingToast: any, message: string) {
++    if (!loadingToast || !toastr_API_ACU) return;
++    loadingToast.find('.acu-toast-progress-message').text(message);
++}
++
++function clearAutoUpdateToast_ACU(loadingToast: any) {
++    if (loadingToast && toastr_API_ACU) {
++        toastr_API_ACU.clear(loadingToast);
++    }
++}
++
++async function refreshRuntimeDataAndNotifyAfterAutoUpdate_ACU(): Promise<void> {
++    const data = getStorageProvider().getCurrentData() || currentJsonTableData_ACU;
++    if (data) {
++        await updateReadableLorebookEntry_ACU(true, false, null, data);
++    }
++    try {
++        (topLevelWindow_ACU as any).AutoCardUpdaterAPI?._notifyTableUpdate?.();
++    } catch (_) {}
++}
++
++function handleAutoGroupedProgressEvent_ACU(event: CardUpdateProgressEvent, loadingToast?: any) {
++    const message = buildAutoUpdateProgressMessage_ACU(event);
++    updateAutoUpdateToastMessage_ACU(loadingToast, message);
++
++    switch (event.phase) {
++        case 'complete':
++            if (typeof updateCardUpdateStatusDisplay_ACU === 'function') updateCardUpdateStatusDisplay_ACU();
++            break;
++        case 'retry':
++            showToastr_ACU('warning', message, { timeOut: 5000 });
++            break;
++        default:
++            break;
++    }
++}
++
++let autoUpdateTriggerInFlight_ACU = false;
++let pendingAutoUpdateTrigger_ACU = false;
++let pendingAutoUpdatePerformanceContext_ACU: { runId?: string; parentSpanId?: string } | undefined;
++
++  export async function triggerAutomaticUpdateIfNeeded_ACU(
++    performanceContext?: { runId?: string; parentSpanId?: string },
++  ) {
++    logDebug_ACU('ACU Auto-Trigger: Starting independent check...');
++    if (autoUpdateTriggerInFlight_ACU) {
++      pendingAutoUpdateTrigger_ACU = true;
++      pendingAutoUpdatePerformanceContext_ACU = performanceContext;
++      logDebug_ACU('ACU Auto-Trigger: trigger already in flight. Coalescing a follow-up run.');
++      logAutoFillSkip_ACU('auto_update_coalesced', {
++        inFlight: true,
++      });
++      return;
++    }
++    autoUpdateTriggerInFlight_ACU = true;
++    let weRound: object | null = null;
++    let weOutcome: T15DbOutcome = 'failure';
++    // 新一轮自动填表开跑前清掉上一轮「终止」残留，避免 isStopped() 立刻把新任务掐死。
++    _set_wasStoppedByUser_ACU(false);
++    const performanceSpan = startRuntimePerformanceSpan_ACU('auto-update-trigger', {
++      ...performanceContext,
++      settings: settings_ACU,
++    });
++
++    try {
++    // [重构] 调用 service 层前置检查
++    const preCheck = checkAutoUpdatePreConditions_ACU(
++        settings_ACU,
++        coreApisAreReady_ACU,
++        isAutoUpdatingCard_ACU,
++        currentJsonTableData_ACU,
++        allChatMessages_ACU.length
++    );
++    if (!preCheck.canProceed) {
++      if (preCheck.code === 'auto_update_disabled') weOutcome = 'disabled';
++      logDebug_ACU(`ACU Auto-Trigger: ${preCheck.reason} Skipping.`);
++      logAutoFillSkip_ACU('preconditions_failed', {
++        aiFloorCount: allChatMessages_ACU.filter((message: any) => !message.is_user).length,
++        inFlight: isAutoUpdatingCard_ACU,
++        preconditionReason: preCheck.code,
++      });
++      return;
++    }
++
++    let liveChat = getChatArray_ACU();
++    if (!liveChat || liveChat.length === 0) {
++      logAutoFillSkip_ACU('empty_chat');
++      return;
++    }
++
++    let totalAiMessages = liveChat.filter(m => !m.is_user).length;
++
++    // [重构] 调用 service 层楼层增加延迟逻辑
++    const delayResult = await handleFloorIncreaseDelay_ACU(
++        totalAiMessages,
++        lastTotalAiMessages_ACU,
++        AUTO_UPDATE_FLOOR_INCREASE_DELAY_ACU,
++        getChatArray_ACU,
++        _set_lastTotalAiMessages_ACU
++    );
++    if (delayResult === null) {
++      logAutoFillSkip_ACU('empty_chat');
++      return;
++    }
++    if (delayResult) {
++        liveChat = delayResult.liveChat;
++        totalAiMessages = delayResult.totalAiMessages;
++    }
++
++    // [重构] 调用 service 层构建更新计划
++    const triggerIsolationKey = getCurrentIsolationKey_ACU();
++    const plan = buildAutoUpdatePlan_ACU(
++      liveChat,
++      currentJsonTableData_ACU,
++      settings_ACU,
++      triggerIsolationKey,
++      { runId: performanceContext?.runId || performanceSpan.id, parentSpanId: performanceSpan.id },
++    );
++    weRound = beginWorldEvolutionCompletion_ACU(Object.keys(plan.updateGroups));
++    if (plan.tablesToUpdate.length === 0) {
++      weOutcome = 'frequency-skipped';
++      logAutoFillSkip_ACU('no_tables_due', { aiFloorCount: totalAiMessages });
++      return;
++    }
++
++    // UI：显示开始 toast
++    const totalGroups = Object.keys(plan.updateGroups).length;
++    const maxConcurrentGroups = Math.max(1, settings_ACU.maxConcurrentGroups || 1);
++    const useGroupedAutoUpdates = !isSqliteMode();
++    if (totalGroups > maxConcurrentGroups) {
++        showToastr_ACU('info', `检测到 ${plan.tablesToUpdate.length} 个表格需要更新，将分批并发处理 ${totalGroups} 组（每批最多 ${maxConcurrentGroups} 组）。`);
++    } else {
++        showToastr_ACU('info', `检测到 ${plan.tablesToUpdate.length} 个表格需要更新，将并发处理 ${totalGroups} 组。`);
++    }
++
++    const autoGroupedAbortController = new AbortController();
++    let autoProgressToast: any = null;
++    if (useGroupedAutoUpdates && !settings_ACU.toastMuteEnabled) {
++        const stopButtonId = `acu-stop-auto-update-btn-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
++        const stopButtonHtml = renderStopButton_ACU(stopButtonId, '终止');
++        const initialMessage = '自动填表正在准备，请稍候...';
++        const toastMessage = `<div><span class="acu-toast-progress-message">${initialMessage}</span>${stopButtonHtml}</div>`;
++        autoProgressToast = showToastr_ACU('info', toastMessage, {
++            timeOut: 0,
++            extendedTimeOut: 0,
++            tapToDismiss: false,
++            acuToastCategory: ACU_TOAST_CATEGORY_ACU.MANUAL_TABLE,
++            onShown: function () {
++                if (typeof bindTableFillStopButton_ACU === 'function') {
++                    bindTableFillStopButton_ACU(stopButtonId, () => {
++                        _set_wasStoppedByUser_ACU(true);
++                        autoGroupedAbortController.abort();
++                        abortAllActiveRequests_ACU();
++                        _set_isAutoUpdatingCard_ACU(false);
++                        updateAutoUpdateToastMessage_ACU(autoProgressToast, '填表任务已终止，正在停止当前任务与后续批次...');
++                        showToastr_ACU('warning', '填表任务已由用户终止，当前任务与后续批次将立即停止。');
++                    });
++                }
++            }
++        });
++    }
++
++    // 调用 service 层执行更新计划，传入纯业务操作委托（不含 UI 操作）
++    let result: Awaited<ReturnType<typeof executeAutoUpdatePlan_ACU>>;
++    try {
++        result = await executeAutoUpdatePlan_ACU(
++            plan,
++            settings_ACU,
++            _set_isAutoUpdatingCard_ACU,
++            {
++                processUpdates: async (indices, mode, options) => {
++                    const keys = Object.keys(plan.updateGroups).filter(key => {
++                        const group = plan.updateGroups[key], sheets = options?.targetSheetKeys;
++                        return Array.isArray(sheets) && group.sheetKeys.length === sheets.length &&
++                          group.sheetKeys.every(k => sheets.includes(k)) && JSON.stringify(group.indices) === JSON.stringify(indices);
++                    });
++                    const value = await processUpdates_ACU(indices, mode, options);
++                    recordWorldEvolutionGroups_ACU(weRound, keys.length === 1 ? keys : [], value);
++                    return value;
++                },
++                ...(useGroupedAutoUpdates
++                    ? {
++                        processGroupedUpdates: async (groups, mode, options) => {
++                            const upstreamProgress = options?.onProgress;
++                            const value = await processGroupedRuntimeChunk_ACU(groups, mode, {
++                                ...options,
++                                abortController: autoGroupedAbortController,
++                                onProgress: event => {
++                                    upstreamProgress?.(event);
++                                    handleAutoGroupedProgressEvent_ACU(event, autoProgressToast);
++                                },
++                            });
++                            recordWorldEvolutionGroups_ACU(weRound, groups.map(g => g.key), value);
++                            return value;
++                        },
++                    }
++                    : {}),
++                // spv8.9：跨 replay 根（requiresBoundaryStaging）的组必须走 staging runner，
++                // 与 SQLite/non-SQLite 的 normal 组选择无关。SQLite 下 normal 组继续走
++                // legacy processUpdates_ACU，但跨根 staging 组必须有可用的 staging runner，
++                // 否则 scheduler 会以 staging_runner_unavailable 稳定失败（不再降级到
++                // processUpdates —— 那会让写目标早于 full checkpoint 的 bucket 在 AI 消耗
++                // token 后才被 persist 层 fail-fast）。
++                processStagingGroupedUpdates: async (groups, mode, options) => {
++                    // 跨 full checkpoint 边界组：共享 staging runner（pre 段 stage_only、
++                    // 边界原子汇合、post 段普通持久化）。boundary 元数据来自计划构建层。
++                    const upstreamProgress = options?.onProgress;
++                    const value = await executeAutoFillStagingGroups_ACU(groups, mode, {
++                        ...options,
++                        boundary: {
++                            fullCheckpointIndices: plan.boundary?.fullCheckpointIndices || [],
++                            requiresBoundaryStaging: plan.boundary?.requiresBoundaryStaging || false,
++                        },
++                        abortController: autoGroupedAbortController,
++                        onProgress: event => {
++                            upstreamProgress?.(event);
++                            handleAutoGroupedProgressEvent_ACU(event, autoProgressToast);
++                        },
++                    });
++                    recordWorldEvolutionGroups_ACU(weRound, groups.map(g => g.key), value);
++                    return value;
++                },
++                refreshData: () => refreshRuntimeDataAndNotifyAfterAutoUpdate_ACU(),
++                loadAllChatMessages: () => loadAllChatMessages_ACU(),
++                purgeOldLayerData: () => purgeOldLayerData_ACU(),
++            },
++            { runId: performanceContext?.runId || performanceSpan.id, parentSpanId: performanceSpan.id },
++        );
++    } finally {
++        clearAutoUpdateToast_ACU(autoProgressToast);
++    }
++
++    // The outer result is checked in addition to the actual awaited group runner receipts.
++    weOutcome = wasStoppedByUser_ACU ? 'cancelled' :
++      result.success === true && result.failedGroups === 0 && result.totalGroups === totalGroups &&
++      (!result.autoMergeTriggered || result.autoMergeSuccess === true) ? 'success' : 'failure';
++    // UI：根据返回值显示结果
++    if (result.failedGroups > 0) {
++        const firstError = Array.isArray(result.errors) && result.errors.length > 0 ? result.errors[0] : '';
++        showToastr_ACU('warning', firstError
++            ? `并发分组更新有 ${result.failedGroups} 组失败：${firstError}`
++            : `并发分组更新有 ${result.failedGroups} 组失败，请查看日志。`);
++    }
++    if (result.autoMergeTriggered && result.autoMergeSuccess) {
++        showToastr_ACU('success', '自动合并纪要完成！');
++        try { (topLevelWindow_ACU as any).AutoCardUpdaterAPI._notifyTableUpdate(); } catch (_) {}
++    }
++    if (typeof updateCardUpdateStatusDisplay_ACU === 'function') updateCardUpdateStatusDisplay_ACU();
++    } finally {
++      performanceSpan.end({
++        messageCount: getChatArray_ACU()?.length || 0,
++        sheetCount: currentJsonTableData_ACU ? getSortedSheetKeys_ACU(currentJsonTableData_ACU).length : 0,
++        sqlite: isSqliteMode(),
++      });
++      autoUpdateTriggerInFlight_ACU = false;
++      if (wasStoppedByUser_ACU || pendingAutoUpdateTrigger_ACU) weOutcome = 'cancelled';
++      if (!weRound) weRound = beginWorldEvolutionCompletion_ACU(null);
++      finishWorldEvolutionCompletion_ACU(weRound, weOutcome);
++      if (!pendingAutoUpdateTrigger_ACU || wasStoppedByUser_ACU) {
++        pendingAutoUpdateTrigger_ACU = false;
++        pendingAutoUpdatePerformanceContext_ACU = undefined;
++        return;
++      }
++      const followUpContext = pendingAutoUpdatePerformanceContext_ACU;
++      pendingAutoUpdateTrigger_ACU = false;
++      pendingAutoUpdatePerformanceContext_ACU = undefined;
++      queueMicrotask(() => { void triggerAutomaticUpdateIfNeeded_ACU(followUpContext); });
++    }
++  }
++
++  export function collectManualExtraHint_ACU() {
++      _set_manualExtraHint_ACU('');
++      if (!$manualExtraHintCheckbox_ACU || !$manualExtraHintCheckbox_ACU.length) return;
++      if (!$manualExtraHintCheckbox_ACU.is(':checked')) return;
++
++      const userInput = prompt('请输入本次手动填表的额外提示词（可留空）：', '');
++      const trimmed = (userInput || '').trim();
++      if (!trimmed) return;
++
++      _set_manualExtraHint_ACU(`以下为用户的额外填表要求，请严格遵守：${trimmed}`);
++  }
++
++  // [新增] 获取当前选中的手动更新表格列表（无效或为空则回退为全部表）
++  export function getSelectedManualSheetKeys_ACU() {
++      if (!currentJsonTableData_ACU) return [];
++      const availableKeys = getSortedSheetKeys_ACU(currentJsonTableData_ACU);
++      const saved = Array.isArray(settings_ACU.manualSelectedTables) ? settings_ACU.manualSelectedTables : [];
++
++      // 未曾手动选择过：默认全选
++      if (!settings_ACU.hasManualSelection) return availableKeys;
++
++      const validSaved = saved.filter((k: string) => availableKeys.includes(k));
++
++      // 已手动选择过：严格按保存的交集，不再自动补全新表，防止回退全选
++      return validSaved;
++  }
++
+diff --git a/src/shared/world-evolution-completion-protocol.ts b/src/shared/world-evolution-completion-protocol.ts
+new file mode 100644
+--- /dev/null
++++ b/src/shared/world-evolution-completion-protocol.ts
+@@ -0,0 +1,257 @@
++/** Portable source-side protocol. No globals, fetch, storage, timers, SQL or UI effects. */
++export const T15_DB_COMPLETION_PROTOCOL = 'WorldEvolution/TavernDB-auto-round/1' as const;
++export interface T15DbFrame {
++  binding: { characterId: string; hostChatId: string };
++  message: object;
++  swipe: number;
++  text: string;
++  isolation: string;
++}
++export type T15DbOutcome = 'success' | 'failure' | 'cancelled' | 'disabled' | 'frequency-skipped' | 'unverifiable';
++export type T15DbEvent =
++  | { type: 'begin'; ticket: object; frame: T15DbFrame; plan: readonly string[] | null }
++  | {
++      type: 'terminal';
++      ticket: object;
++      frame: T15DbFrame;
++      outcome: T15DbOutcome;
++      reason: string;
++      plan: readonly string[] | null;
++      groups: readonly { key: string; success: boolean }[];
++      data: unknown;
++    }
++  | { type: 'invalidated'; reason: string };
++export interface T15DbObserver {
++  readonly protocol: typeof T15_DB_COMPLETION_PROTOCOL;
++  readonly coverage: readonly ['automatic-plan'];
++  readonly candidateOnly: true;
++  subscribe(listener: (event: T15DbEvent) => void): void;
++  unsubscribe(listener: (event: T15DbEvent) => void): void;
++  isCurrent(ticket: object): boolean;
++}
++export interface T15DbProducerPort {
++  current(): T15DbFrame;
++  /** Compare the runtime export too: an unpersisted edit must not reuse a terminal receipt. */
++  snapshot(): { data: unknown; runtime: unknown };
++  epoch(): number;
++}
++function jsonCopy(value: unknown, depth = 0, budget = { nodes: 0 }): unknown {
++  if (depth > 48 || ++budget.nodes > 100000) throw new Error('source snapshot exceeds limits');
++  if (value === null || typeof value === 'string' || typeof value === 'boolean') return value;
++  if (typeof value === 'number' && Number.isFinite(value)) return value;
++  if (Array.isArray(value)) return Array.from(value, v => jsonCopy(v, depth + 1, budget));
++  if (
++    !value ||
++    typeof value !== 'object' ||
++    (Object.getPrototypeOf(value) !== null && Object.getPrototypeOf(Object.getPrototypeOf(value)) !== null)
++  )
++    throw new Error('source snapshot is not JSON');
++  const result: Record<string, unknown> = {};
++  for (const key of Object.keys(value).sort()) {
++    if (['__proto__', 'constructor', 'prototype'].includes(key)) throw new Error('unsafe source field');
++    const v = (value as Record<string, unknown>)[key];
++    if (v !== undefined) result[key] = jsonCopy(v, depth + 1, budget);
++  }
++  return result;
++}
++function snapshot(port: T15DbProducerPort) {
++  const value = jsonCopy(port.snapshot()) as { data: unknown; runtime: unknown },
++    text = JSON.stringify(value);
++  if (text.length > 2_000_000) throw new Error('source snapshot exceeds size limit');
++  return { value, text };
++}
++function freezeJson<T>(value: T): T {
++  if (value && typeof value === 'object') {
++    for (const v of Object.values(value)) freezeJson(v);
++    Object.freeze(value);
++  }
++  return value;
++}
++function capture(frame: T15DbFrame): T15DbFrame {
++  if (
++    !frame.binding?.characterId ||
++    !frame.binding.hostChatId ||
++    !frame.message ||
++    typeof frame.message !== 'object' ||
++    !Number.isSafeInteger(frame.swipe) ||
++    frame.swipe < 0 ||
++    typeof frame.text !== 'string' ||
++    !frame.text ||
++    frame.text.length > 1_000_000 ||
++    !frame.isolation ||
++    frame.isolation.length > 200
++  )
++    throw new Error('invalid source frame');
++  // Never deep-freeze the native message object.
++  return Object.freeze({ ...frame, binding: Object.freeze({ ...frame.binding }) });
++}
++function sameFrame(a: T15DbFrame, b: T15DbFrame) {
++  return (
++    a.binding.characterId === b.binding.characterId &&
++    a.binding.hostChatId === b.binding.hostChatId &&
++    a.message === b.message &&
++    a.swipe === b.swipe &&
++    a.text === b.text &&
++    a.isolation === b.isolation
++  );
++}
++export function createT15DbCompletionProducer(input: T15DbProducerPort) {
++  const port = Object.freeze({ ...input }),
++    listeners = new Set<(event: T15DbEvent) => void>();
++  let closed = false;
++  let run: {
++    ticket: object;
++    frame: T15DbFrame;
++    epoch: number;
++    plan: readonly string[] | null;
++    groups: Map<string, boolean>;
++    invalid: boolean;
++    ended: boolean;
++    terminal: T15DbEvent | null;
++    snapshot: string | null;
++  } | null = null;
++  const emit = (event: T15DbEvent) => {
++    for (const fn of [...listeners]) {
++      try {
++        fn(event);
++      } catch {
++        /* Observers cannot alter the database operation. */
++      }
++    }
++  };
++  const observer: T15DbObserver = Object.freeze({
++    protocol: T15_DB_COMPLETION_PROTOCOL,
++    coverage: Object.freeze(['automatic-plan'] as const),
++    candidateOnly: true,
++    subscribe(fn: (event: T15DbEvent) => void) {
++      if (closed) throw new Error('source closed');
++      listeners.add(fn);
++    },
++    unsubscribe(fn: (event: T15DbEvent) => void) {
++      listeners.delete(fn);
++    },
++    isCurrent(ticket: object) {
++      try {
++        return (
++          !closed &&
++          !!run &&
++          run.ticket === ticket &&
++          run.ended &&
++          !run.invalid &&
++          run.snapshot !== null &&
++          run.epoch === port.epoch() &&
++          sameFrame(run.frame, port.current()) &&
++          run.snapshot === snapshot(port).text
++        );
++      } catch {
++        return false;
++      }
++    },
++  });
++  return {
++    observer,
++    begin(keys: readonly string[] | null) {
++      if (closed) throw new Error('source closed');
++      const plan = keys === null ? null : Object.freeze([...keys]);
++      if (
++        plan &&
++        (plan.length > 512 ||
++          new Set(plan).size !== plan.length ||
++          plan.some(k => typeof k !== 'string' || !k.trim() || k.length > 200))
++      )
++        throw new Error('invalid group plan');
++      const ticket = Object.freeze({}),
++        frame = capture(port.current());
++      run = {
++        ticket,
++        frame,
++        epoch: port.epoch(),
++        plan,
++        groups: new Map(),
++        invalid: false,
++        ended: false,
++        terminal: null,
++        snapshot: null,
++      };
++      emit(Object.freeze({ type: 'begin', ticket, frame, plan }));
++      return ticket;
++    },
++    /** Only actual awaited group runners call this, never chunk/progress callbacks. */
++    groups(ticket: object, keys: readonly string[], result: unknown) {
++      if (closed || !run || run.ticket !== ticket || run.ended) return false;
++      const r = result as { success?: unknown; failedGroups?: unknown } | null;
++      if (
++        !run.plan ||
++        !keys.length ||
++        new Set(keys).size !== keys.length ||
++        keys.some(k => !run!.plan!.includes(k) || run!.groups.has(k)) ||
++        !r ||
++        typeof r.success !== 'boolean' ||
++        (r.failedGroups !== undefined &&
++          (!Array.isArray(r.failedGroups) ||
++            r.failedGroups.some(k => typeof k !== 'string' || !keys.includes(k)) ||
++            new Set(r.failedGroups).size !== r.failedGroups.length))
++      ) {
++        run.invalid = true;
++        return false;
++      }
++      const failed = (r.failedGroups ?? []) as string[];
++      if (r.success && failed.length) {
++        run.invalid = true;
++        return false;
++      }
++      for (const key of keys) run.groups.set(key, r.success === true || (failed.length > 0 && !failed.includes(key)));
++      return true;
++    },
++    finish(ticket: object, outcome: T15DbOutcome, reason: string) {
++      if (closed || !run || run.ticket !== ticket || run.ended) return false;
++      run.ended = true;
++      let data: unknown = null;
++      const original = outcome;
++      try {
++        if (run.invalid || run.epoch !== port.epoch() || !sameFrame(run.frame, port.current())) throw new Error();
++        if (!['success', 'failure', 'cancelled', 'disabled', 'frequency-skipped', 'unverifiable'].includes(outcome))
++          throw new Error();
++        if (
++          outcome === 'success' &&
++          (!run.plan?.length || run.groups.size !== run.plan.length || [...run.groups.values()].some(v => !v))
++        )
++          throw new Error();
++        if (
++          (outcome === 'frequency-skipped' && run.plan?.length !== 0) ||
++          (outcome === 'disabled' && (run.plan !== null || run.groups.size))
++        )
++          throw new Error();
++        if (outcome === 'success' || outcome === 'disabled' || outcome === 'frequency-skipped') {
++          const final = snapshot(port);
++          run.snapshot = final.text;
++          data = freezeJson(final.value.data);
++        }
++      } catch {
++        outcome = 'unverifiable';
++        run.invalid = true;
++        run.snapshot = null;
++      }
++      const event: T15DbEvent = Object.freeze({
++        type: 'terminal',
++        ticket,
++        frame: run.frame,
++        outcome,
++        reason: outcome === original ? reason.slice(0, 160) : '本轮目标、分组结果或最终资料无法验证',
++        plan: run.plan,
++        groups: Object.freeze([...run.groups].map(([key, success]) => Object.freeze({ key, success }))),
++        data,
++      });
++      run.terminal = event;
++      emit(event);
++      return true;
++    },
++    close() {
++      if (closed) return;
++      closed = true;
++      run = null;
++      emit(Object.freeze({ type: 'invalidated', reason: '数据库完成接口已卸载' }));
++      listeners.clear();
++    },
++  };
++}
+diff --git a/src/service/runtime/world-evolution-completion.ts b/src/service/runtime/world-evolution-completion.ts
+new file mode 100644
+--- /dev/null
++++ b/src/service/runtime/world-evolution-completion.ts
+@@ -0,0 +1,37 @@
++/** Optional completion observer: never changes the database's model/save/UI behavior. */
++import { createT15DbCompletionProducer, type T15DbOutcome } from '../../shared/world-evolution-completion-protocol';
++import { SillyTavern_API_ACU } from '../../shared/host-api';
++import { getChatArray_ACU } from '../chat/chat-service';
++import { currentJsonTableData_ACU, getCurrentIsolationKey_ACU, isAutoUpdatingCard_ACU } from './state-manager';
++function current() {
++    const c = SillyTavern_API_ACU, chatMessages = getChatArray_ACU(), message = chatMessages[chatMessages.length - 1];
++    const card = c?.characters?.[Number(c.characterId)], chat = c?.getCurrentChatId?.();
++    if (!c || c.groupId || isAutoUpdatingCard_ACU || !message || message.is_user || message.is_system || message.extra?.type === 'narrator' ||
++        !card?.avatar || !chat || card.chat !== chat || typeof message.mes !== 'string') throw new Error('unsupported completion target');
++    return {binding:{characterId:card.avatar,hostChatId:chat},message,swipe:message.swipe_id ?? 0,
++      text:message.mes,isolation:getCurrentIsolationKey_ACU()};
++}
++const producer = createT15DbCompletionProducer({
++    current, epoch:()=>0, // Consumer also fences all chat/swipe/edit/generation events; no server CAS claim.
++    snapshot:()=>{
++      const frame = current(), message = frame.message as Record<string, unknown>;
++      const all = message.TavernDB_ACU_IsolatedData as Record<string,unknown> | undefined;
++      return {data:all && Object.prototype.hasOwnProperty.call(all,frame.isolation) ?
++        {TavernDB_ACU_IsolatedData:{[frame.isolation]:all[frame.isolation]}} : {},runtime:currentJsonTableData_ACU ?? {}};
++    },
++});
++export function getWorldEvolutionCompletion_ACU() { return producer.observer; }
++export function beginWorldEvolutionCompletion_ACU(keys: string[] | null): object | null {
++    try { return producer.begin(keys); } catch { return null; }
++}
++export function recordWorldEvolutionGroups_ACU(ticket: object | null, keys:string[], result:unknown) {
++    if(ticket) { try { producer.groups(ticket,keys,result); } catch { /* Unsupported result cannot authorize evolution. */ } }
++}
++export function finishWorldEvolutionCompletion_ACU(ticket: object | null, outcome:T15DbOutcome) {
++    if(ticket) { try { producer.finish(ticket,outcome,{
++      success:'数据库本轮所有计划组与收尾已结束；仍需独立确认保存',failure:'数据库本轮计划失败或未完成',
++      cancelled:'数据库本轮停止或还有合并的后续检查',disabled:'数据库自动填表明确停用',
++      'frequency-skipped':'本轮按表格计划没有到期任务',unverifiable:'数据库本轮结果无法验证',
++    }[outcome]); } catch { /* Notifications must not alter the original database result. */ } }
++}
++if(typeof window !== 'undefined')window.addEventListener('pagehide',()=>producer.close(),{once:true});

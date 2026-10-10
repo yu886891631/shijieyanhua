@@ -1,0 +1,7 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>T15 模拟酒馆入口验收</title>
+<h1>模拟宿主，不是真实 SillyTavern</h1><p>只验证导入包入口、重复加载与卸载；没有聊天、API 或世界书。</p>
+<div id="extensionsMenu"></div><button id="again">重复加载同一入口</button><button id="unload">卸载本次测试入口</button>
+<script>window.$=fn=>fn();window.getButtonEvent=name=>name;
+window.eventOn=(name,fn)=>{const b=document.createElement('button');b.textContent=name;document.body.append(b);b.onclick=fn;return {stop:()=>b.remove()}};
+document.getElementById('again').onclick=()=>{const s=document.createElement('script');s.src='/index.js';document.body.append(s)};
+document.getElementById('unload').onclick=()=>window.dispatchEvent(new Event('pagehide'));</script><script src="/index.js"></script></html>

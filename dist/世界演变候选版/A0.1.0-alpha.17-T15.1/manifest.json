@@ -1,0 +1,628 @@
+{
+  "candidate": "A0.1.0-alpha.17-T15.1",
+  "mode": "isolated-only",
+  "bundle": {
+    "bytes": 2375649,
+    "sha256": "6c90b5568d9e7f6826a1bcb06e0cf11cdd0f13eee9c48b976d65f0ac8481a761"
+  },
+  "worker": {
+    "bytes": 1312073,
+    "sha256": "a2417085eb347a6c5b241735b17e9cb8970e41ca195fead5924249e41e0eaf51"
+  },
+  "app": {
+    "bytes": 2296050,
+    "sha256": "0974e52a1e4800b88a1086632d53d2e1948bff58e59148b574c95eb0b80c3960"
+  },
+  "importPackage": "酒馆助手脚本-世界演变-A0.1.0-alpha.17-T15.1-隔离功能候选版.json",
+  "capabilities": {
+    "realApi": false,
+    "chatWrites": false,
+    "worldbookWrites": false
+  },
+  "inputs": [
+    {
+      "path": "node_modules/.pnpm/sql.js@1.14.2/node_modules/sql.js/dist/sql-wasm-browser.js",
+      "sha256": "35e39a73b2e0bc1c2202a4cadb23bcf7a3a77071a39c270f014402968785b95f"
+    },
+    {
+      "path": "wasm-inline:C:\\Users\\yu332\\Documents\\Playground\\shijieyanhua\\node_modules\\.pnpm\\sql.js@1.14.2\\node_modules\\sql.js\\dist\\sql-wasm-browser.wasm",
+      "sha256": "38c14f6e379210bc942bdc4ebca44e7bfdb4318ecc1c72ca666a28fdce96670a"
+    },
+    {
+      "path": "src/世界演变/rebuild/t3-browser-runtime.ts",
+      "sha256": "0023139494adceb4fa7272ddda4b7e7e2ae5b44af8dbcb4ec20d2b1eb1d2a360"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/core/core.js",
+      "sha256": "a5e713beaac4647151e03716a83f51ab714e5337cf66850f3b28eaf072a0bbfe"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/core/util.js",
+      "sha256": "968e3433e810cf7ba5efb609a1cb6d9a6cfb51215fd1f699938228f7ac25deb3"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/core/errors.js",
+      "sha256": "bdd0ed8fd4a6e9d04fe6423b0f9df3a0b403939bc7dcedd8930a4b8df1fb118c"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/core/parse.js",
+      "sha256": "2578b8d1341c3882a6c089f9ec57ce1c1a16b8b2b477721d4d89ba3d3ee50c9c"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/core/regexes.js",
+      "sha256": "3cb122080c1154321331322ebc0cbe04878fe104c8c7b335891d9f85fc4b3f63"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/core/checks.js",
+      "sha256": "5a33a20dcad372b4d18ead8d1e58b1950454f136a2216e62f247e0e5601ac838"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/core/doc.js",
+      "sha256": "e084bbcc536746a8942fd33b08afe4db345554b3a0383114f1dca95261c958d9"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/core/versions.js",
+      "sha256": "bf082fde98fa7725412d713c7f56da3a5603bdef199d68d5769263f30ce9c756"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/core/schemas.js",
+      "sha256": "09da9b0cb9b9d2d795c349bc47c7521d5aaffe241885f0c9728f2aa7de3834c9"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/ar.js",
+      "sha256": "220ca3ca8cf67e4ccc05d789eeed2692d970269fe0cd82f05db8fd899b661b9e"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/az.js",
+      "sha256": "4725ffef0b2f2df947194f9698c792b69f52a8c3a5a1e1bdfabbf62259a1dd46"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/be.js",
+      "sha256": "da4bda7fbc940dd9f50efdd914caa9397243be779a505b82bd4be5395d3b795e"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/bg.js",
+      "sha256": "48511ad2f86043f0eea6e7673d5e2b848a3295a26c9c4650e96b3884d640196d"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/ca.js",
+      "sha256": "796f9ba7dcd53648171aa0132c50271ef358936765cec0a44a642c41d05b3e8c"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/cs.js",
+      "sha256": "670a75fe1db1104db090c95aabb01e4eb6decd451fe77fd830c2e4dafc79b49a"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/da.js",
+      "sha256": "cdaad7a1fa370abda1943fe9c2caba961e7896b9808d51275daf33f964af49cc"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/de.js",
+      "sha256": "521a4ed29fcaf3f781163875dc282cfb5262047773aa2b70a852996b1d8a51b9"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/el.js",
+      "sha256": "9857a9e4909282b2efd86317fc3e67ed86e24287f32329cfa5ab833c05fc0d81"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/en.js",
+      "sha256": "232a0828d64df8e410b23ac9825a667bd9d485fd70acdc4b4d0870539faef0a4"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/eo.js",
+      "sha256": "ebe08048aa3ee9871ce9fe1271e254cb672b1968ec40ac253066d08d176e8a65"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/es.js",
+      "sha256": "4edd9302e9724c408b024220e99092fbd2f90100ac3c6407a94543b79843610c"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/fa.js",
+      "sha256": "2dc1bee1e984e8a15191fb3c69aaecaa26c922e12a0d4486ac005a0372b78565"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/fi.js",
+      "sha256": "3911184979f01d2ae580ce611710ee40597eff97a410d0fa823ab6ea27cee88c"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/fr.js",
+      "sha256": "3ea466ca5737984bb5acc9008822060272f596317004618cfe1e05109f707577"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/fr-CA.js",
+      "sha256": "f8716c2baaccdfd1d958743bbc5250c9bdef5152d0801470e9b9a380d618f4ab"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/he.js",
+      "sha256": "290512e43d2907700211da09dc3959fd98d120bfb89f8836e6e3f83a472e26fe"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/hr.js",
+      "sha256": "1ea65433c32b89bead43113ac69b3acc520bb73ae231dd2e05fedf8e8c5656d6"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/hu.js",
+      "sha256": "913ee94a253db79b31463ae23a337060b6fe28be73dfc7657d8a83a4942bd8a8"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/hy.js",
+      "sha256": "0d3bbb96c0f8bc74468a2dfc7d066e838bb56fab64fd5ec03ce9c4d89eccbe99"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/id.js",
+      "sha256": "cd2c19b5c30dade3ed91ffcff3deb0b068713be24f02248e7e46b87b2b9553ee"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/is.js",
+      "sha256": "ead5b14eac892229f915fe38ec94ab3b1e676f8aa2df2a8450848ba9ca9a1612"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/it.js",
+      "sha256": "439969d199427d77ebf1e477bf2295b226712804b25437d442f9dfc78aca95e0"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/ja.js",
+      "sha256": "43ee10378cac22b0b8aee912a66c3f36a834d5b4c76e9748f88a784044f248fd"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/ka.js",
+      "sha256": "0ab5322368f9ac6e6b58f93dac484a4f4f06cdf4c0677f4df88164e9d8b4bf81"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/km.js",
+      "sha256": "dbdabda94dd93d4a1827e6c809505c79fa6aa7abefec91dc50fa0871382c99cc"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/kh.js",
+      "sha256": "78c3d1991041bb8c8fc0f7c5d745aae422d4c2e4e8f30bae44f3fef4765900a8"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/ko.js",
+      "sha256": "d2efe22ac069d9b32b0109fa07713ac0695ac1c1357afc4e4277056466f2e196"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/lt.js",
+      "sha256": "dad886e52c56a1329d22e072f8b08dc8730f69c3dc5e5acf8267cac18df1ab28"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/mk.js",
+      "sha256": "9eb4af0392fc5b9c438cdc6ceea446acc541b59e221dba918f7b80800d9da3d1"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/ms.js",
+      "sha256": "c550a9185d997e8fcd17311951aa1e29793a50b8e825e18310efd5a46c641795"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/nl.js",
+      "sha256": "acba414579c5bbd7f83dc6661fa1a12d65f1822f9b0f5035549ac60f46d93763"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/no.js",
+      "sha256": "1854483c7cf158b8f97f0faf6fd799eb1f762009018b5fde893ca33f2fb0b313"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/ota.js",
+      "sha256": "34ae496104bc17fea7d30c3d45c94cfe3d1d569b5d39a6ca51de6c177690c556"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/ps.js",
+      "sha256": "f977b5141fa8fb6a8459372e0b2895d74b381c9f2ff4899141f7ee3e639a4513"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/pl.js",
+      "sha256": "18eab58f395e30b906e8e3fddc5f212eb19f2c4362410889a5c5e0141ebe2144"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/pt.js",
+      "sha256": "df172afc585544dee7c063c484f5a07b5ed103e2c1072a782c763ad8ceb08e17"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/ro.js",
+      "sha256": "ecae409f4299ab91e2aff1095db14e23f3cf2c05b3654e242047655352c7f46b"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/ru.js",
+      "sha256": "c397a473e94d7d189a9c09c7890fe379c4f6f46d9556d52a040a90ffa56f7b93"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/sl.js",
+      "sha256": "ee2ff3a19b62cd2f89b54b165088773b937de15df7253df220bef07d9adf2d80"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/sv.js",
+      "sha256": "97d6718fb643e05d6fe30fa4f9f09b8d9a3eda4a3a350b57dfb2944943d19502"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/ta.js",
+      "sha256": "04bbde9766251f9047e786fdd77632f2ecd53aec2eb060eb2fc85bf576ad729d"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/th.js",
+      "sha256": "aea70c9ac2b399fe4749e19ba3aa99c3efb4dfb50eadfb62b0b2a6e005748f3d"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/tr.js",
+      "sha256": "4449f41d22c6f15ede5066f79d840a52ec45a6b694c859e16f9121062b6fad2f"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/uk.js",
+      "sha256": "77136a2a60eef62f7cc803a0f9971aebbc641403af77c1b41fd5ce59abfa5de3"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/ua.js",
+      "sha256": "9391169ffbc72f777a83230b6ffcc3f4cf46ab5945ec540de9ef4609dca1f4cc"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/ur.js",
+      "sha256": "858f4f38d651073e7a3fbec7ed356692578b3ad1fae1b453cb3d85312a4f39d2"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/uz.js",
+      "sha256": "d540bed482d15c47cb45439cff34e053379c53019c7c7c5fbe43f222d0c81f04"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/vi.js",
+      "sha256": "2c61bd3f4a733f3cbb1ad85e75a053cb15a8ebeb83ab56dc21f2948b1138e12f"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/zh-CN.js",
+      "sha256": "99a4b16af598834a0b11607fcdebd1c6de026386ff1d6a5a306b364c154c5899"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/zh-TW.js",
+      "sha256": "37dcae620e1553e9174a4b9434bbcc4e465150a627e80c9c17fd01de8baaf59a"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/yo.js",
+      "sha256": "98b9cbf31bf00c8b2c00de62725a9dd7cb718ac72d6e8fd4e0a1a7c49723e0f4"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/locales/index.js",
+      "sha256": "d73f41a76614855d43eea493030a1aa05dca30c9a17015a0da5b8b70da61b6b1"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/core/registries.js",
+      "sha256": "620ea1a715ccc4e6e605a271343bf47942dccae90885dc71f137b1f08a972e50"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/core/api.js",
+      "sha256": "00cb5edcfde8098e5a169e66c1dce50c101484d21436e3d78e137e1fa87c4836"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/core/to-json-schema.js",
+      "sha256": "fb3c9ab59947582f7671a53c8e20a3ced5eaa92d1c220ce8b27717a59033ad0d"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/core/json-schema-processors.js",
+      "sha256": "ff15f567c9401dd7d3151ce11736283ff747c9a9e205cc08ee96f90eadc1c0c6"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/core/json-schema-generator.js",
+      "sha256": "9cc884cdb535a9c87b85b66e61a593ff6b686222f038834f81c5e92552cd6e23"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/core/json-schema.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/core/index.js",
+      "sha256": "f9698820ee8371215e8d015cfa060230c62e65428397dce83f78e6538976301c"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/classic/checks.js",
+      "sha256": "78a162d29e06001b4d919e1ed08f6e7d0d665bba0ef983201373745410d7b354"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/classic/iso.js",
+      "sha256": "3cc5e6b4da086b8ffc7ee3188c69e4d3c945b368092e78d2299b5321182752c5"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/classic/errors.js",
+      "sha256": "b155316267f79068ddc2dddc7046e13785804b768ca36e6deff1691d154f7c20"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/classic/parse.js",
+      "sha256": "14cbcc416ab9169abc2cde97af77da54ca769684eac1e03a3753c16ea4a7cd95"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/classic/schemas.js",
+      "sha256": "eb4af7946a092aff8678b9251728ea58dab40154920cd65ec4a2ca1d4df68393"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/classic/compat.js",
+      "sha256": "0e948b101771cc0e7b753e54b3f5b486929d3db9bd4c09d98fe4ce86271bcf7b"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/classic/from-json-schema.js",
+      "sha256": "d8866bf5232e55d12cda032bde6a56a05a0a8b276945c2e4eed66432ef5cc9b2"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/classic/coerce.js",
+      "sha256": "fb2efe3b6eacc475c77cbb571b5fb8650d92a10f316dc869e49b722973d83c3c"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/v4/classic/external.js",
+      "sha256": "179a03ace3d1d77895cc5b3c54a3fcbf2b7f8bad44d6f030092491c10e5d9097"
+    },
+    {
+      "path": "node_modules/.pnpm/zod@4.4.3/node_modules/zod/index.js",
+      "sha256": "c733a1897d6b4b30dad6998597f6896b265b094a65534359ada34b08ecf8932c"
+    },
+    {
+      "path": "src/世界演变/rebuild/t2-template.ts",
+      "sha256": "3755b74c057c856c78ceacd1c1df895085b5f7c6997841211f131503586655a6"
+    },
+    {
+      "path": "src/世界演变/rebuild/t2-values.ts",
+      "sha256": "a031ee4b4d45ea018149951eb1f4bc87ce99e3307faa53b0aca05d3f29fd7aa4"
+    },
+    {
+      "path": "src/世界演变/rebuild/t3-schema.ts",
+      "sha256": "f93280f2da001fbc07f5c277351614fa360681fa5f2b0c1d6fcebb5ffa113372"
+    },
+    {
+      "path": "src/世界演变/rebuild/t3-sql.ts",
+      "sha256": "25c6f7525577e69025a89f8462af439fd003f2fbceaa7727fbc98daba437b4c9"
+    },
+    {
+      "path": "src/世界演变/rebuild/t3-engine.ts",
+      "sha256": "0aceb3c5ef1a2c57766662119e12f8ca7c8d80549bcd9bee939d454a679beef5"
+    },
+    {
+      "path": "src/世界演变/rebuild/t3-result.ts",
+      "sha256": "5b89a97415e66953dd339d102f0fa4d745c474adf51bcb663fc5c186efdfd618"
+    },
+    {
+      "path": "src/世界演变/rebuild/t3-runtime.ts",
+      "sha256": "b73b375e810c92112dbe8e74b4dfeb25c128082f0b81bbb39ff987fd46884785"
+    },
+    {
+      "path": "src/世界演变/rebuild/t3-worker.ts",
+      "sha256": "57b4c79dae8194a39b42776b0c14312d456aebca13beb7275ff297ce50c32890"
+    },
+    {
+      "path": "node_modules/.pnpm/@vue+shared@3.5.38/node_modules/@vue/shared/dist/shared.esm-bundler.js",
+      "sha256": "af2d894251b4157fa1ce41d0d6b2d3549c0351a9e45d5de00fb6855430011416"
+    },
+    {
+      "path": "node_modules/.pnpm/@vue+reactivity@3.5.38/node_modules/@vue/reactivity/dist/reactivity.esm-bundler.js",
+      "sha256": "39fb945ff3305094d5ceb0160d8b016ef8873485aeeaffbe3435c1f88bf9dd43"
+    },
+    {
+      "path": "node_modules/.pnpm/@vue+runtime-core@3.5.38/node_modules/@vue/runtime-core/dist/runtime-core.esm-bundler.js",
+      "sha256": "7d958b6743bccc77a08fb22514eae9b785032b9e63af5f87b530910e356b4f0a"
+    },
+    {
+      "path": "node_modules/.pnpm/@vue+runtime-dom@3.5.38/node_modules/@vue/runtime-dom/dist/runtime-dom.esm-bundler.js",
+      "sha256": "f4f8c12ade5d5ac4a325500288de7cf2a38b93c2bd818e50e9be6868e4a01210"
+    },
+    {
+      "path": "node_modules/.pnpm/vue@3.5.38_typescript@6.0.0-dev.20250807/node_modules/vue/dist/vue.runtime.esm-bundler.js",
+      "sha256": "7131734a2ae02ece185f09ac0b61520ebd055068f6a31d196b4db55053642e89"
+    },
+    {
+      "path": "src/世界演变/rebuild/t1-ui-contract.ts",
+      "sha256": "13ee576ed67a2a0e85f1361ac7b8884df9812d755912aa4c9cf120b1978ef8b4"
+    },
+    {
+      "path": "src/世界演变/rebuild/t14-appearance.ts",
+      "sha256": "f623a221cc197030bb4711e81f1c605b8297928d85b700a71a0f8c5108c420d9"
+    },
+    {
+      "path": "src/世界演变/rebuild/T14Workspace.vue",
+      "sha256": "2109d1413f8ede3bfc0603f91945af8034b3424aeff26b2cfa6e56b583bc1080"
+    },
+    {
+      "path": "src/世界演变/rebuild/T5TableWorkbench.vue",
+      "sha256": "057daf824394aa74858ed3e067f48861e19c81d861f81a453a76812009ec5fd3"
+    },
+    {
+      "path": "src/世界演变/rebuild/t6-editor.ts",
+      "sha256": "2faa4834dddcfd37ad0cb2f1c33f5117ba3d0c4094d229b02dae9e17658bfa20"
+    },
+    {
+      "path": "src/世界演变/rebuild/t6-parameters.ts",
+      "sha256": "df975bc5a47cc22951d4c0803ea8b9f947662591fd99417f43be58d98db244af"
+    },
+    {
+      "path": "src/世界演变/rebuild/T6ParameterForm.vue",
+      "sha256": "edce6eb22d413584de584c22c14cf6888442339f37685e8dc43fd1d526c7ebdf"
+    },
+    {
+      "path": "src/世界演变/rebuild/T6CellSetting.vue",
+      "sha256": "f25738839995169470cfa5429831e2e4217698c881a9a36977fb90bf0e1097a4"
+    },
+    {
+      "path": "src/世界演变/rebuild/T6TemplateWorkbench.vue",
+      "sha256": "ba6b6dbfe5608205cddbc59a54182dedb9199019b59d3bd08361c6c191b01eb0"
+    },
+    {
+      "path": "src/世界演变/rebuild/T6WorldWorkbench.vue",
+      "sha256": "a052e711943b2dcce3a866b7b1a783fa875290511545f08834e8f16677a6f3d0"
+    },
+    {
+      "path": "src/世界演变/rebuild/T7PromptWorkbench.vue",
+      "sha256": "324e8617442d73f283cf27123bf3108b7a249b04f8576adcc85859e8fce7ff78"
+    },
+    {
+      "path": "src/世界演变/rebuild/T11DailyWorkbench.vue",
+      "sha256": "93299a15a7d3f1d9122932c773c6d576924f2e34ee2f9cc384750593e7fe7d9a"
+    },
+    {
+      "path": "src/世界演变/rebuild/T12ProjectionWorkbench.vue",
+      "sha256": "c3210b9dc3d5584c0a259b0f555b901ce58136441a8785ad669709d5b0687f09"
+    },
+    {
+      "path": "src/世界演变/rebuild/T13BackupWorkbench.vue",
+      "sha256": "748634ce460f96d62e3be6d7aff622c89e91285660b0fce1409995eafce8a741"
+    },
+    {
+      "path": "src/世界演变/types.ts",
+      "sha256": "d1360844e977c147bb8b465c996ef29e1f04e12f3863d874c5c7475412a137c6"
+    },
+    {
+      "path": "src/世界演变/store.ts",
+      "sha256": "2dbf049e518071ad52ac583b0081cab8e2afde30e5d39a10d4e01eb6013191dc"
+    },
+    {
+      "path": "src/世界演变/api-config.ts",
+      "sha256": "455a2178e3ae034fdab9b34bae5916cea6d476229e919323c9c8ecb14b0ce42b"
+    },
+    {
+      "path": "src/世界演变/api-client.ts",
+      "sha256": "ac71eb0bbd199cbdb0c1b5d3d5b956f2a3fe65e4939148108ac0d5bc2b1a8ab0"
+    },
+    {
+      "path": "src/世界演变/api-routing.ts",
+      "sha256": "cafc9cec8bf6b535cb9d0d0650ca74394c1c97d558b93b9db1a1df1fc240efb7"
+    },
+    {
+      "path": "src/世界演变/console/ApiSettingsPanel.vue",
+      "sha256": "486a78f68591c9dfd1a86fd77ebbd7ddf96bf8b1ebd621b8f3661bb311bb3366"
+    },
+    {
+      "path": "src/世界演变/rebuild/t2-defaults.ts",
+      "sha256": "34e4a1a244da5805099a32668531889b1e3f50cc154551039c652fc5ee2da997"
+    },
+    {
+      "path": "src/世界演变/rebuild/t5-controls.ts",
+      "sha256": "6bfd330675180d985ce3c386f9d53702f164f3fd77740d9a1a3fcc07b04c264e"
+    },
+    {
+      "path": "src/世界演变/rebuild/t9-ledger.ts",
+      "sha256": "d88c2df02223e1b92abfcefc2f2ab1d7a8350442a0b7045b12d0917a884042bd"
+    },
+    {
+      "path": "src/世界演变/rebuild/t13-evidence.ts",
+      "sha256": "f08b73001f31feaa0ad311eb5dd3ff4347886607b84133e662346490ea7ca2f3"
+    },
+    {
+      "path": "src/世界演变/rebuild/t4-protocol.ts",
+      "sha256": "ca0356dac15df23eb02b6f548c6fbca475e845a38c582d7f55e345b166ba78a0"
+    },
+    {
+      "path": "src/世界演变/rebuild/t4-store.ts",
+      "sha256": "7b018094370dc52768aa259b0fd9ee1202fe88ea47f2784c92d4f008c5efbdbc"
+    },
+    {
+      "path": "src/世界演变/rebuild/t4-service.ts",
+      "sha256": "ac8940d3f5f7bd15a5c9748305cb7a18153d8c1fa12c7a49237237d0281084be"
+    },
+    {
+      "path": "src/世界演变/rebuild/t4-preview.ts",
+      "sha256": "ba454a3e9fbd42964c1106047db8b1748ecc8ec80580e6ab7343f1f147c48f29"
+    },
+    {
+      "path": "src/世界演变/rebuild/t5-form.ts",
+      "sha256": "8269eaaa24f90d24ab7c9dd0839a97e37ea87becb26f278cb1855eb1eb3aaf99"
+    },
+    {
+      "path": "src/世界演变/rebuild/t5-import.ts",
+      "sha256": "5ac29040d9c7fed936d991d3ab4284916fda71fd06d5360f59185f7d89286ee5"
+    },
+    {
+      "path": "src/世界演变/rebuild/t5-workbench.ts",
+      "sha256": "2ce22f47cc0ef4d44ce26058157c241b633f7751f89e8654e0e3dee968b7f794"
+    },
+    {
+      "path": "src/世界演变/rebuild/t6-defaults.ts",
+      "sha256": "276c1909ff40a55e0dd26b901c2229e26f2d854901fc48e2192e2333ec42f6ef"
+    },
+    {
+      "path": "src/世界演变/rebuild/t6-ddl.ts",
+      "sha256": "66df46b6fdd60d4926108e6e0caeab9d1b16c180a15f4e43095a5b95ee2d2b7a"
+    },
+    {
+      "path": "src/世界演变/rebuild/t6-migration.ts",
+      "sha256": "80ac65da2609a759ae1a094e25cc0339fe43edf76fde5d296d1ff7a00d014aab"
+    },
+    {
+      "path": "src/世界演变/rebuild/t6-workbench.ts",
+      "sha256": "7c598cf50b51bf32f9424120562999e2bc7489ecb2cbbf5f58a8a406cde6cfa7"
+    },
+    {
+      "path": "src/世界演变/rebuild/t7-input.ts",
+      "sha256": "f2903963c210b08fb93c27950023123e0d44f5e5d97be7fe0dcc035e63b21144"
+    },
+    {
+      "path": "src/世界演变/rebuild/t7-prompts.ts",
+      "sha256": "d988cfaff94bb84db9a70e2106f8e16ebb4224c4eabca2a6716b49f428d5d9eb"
+    },
+    {
+      "path": "src/世界演变/rebuild/t7-run.ts",
+      "sha256": "436876e3770c0508f79769437387d05f863d1ec48f4dfa38d9e417e161e3f656"
+    },
+    {
+      "path": "src/世界演变/rebuild/t7-workbench.ts",
+      "sha256": "f20e7c13aa8526d36a4ee8314d663db9f0d8cef65978de4610872ed689c778ef"
+    },
+    {
+      "path": "src/世界演变/rebuild/t8-queue.ts",
+      "sha256": "f33c9a5f2bff13d874a092f12b68ba8747ceba489b42dcf45b97c2769fa3376c"
+    },
+    {
+      "path": "src/世界演变/rebuild/t3-diagnostic.ts",
+      "sha256": "922f64529a82fc365aab4c92570f7fdbf77d5f244348fa97cdb668d5abe6b072"
+    },
+    {
+      "path": "src/世界演变/rebuild/t8-control.ts",
+      "sha256": "d8206963b78a3246ce9e96916806de88c3055964e696049935180397b17df416"
+    },
+    {
+      "path": "src/世界演变/rebuild/t9-round.ts",
+      "sha256": "e246ca99e7109e2195bda5e773991644318d546e9aac67d240b104dec8e25a0a"
+    },
+    {
+      "path": "src/世界演变/rebuild/t11-history.ts",
+      "sha256": "96a1fc8463a7d697de833850423c58eee33e4502d1972df7be3e052007923205"
+    },
+    {
+      "path": "src/世界演变/rebuild/t11-controller.ts",
+      "sha256": "cd50ba8498e4be018c084923cd4f817538873b0b5956ccb652d063f5a7cd9e83"
+    },
+    {
+      "path": "src/世界演变/rebuild/t12-projection.ts",
+      "sha256": "3aa2113c036c308f3d5d19617d9b20ff8705de9f7d557be1e71590591e63acf6"
+    },
+    {
+      "path": "src/世界演变/rebuild/t12-gateway.ts",
+      "sha256": "2bce46333bb14b4c3bb277dc4cff57eebf28d7248f57f166971f4d3d795d8471"
+    },
+    {
+      "path": "src/世界演变/rebuild/t12-simulated-book.ts",
+      "sha256": "4a4f06a70292f0e1d3c7d41409bccc4a66f04129b942ed3dfbcdb8254cc800e7"
+    },
+    {
+      "path": "src/世界演变/rebuild/t12-controller.ts",
+      "sha256": "42d754b5896782571c46d6b0f10982bb72b02633cb40415a6bb209bd13f4ca40"
+    },
+    {
+      "path": "src/世界演变/rebuild/t13-backup.ts",
+      "sha256": "7182d08da8671ec7944a4523057d122c66e6d25f0754c624e0fc09bb1ff6cd45"
+    },
+    {
+      "path": "src/世界演变/rebuild/t13-legacy.ts",
+      "sha256": "a6534684930ba2accafe99340e50c443c809cc90c519a76767d88d620ecb1923"
+    },
+    {
+      "path": "src/世界演变/rebuild/t13-controller.ts",
+      "sha256": "c1b6572e6590b16fadd71f11b4ab63143f24fb5ef2a872c832c820f8e6614321"
+    },
+    {
+      "path": "src/世界演变/rebuild/t15-session.ts",
+      "sha256": "36466d90c6a549fc3f6b92e6b263a11f592f9a6e540bf138e245d343663930c5"
+    },
+    {
+      "path": "src/世界演变/rebuild/T15CandidateWorkspace.vue",
+      "sha256": "db05787e3fdd804dcc10cde841f14c3417f9d2a3b105c2b4503f242f58bcb2e5"
+    },
+    {
+      "path": "src/世界演变/rebuild/t15-browser.ts",
+      "sha256": "cd9c1af842324450e77d68b2b42c2e007a9e243b3ff4ac7bb25b4a343a765206"
+    },
+    {
+      "path": "src/世界演变/rebuild/t15-entry.ts",
+      "sha256": "7aed7a8542494bdc392b04c0c00745f8c6661aa3c911e6b8e45ead8953485a0d"
+    }
+  ]
+}

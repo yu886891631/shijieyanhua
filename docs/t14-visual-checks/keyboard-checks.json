@@ -1,0 +1,13 @@
+{
+  "build": "f4787ecdc86c836472bbd7371b2646db58263dd0d0668767610d211ebaa5b897",
+  "before": {
+    "left": 0,
+    "max": 3043
+  },
+  "after": {
+    "left": 40,
+    "max": 3043
+  },
+  "safeInitialFocus": "留在工作台",
+  "escapeFocus": "关闭工作台"
+}

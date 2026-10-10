@@ -1,0 +1,29 @@
+{
+  "build": "f4787ecdc86c836472bbd7371b2646db58263dd0d0668767610d211ebaa5b897",
+  "colors": [
+    {
+      "background": "rgb(255, 240, 243)",
+      "border": "rgb(181, 103, 128)",
+      "color": "rgb(133, 60, 82)",
+      "theme": "light"
+    },
+    {
+      "background": "rgb(255, 240, 243)",
+      "border": "rgb(181, 103, 128)",
+      "color": "rgb(133, 60, 82)",
+      "theme": "cream"
+    },
+    {
+      "background": "rgb(255, 231, 238)",
+      "border": "rgb(181, 103, 128)",
+      "color": "rgb(128, 48, 71)",
+      "theme": "landmine"
+    },
+    {
+      "background": "rgb(80, 55, 64)",
+      "border": "rgb(230, 167, 187)",
+      "color": "rgb(255, 218, 228)",
+      "theme": "dark"
+    }
+  ]
+}

@@ -4,7 +4,13 @@
       <div>
         <p class="we-eyebrow">BUILT-IN API · {{ worldEvolutionVersion }}</p>
         <h2>预设、路由与桥接</h2>
-        <p>API 配置保存在世界演变脚本自己的设置中。工作流助手仍可作为兼容来源，但不再是必需依赖。</p>
+        <p v-if="isolatedPort">
+          隔离候选：配置只存当前内存，用于检查编辑器；不绑定演算、不访问工作流助手、不导出 Key。
+        </p>
+        <p v-else-if="props.port">
+          配置通过当前世界演变宿主保存。真实演变需另行确认；本页连接测试仍是本地模拟，不证明模型可用。
+        </p>
+        <p v-else>API 配置保存在世界演变脚本自己的设置中。工作流助手仍可作为兼容来源，但不再是必需依赖。</p>
       </div>
       <div class="we-api-badges">
         <span class="we-api-badge" :class="{ good: config.presets.length }">
@@ -49,7 +55,11 @@
       </div>
       <div v-else class="we-api-empty" role="status">
         <strong>还没有内置 API 预设</strong>
-        <span>可以先新建一个，或继续使用工作流助手兼容桥接。</span>
+        <span>{{
+          isolatedPort
+            ? '可使用假 Key 新建测试配置；不会调用真实接口。'
+            : '可以先新建一个，或继续使用工作流助手兼容桥接。'
+        }}</span>
       </div>
     </section>
 
@@ -59,7 +69,9 @@
           <span class="we-eyebrow">{{ form.id ? 'EDIT PRESET' : 'NEW PRESET' }}</span>
           <h3>{{ form.id ? '编辑 API 预设' : '新建 API 预设' }}</h3>
         </div>
-        <span class="we-api-safe-note">Key 只保存在本地，不会进入世界书或导出文件</span>
+        <span class="we-api-safe-note">{{
+          isolatedPort ? '仅本次内存；请勿填写真实 Key，刷新后不保留' : 'Key 只保存在本地，不会进入世界书或导出文件'
+        }}</span>
       </div>
 
       <div class="we-api-form">
@@ -86,7 +98,9 @@
         <section class="we-api-field-group">
           <div class="we-api-field-head">
             <strong>接口连接</strong>
-            <span>Key 仅保存在本机设置，不会写入世界书。</span>
+            <span>{{
+              isolatedPort ? '假 Key 只存当前内存；不写本机设置或世界书。' : 'Key 仅保存在本机设置，不会写入世界书。'
+            }}</span>
           </div>
           <div class="we-api-field-grid">
             <label class="wide">
@@ -286,6 +300,10 @@
             当前工作流助手预设：{{ bridge.activePresetName || '跟随当前聊天' }}；可用预设
             {{ bridge.presets.length }} 个。此状态仅表示已检测到配置，不代表凭据验证成功。
           </p>
+          <p v-else-if="isolatedPort" class="we-api-muted">
+            此隔离候选不检测桥接，也不使用本页的真实路由生成；请勿在此配置实际游戏 API。
+          </p>
+          <p v-else-if="props.port" class="we-api-muted">当前接线使用内置主预设与表级路由，不探测工作流助手凭据。</p>
           <p v-else class="we-api-muted">内置 API 配置不依赖工作流助手；后续运行流程接入后，可以直接使用内置路由。</p>
         </div>
       </div>
@@ -294,7 +312,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { loadSettings } from '../store';
 import {
   createEmptyWorldEvolutionApiConfiguration,
@@ -329,13 +347,25 @@ type BridgeInfo = {
   presets: Array<{ name: string; model: string; endpointConfigured: boolean; keyConfigured: boolean }>;
 };
 
-const legacy = loadSettings();
-const worldEvolutionVersion = WORLD_EVOLUTION_VERSION;
+const props = defineProps<{
+  version?: string;
+  portMode?: 'isolated' | 'host';
+  port?: {
+    read: () => WorldEvolutionApiConfiguration;
+    save: (next: WorldEvolutionApiConfiguration) => WorldEvolutionApiConfiguration;
+  };
+}>();
+const isolatedPort = computed(() => !!props.port && props.portMode !== 'host');
+const emit = defineEmits<{ dirty: [value: boolean] }>();
+const legacy = props.port ? null : loadSettings();
+const worldEvolutionVersion = props.version ?? WORLD_EVOLUTION_VERSION;
 const config = ref<WorldEvolutionApiConfiguration>(
-  loadWorldEvolutionApiConfiguration({
-    apiPresetName: legacy.apiPresetName,
-    apiFallbackPresetNames: legacy.apiFallbackPresetNames,
-  }),
+  props.port
+    ? props.port.read()
+    : loadWorldEvolutionApiConfiguration({
+        apiPresetName: legacy?.apiPresetName,
+        apiFallbackPresetNames: legacy?.apiFallbackPresetNames,
+      }),
 );
 const form = reactive<ApiForm>(emptyForm());
 const busy = ref(false);
@@ -448,7 +478,7 @@ function clearSavedApiKey(): void {
 }
 
 function persist(next: WorldEvolutionApiConfiguration, successMessage: string): void {
-  config.value = saveWorldEvolutionApiConfiguration(next);
+  config.value = props.port ? props.port.save(next) : saveWorldEvolutionApiConfiguration(next);
   savedRoutingFingerprint.value = JSON.stringify(config.value.routing);
   setMessage(successMessage);
 }
@@ -562,6 +592,7 @@ function saveRouting(): void {
 }
 
 function refreshBridge(): void {
+  if (props.port) return; // An isolated caller must never probe parent presets or credentials.
   try {
     const host = (window.parent ?? window) as Window & {
       AcuPostProcessAPI?: {
@@ -615,6 +646,16 @@ function refreshBridge(): void {
 refreshBridge();
 savedRoutingFingerprint.value = JSON.stringify(config.value.routing);
 if (config.value.presets[0]) editPreset(config.value.presets[0]);
+watch(
+  [() => JSON.stringify(form), clearExistingKey, routingDirty],
+  () => {
+    const preset = selectedPreset.value;
+    const baseline: ApiForm = preset ? { ...preset, apiKey: '' } : emptyForm();
+    const changed = (Object.keys(emptyForm()) as Array<keyof ApiForm>).some(key => form[key] !== baseline[key]);
+    emit('dirty', changed || clearExistingKey.value || routingDirty.value);
+  },
+  { immediate: true },
+);
 </script>
 
 <style scoped lang="scss">
